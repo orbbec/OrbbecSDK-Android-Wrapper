@@ -1,0 +1,80 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.orbbec.orbbecsdkexamples.view.OBGLView
+        android:id="@+id/glview_sensor"
+        android:layout_width="0dip"
+        android:layout_height="0dip"
+        android:layout_marginTop="5dip"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintHeight_percent="0.6"
+        app:layout_constraintDimensionRatio="W, 4:3" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/textview_depth_mode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="40dip"
+        android:layout_marginBottom="40dip"
+        android:text="@string/depth_mode"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatSpinner
+        android:id="@+id/spinner_depth_mode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dip"
+        app:layout_constraintWidth_min="150dip"
+        app:layout_constraintHeight_min="30dip"
+        app:layout_constraintLeft_toRightOf="@id/textview_depth_mode"
+        app:layout_constraintBottom_toBottomOf="@id/textview_depth_mode" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/textview_sensor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="40dip"
+        android:layout_marginBottom="40dip"
+        android:text="@string/sensor"
+        app:layout_constraintLeft_toRightOf="@id/spinner_depth_mode"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatSpinner
+        android:id="@+id/spinner_sensor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dip"
+        app:layout_constraintWidth_min="150dip"
+        app:layout_constraintHeight_min="30dip"
+        app:layout_constraintLeft_toRightOf="@id/textview_sensor"
+        app:layout_constraintBottom_toBottomOf="@id/textview_sensor" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_start_play"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/start_play"
+        android:layout_marginLeft="0dip"
+        android:layout_marginTop="20dip"
+        app:layout_constraintLeft_toLeftOf="@id/glview_sensor"
+        app:layout_constraintRight_toRightOf="@+id/btn_stop_play"
+        app:layout_constraintTop_toBottomOf="@id/glview_sensor" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@id/btn_stop_play"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/stop_play"
+        android:layout_marginLeft="20dip"
+        android:layout_marginTop="20dip"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintLeft_toLeftOf="@id/btn_start_play"
+        app:layout_constraintRight_toRightOf="@id/glview_sensor"
+        app:layout_constraintTop_toBottomOf="@id/glview_sensor" />
+</androidx.constraintlayout.widget.ConstraintLayout>
