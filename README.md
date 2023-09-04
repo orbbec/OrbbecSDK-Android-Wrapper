@@ -1,23 +1,49 @@
-# User Guide
 
-## Build Tools
-### Android studio
+# Quick start
+## download source
+```
+git clone https://github.com/orbbec/OrbbecSDK-Android-Wrapper.git
+```
+
+## import project
+1. Open Android studio
+2. Menu: File --> open, and select project directory
+3. Click Ok button
+4. wait gradle sync complete
+
+![](doc/readme-images/Open-module-Android-wrapper.png)
+
+## run example
+
+### build example
+![](doc/readme-images/run-example.png)
+
+### Main UI
+![](doc/readme-images/Example-HelloOrbbec.png)
+
+Click 'DepthViewer' to show depth sensor stream.
+
+### DepthViewer
+![](doc/readme-images/Example-DepthViewer.png)
+
+# Build Tools
+## Android studio
 Android studio **Giraffe | 2022.3.1 Patch 1**
 download link [Android studio](https://developer.android.com/studio)
 
-### NDK
+## NDK
 **version:** 21.4.7075529
 
-### CMake
+## CMake
 **version:** 3.18.1
 
-### gradle
+## gradle
 gradle/wrapper/gradle-wrapper.properties
 ```txt
 distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-bin.zip
 ```
 
-### gradle pulgins
+## gradle pulgins
 build.gradle
 ```groovy
 plugins {
@@ -31,11 +57,12 @@ id 'com.android.application' version '8.1.0' apply false
 ## sensorsdk
 Orbbec basic sdk implementation with c & cpp, android wrapper import sensorsdk as so.
 
-### so files
+## so files
 **path:** obsensor_jni/libs
 
-### include headers
+## include headers
 **path:** obsensor_jni/src/main/cpp/sensorsdk
+
 _Note_: To short include path in native code, module of 'obsensor_jni' import as path 'obsensor_jni/src/main/cpp/sensorsdk/include/libobsensor'
 
 ## obsensor_jni
@@ -49,6 +76,7 @@ targetSdk 27
 ```
 **targetSdkVersion** 27 to fixed bug 'Android 10 Devices Do NOT Support USB Camera Connection' which fixed on android 11.
 \[reference 01] [Android 10 sdk28 usb camera device class bug.](https://forums.oneplus.com/threads/android-10-sdk28-usb-camera-device-class-bug.1258389/)
+
 \[reference 02] [Android 10 Devices Do NOT Support USB Camera Connection.](https://www.camerafi.com/notice-android-10-devices-do-not-support-usb-camera-connection/)
 
 ## example
@@ -91,4 +119,26 @@ Support device list (firmware version):
 ||Gemini E||
 ||Gemini E Lite||
 
-# Quick start
+
+# QA
+## LintModelSeverity has been compiled by a more recent version of the Java 
+```
+An exception occurred applying plugin request [id: 'com.android.application']
+> Failed to apply plugin 'com.android.internal.application'.
+   > Could not create an instance of type com.android.build.gradle.internal.dsl.ApplicationExtensionImpl$AgpDecorated.
+      > Could not create an instance of type com.android.build.gradle.internal.dsl.LintImpl$AgpDecorated.
+         > Could not generate a decorated class for type LintImpl$AgpDecorated.
+            > com/android/tools/lint/model/LintModelSeverity has been compiled by a more recent version of the Java Runtime (class file version 61.0), this version of the Java Runtime only recognizes class file versions up to 55.0
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+```
+
+**Reason**: AGP(android gradle plugin) is v8.1.0, need jdk 17, Please update android studio to new version, and check gradle jdk version.
+Android studio --> File --> Settings --> Build,Execution,Deployment --> Build Tools --> Gradle, check Gradle Projects -> Gradle JDK 
+
+**reference**: 
+https://developer.android.com/studio/releases#android_gradle_plugin_and_android_studio_compatibility
+
+https://developer.android.com/build/releases/gradle-plugin
