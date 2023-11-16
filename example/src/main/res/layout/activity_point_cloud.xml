@@ -13,6 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal|center_vertical"
         android:layout_marginTop="150dp"
+        android:enabled="false"
         android:text="Save Depth Points"
         android:textAllCaps="false"/>
 
@@ -22,6 +23,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal|center_vertical"
         android:layout_marginTop="10dp"
+        android:enabled="false"
         android:text="Save Color Points"
         android:textAllCaps="false"/>
 

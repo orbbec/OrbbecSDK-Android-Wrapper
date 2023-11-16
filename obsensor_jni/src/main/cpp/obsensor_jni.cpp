@@ -11,6 +11,7 @@
 
 #include <cinttypes>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <memory>
@@ -20,8 +21,12 @@
 
 #include "jdatatype/DataBundle.h"
 #include "jdatatype/DepthWorkMode.h"
-#include "jdatatype/DeviceSyncConfig.h"
+#include "jdatatype/MultiDeviceSyncConfig.h"
+#include "jdatatype/TimestampResetConfig.h"
+#include "jdatatype/NetworkConfig.h"
+#include "jdatatype/DeviceInfo.h"
 #include "utils/LocalUtils.h"
+#include "libobsensor/h/MultipleDevices.h"
 #include "libobsensor/internal/Extension.h"
 
 #define LOG_TAG "obsensor_jni"
@@ -31,48 +36,24 @@ JavaVM *gJVM;
 std::vector<std::pair<jlong, jobject>> gListCallback_;
 std::mutex mutex_;
 
-static inline void handle_error(JNIEnv *env, ob_error *error) {
-  // No Error
-  if (!error) {
-    return;
-  }
-
-  // Handle Error
-  std::string message = (char *)ob_error_message(error);
-  std::string function = (char *)ob_error_function(error);
-  std::string args = (char *)ob_error_args(error);
-  std::string errorMsg = function + "(" + args + ")#" + message;
-  ob_delete_error(error);
-  env->ThrowNew(env->FindClass("com/orbbec/obsensor/OBException"),
-                errorMsg.c_str());
-}
-
-static inline void throw_error(JNIEnv *env, const char *function_name, const char *message) {
-  std::string strFunction = (function_name ? std::string(function_name) : "");
-  std::string strMessage = (message ? std::string(message) : "");
-  std::string errorMsg = strFunction + "(), " + strMessage;
-  env->ThrowNew(env->FindClass("com/orbbec/obsensor/OBException"),
-                errorMsg.c_str());
-}
-
 static inline std::string getStdString(JNIEnv *env, jstring jText, const char *functionName, const char *paramName) {
   if (!jText) {
     std::string strParamName = (paramName ? std::string(paramName) : "");
     std::string errMsg = "Invalid argument, " + strParamName + " is null";
-    throw_error(env, functionName, errMsg.c_str());
+    ob_throw_error(env, functionName, errMsg.c_str());
   }
   const char* szText = env->GetStringUTFChars(jText, JNI_FALSE);
   if (!szText) {
     std::string strParamName = (paramName ? std::string(paramName) : "");
     std::string errMsg = "Invalid argument, " + strParamName + " GetStringUTFChars return null";
-    throw_error(env, functionName, errMsg.c_str());
+    ob_throw_error(env, functionName, errMsg.c_str());
   }
   if (strlen(szText) <= 0) {
     env->ReleaseStringUTFChars(jText, szText);
 
     std::string strParamName = (paramName ? std::string(paramName) : "");
     std::string errMsg = "Invalid argument, " + strParamName + " string is empty";
-    throw_error(env, functionName, errMsg.c_str());
+    ob_throw_error(env, functionName, errMsg.c_str());
   }
 
   std::string strText(szText);
@@ -229,7 +210,7 @@ void onPlaybackCallback(ob_frame *frame, void *pCallback) {
     if (gJVM->AttachCurrentThread(&env, NULL) != 0) {
       LOGE("onPlaybackCallback JNI error attach current thread!");
       ob_delete_frame(frame, &error);
-      handle_error(env, error);
+      ob_handle_error(env, error);
       return;
     }
     needDetach = true;
@@ -238,7 +219,7 @@ void onPlaybackCallback(ob_frame *frame, void *pCallback) {
   if (!pCallback) {
     LOGW("onPlaybackCallback JNI callback is null...");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     if (needDetach) {
       gJVM->DetachCurrentThread();
     }
@@ -248,7 +229,7 @@ void onPlaybackCallback(ob_frame *frame, void *pCallback) {
   if (!isInGListCallback(pCallback)) {
     LOGI("onPlaybackCallback Global ref pCallback had already been deleted !");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     if (needDetach) {
       gJVM->DetachCurrentThread();
     }
@@ -263,7 +244,7 @@ void onPlaybackCallback(ob_frame *frame, void *pCallback) {
       gJVM->DetachCurrentThread();
     }
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
   jmethodID methodCallback =
@@ -274,7 +255,7 @@ void onPlaybackCallback(ob_frame *frame, void *pCallback) {
       gJVM->DetachCurrentThread();
     }
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -294,7 +275,7 @@ void onFrameCallback(ob_frame *frame, void *pCallback) {
     if (gJVM->AttachCurrentThread(&env, NULL) != 0) {
       LOGE("JNI error attach current thread");
       ob_delete_frame(frame, &error);
-      handle_error(env, error);
+      ob_handle_error(env, error);
       return;
     }
   }
@@ -302,7 +283,7 @@ void onFrameCallback(ob_frame *frame, void *pCallback) {
   if (!pCallback) {
     LOGD("JNI callback is null...");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     if (needDetach) {
       gJVM->DetachCurrentThread();
     }
@@ -312,7 +293,7 @@ void onFrameCallback(ob_frame *frame, void *pCallback) {
   if (!isInGListCallback(pCallback)) {
     LOGD("onFrameCallback Global ref pCallback had already been deleted !");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     if (needDetach) {
       gJVM->DetachCurrentThread();
     }
@@ -328,7 +309,7 @@ void onFrameCallback(ob_frame *frame, void *pCallback) {
     }
     LOGD("onFrameCallback DetachCurrentThread");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -341,7 +322,7 @@ void onFrameCallback(ob_frame *frame, void *pCallback) {
     }
     LOGD("onFrameCallback DetachCurrentThread");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -361,7 +342,7 @@ void onFrameSetCallback(ob_frame *frame, void *pCallback) {
     if (gJVM->AttachCurrentThread(&env, NULL) != 0) {
       LOGE("JNI error attach current thread");
       ob_delete_frame(frame, &error);
-      handle_error(env, error);
+      ob_handle_error(env, error);
       return;
     }
   }
@@ -369,14 +350,14 @@ void onFrameSetCallback(ob_frame *frame, void *pCallback) {
   if (!pCallback) {
     LOGD("JNI callback is null...");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
   if (!isInGListCallback(pCallback)) {
     LOGD("onFrameSetCallback Global ref pCallback had already been deleted !");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -389,7 +370,7 @@ void onFrameSetCallback(ob_frame *frame, void *pCallback) {
     }
     LOGD("onFrameSetCallback DetachCurrentThread");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -402,7 +383,7 @@ void onFrameSetCallback(ob_frame *frame, void *pCallback) {
     }
     LOGD("onFrameSetCallback DetachCurrentThread");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -422,7 +403,7 @@ void onFilterCallback(ob_frame *frame, void *pCallback) {
     if (gJVM->AttachCurrentThread(&env, NULL) != 0) {
       LOGE("JNI error attach current thread");
       ob_delete_frame(frame, &error);
-      handle_error(env, error);
+      ob_handle_error(env, error);
       return;
     }
   }
@@ -430,14 +411,14 @@ void onFilterCallback(ob_frame *frame, void *pCallback) {
   if (!pCallback) {
     LOGD("JNI callback is null...");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
   if (!isInGListCallback(pCallback)) {
     LOGD("onFilterCallback Global ref pCallback had already been deleted !");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -450,7 +431,7 @@ void onFilterCallback(ob_frame *frame, void *pCallback) {
     }
     LOGD("onFilterCallback DetachCurrentThread");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -463,7 +444,7 @@ void onFilterCallback(ob_frame *frame, void *pCallback) {
     }
     LOGD("onFilterCallback DetachCurrentThread");
     ob_delete_frame(frame, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -663,7 +644,7 @@ void onDeviceChangedCallback(ob_device_list *removed, ob_device_list *added,
     LOGW("onDeviceChangedCallback JNI callback is null...");
     ob_delete_device_list(removed, &error);
     ob_delete_device_list(added, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
 
@@ -672,7 +653,7 @@ void onDeviceChangedCallback(ob_device_list *removed, ob_device_list *added,
          "deleted !");
     ob_delete_device_list(removed, &error);
     ob_delete_device_list(added, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
   bool isNeedDetach = false;
@@ -683,7 +664,7 @@ void onDeviceChangedCallback(ob_device_list *removed, ob_device_list *added,
       LOGE("JNI error attach current thread");
       ob_delete_device_list(removed, &error);
       ob_delete_device_list(added, &error);
-      handle_error(env, error);
+      ob_handle_error(env, error);
       return;
     }
   }
@@ -698,7 +679,7 @@ void onDeviceChangedCallback(ob_device_list *removed, ob_device_list *added,
     LOGD("onCallback DetachCurrentThread");
     ob_delete_device_list(removed, &error);
     ob_delete_device_list(added, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
   //    LOGD("onCallback GetObjectClass...");
@@ -714,7 +695,7 @@ void onDeviceChangedCallback(ob_device_list *removed, ob_device_list *added,
     LOGD("onCallback DetachCurrentThread");
     ob_delete_device_list(removed, &error);
     ob_delete_device_list(added, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return;
   }
   if (ob_device_list_device_count(added, &error) > 0) {
@@ -722,13 +703,13 @@ void onDeviceChangedCallback(ob_device_list *removed, ob_device_list *added,
   } else {
     ob_delete_device_list(added, &error);
   }
-  handle_error(env, error);
+  ob_handle_error(env, error);
   if (ob_device_list_device_count(removed, &error) > 0) {
     env->CallVoidMethod(jCallback, methodCallback2, (jlong)removed);
   } else {
     ob_delete_device_list(removed, &error);
   }
-  handle_error(env, error);
+  ob_handle_error(env, error);
   if (isNeedDetach) {
     gJVM->DetachCurrentThread();
   }
@@ -791,7 +772,7 @@ Java_com_orbbec_obsensor_OBContext_nCreate(JNIEnv *env, jclass typeOBContext) {
   LOGI("JNI OBContext create");
   ob_error *error = NULL;
   auto context = ob_create_context(&error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)context;
 }
 
@@ -803,7 +784,7 @@ Java_com_orbbec_obsensor_OBContext_nCreateWithConfig(JNIEnv *env,
   ob_error *error = NULL;
   std::string strConfigPath(getStdString(env, configPath, "OBContext#nCreateWithConfig", "configPath"));
   auto context = ob_create_context_with_config(strConfigPath.c_str(), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)context;
 }
 
@@ -824,7 +805,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_OBContext_nDelete(
     }
   }
   ob_delete_context(context, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -858,7 +839,7 @@ Java_com_orbbec_obsensor_OBContext_nQueryDevices(JNIEnv *env, jclass typeOBConte
   ob_error *error = NULL;
   auto context = reinterpret_cast<ob_context *>(handle);
   auto deviceInfoList = ob_query_device_list(context, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)deviceInfoList;
 }
 
@@ -878,16 +859,16 @@ Java_com_orbbec_obsensor_OBContext_nSetDeviceChangedCallback(JNIEnv *env,
   }
   ob_set_device_changed_callback(context, onDeviceChangedCallback, cookie,
                                  &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_orbbec_obsensor_OBContext_nEnableMultiDeviceSync(
+Java_com_orbbec_obsensor_OBContext_nEnableDeviceClockSync(
     JNIEnv *env, jclass typeOBContext, jlong handle, jlong repeatInterval) {
   ob_error *error = NULL;
   auto context = reinterpret_cast<ob_context *>(handle);
-  ob_enable_multi_device_sync(context, repeatInterval, &error);
-  handle_error(env, error);
+  ob_enable_device_clock_sync(context, repeatInterval, &error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -896,7 +877,7 @@ Java_com_orbbec_obsensor_OBContext_nSetLoggerSeverity(JNIEnv *env,
                                                       jint logSeverity) {
   ob_error *error = NULL;
   ob_set_logger_severity(static_cast<ob_log_severity>(logSeverity), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /*
@@ -913,7 +894,7 @@ Java_com_orbbec_obsensor_OBContext_nSetLoggerToFile__ILjava_lang_String_2
   ob_error *error = NULL;
   std::string strFilePath(getStdString(env, directory, "nSetLoggerToFile__ILjava_lang_String_2", "directory"));
   ob_set_logger_to_file(static_cast<ob_log_severity>(logSeverity), strFilePath.c_str(), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /*
@@ -929,7 +910,7 @@ Java_com_orbbec_obsensor_OBContext_nSetLoggerToFile__ILjava_lang_String_2JJ
   std::string strFilePath(getStdString(env, directory, "nSetLoggerToFile__ILjava_lang_String_2JJ", "directory"));
   LOGI("SetLoggerToFile with file size. directory: %s, maxFileSize: %lld, maxFileNum: %lld", strFilePath.c_str(), maxFileSize, maxFileNum);
   ob_set_logger_to_rotating_file(static_cast<ob_log_severity>(logSeverity), strFilePath.c_str(), (uint32_t)maxFileSize, (uint32_t)maxFileNum, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -938,7 +919,7 @@ Java_com_orbbec_obsensor_OBContext_nSetLoggerToConsole(JNIEnv *env,
                                                        jint logSeverity) {
   ob_error *error = NULL;
   ob_set_logger_to_console(static_cast<ob_log_severity>(logSeverity), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -954,7 +935,7 @@ Java_com_orbbec_obsensor_OBContext_nLoadLicense(JNIEnv *env,
   } else {
     ob_load_license(strFilePath.c_str(), nullptr, &error);
   }
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -966,8 +947,35 @@ Java_com_orbbec_obsensor_OBContext_nCreateNetDevice(JNIEnv *env, jclass typeOBCo
   auto context = reinterpret_cast<ob_context *>(handle);
   std::string szAddress(getStdString(env, address, "OBContext#nCreateNetDevice", "address"));
   auto device = ob_create_net_device(context, szAddress.c_str(), port, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return reinterpret_cast<jlong>(device);
+}
+
+/*
+ * Class:     com_orbbec_obsensor_OBContext
+ * Method:    nEnableNetDeviceEnumeration
+ * Signature: (JZ)V
+ */
+extern "C" JNIEXPORT void JNICALL
+Java_com_orbbec_obsensor_OBContext_nEnableNetDeviceEnumeration(JNIEnv *env, jclass typeContext, jlong handle, jboolean enable) {
+  ob_error *error = NULL;
+  auto context = reinterpret_cast<ob_context *>(handle);
+  ob_enable_net_device_enumeration(context, enable, &error);
+  ob_handle_error(env, error);
+}
+
+/*
+ * Class:     com_orbbec_obsensor_OBContext
+ * Method:    nIsNetDeviceEnumerationEnable
+ * Signature: (J)Z
+ */
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_orbbec_obsensor_OBContext_nIsNetDeviceEnumerationEnable(JNIEnv *env, jclass typeContext, jlong handle) {
+  ob_error *error = NULL;
+  auto context = reinterpret_cast<ob_context *>(handle);
+  bool ret = ob_context_is_net_device_enumeration_enable(context, &error);
+  ob_handle_error(env, error);
+  return ret;
 }
 
 /**
@@ -980,7 +988,7 @@ Java_com_orbbec_obsensor_DeviceList_nGetDeviceCount(JNIEnv *env,
   ob_error *error = NULL;
   auto deviceInfoList = reinterpret_cast<ob_device_list *>(handle);
   auto count = ob_device_list_device_count(deviceInfoList, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return count;
 }
 
@@ -990,7 +998,7 @@ Java_com_orbbec_obsensor_DeviceList_nGetDevice(JNIEnv *env, jclass typeDeviceLis
   ob_error *error = NULL;
   auto deviceList = reinterpret_cast<ob_device_list *>(handle);
   auto device = ob_device_list_get_device(deviceList, index, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)device;
 }
 
@@ -1002,7 +1010,7 @@ Java_com_orbbec_obsensor_DeviceList_nGetDeviceBySerialNumber(
   std::string strSerialNum(getStdString(env, serialNum, "DeviceList#nGetDeviceBySerialNumber", "serialNum"));
   auto device = ob_device_list_get_device_by_serial_number(deviceList,
                                                            strSerialNum.c_str(), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)device;
 }
 
@@ -1014,7 +1022,7 @@ Java_com_orbbec_obsensor_DeviceList_nGetDeviceByUid(JNIEnv *env,
   auto deviceList = reinterpret_cast<ob_device_list *>(handle);
   std::string strDeviceUid(getStdString(env, uid, "DeviceList#nGetDeviceByUid", "uid"));
   auto device = ob_device_list_get_device_by_uid(deviceList, strDeviceUid.c_str(), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)device;
 }
 
@@ -1025,7 +1033,7 @@ Java_com_orbbec_obsensor_DeviceList_nGetName(JNIEnv *env, jclass typeDeviceList,
   auto deviceInfoList = reinterpret_cast<ob_device_list *>(handle);
   const char *name =
       ob_device_list_get_device_name(deviceInfoList, index, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   uint8_t ret = ensure_utf8(name);
   if (ret) {
     return env->NewStringUTF(name);
@@ -1038,7 +1046,7 @@ extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_DeviceList_nGetPid(
   ob_error *error = NULL;
   auto deviceInfoList = reinterpret_cast<ob_device_list *>(handle);
   auto pid = ob_device_list_get_device_pid(deviceInfoList, index, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return pid;
 }
 
@@ -1047,7 +1055,7 @@ extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_DeviceList_nGetVid(
   ob_error *error = NULL;
   auto deviceInfoList = reinterpret_cast<ob_device_list *>(handle);
   auto vid = ob_device_list_get_device_vid(deviceInfoList, index, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return vid;
 }
 
@@ -1058,7 +1066,7 @@ Java_com_orbbec_obsensor_DeviceList_nGetUid(JNIEnv *env, jclass typeDeviceList,
   auto deviceInfoList = reinterpret_cast<ob_device_list *>(handle);
   const char *uid =
       ob_device_list_get_device_uid(deviceInfoList, index, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   uint8_t ret = ensure_utf8(uid);
   if (ret) {
     return env->NewStringUTF(uid);
@@ -1075,7 +1083,7 @@ Java_com_orbbec_obsensor_DeviceList_nGetDeviceSerialNumber(JNIEnv *env,
   auto deviceList = reinterpret_cast<ob_device_list *>(handle);
   const char *serialNum =
       ob_device_list_get_device_serial_number(deviceList, index, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   uint8_t ret = ensure_utf8(serialNum);
   if (ret) {
     return env->NewStringUTF(serialNum);
@@ -1083,199 +1091,80 @@ Java_com_orbbec_obsensor_DeviceList_nGetDeviceSerialNumber(JNIEnv *env,
   return env->NewStringUTF("null");
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_DeviceList_nDelete(
-    JNIEnv *env, jclass typeDeviceList, jlong handle) {
+/*
+ * Class:     com_orbbec_obsensor_DeviceList
+ * Method:    nGetConnectionType
+ * Signature: (JI)Ljava/lang/String;
+ */
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_orbbec_obsensor_DeviceList_nGetConnectionType(JNIEnv *env, jclass typeDevice, jlong handle, jint index) {
   ob_error *error = NULL;
   auto deviceInfoList = reinterpret_cast<ob_device_list *>(handle);
-  ob_delete_device_list(deviceInfoList, &error);
-  handle_error(env, error);
-}
-
-/**
- * DeviceInfo
- */
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_orbbec_obsensor_Device_nGetDeviceInfo(JNIEnv *env, jclass typeDeviceInfo,
-                                               jlong handle) {
-  ob_error *error = NULL;
-  auto device = reinterpret_cast<ob_device *>(handle);
-  auto deviceInfo = ob_device_get_device_info(device, &error);
-  handle_error(env, error);
-  return (jlong)deviceInfo;
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_DeviceInfo_nDelete(
-    JNIEnv *env, jclass typeDeviceInfo, jlong handle) {
-  ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  ob_delete_device_info(deviceInfo, &error);
-  handle_error(env, error);
-}
-
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetName(JNIEnv *env, jclass typeDeviceInfo,
-                                             jlong handle) {
-  ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  const char *name = ob_device_info_name(deviceInfo, &error);
-  handle_error(env, error);
-  uint8_t ret = ensure_utf8(name);
+  const char *connectType = ob_device_list_get_device_connection_type(deviceInfoList, index, &error);
+  ob_handle_error(env, error);
+  auto ret = ensure_utf8(connectType);
   if (ret) {
-    return env->NewStringUTF(name);
-  }
-  return env->NewStringUTF("null");
-}
-
-extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_DeviceInfo_nGetPid(
-    JNIEnv *env, jclass typeDeviceInfo, jlong handle) {
-  ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  auto pid = ob_device_info_pid(deviceInfo, &error);
-  handle_error(env, error);
-  return pid;
-}
-
-extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_DeviceInfo_nGetVid(
-    JNIEnv *env, jclass typeDeviceInfo, jlong handle) {
-  ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  auto vid = ob_device_info_vid(deviceInfo, &error);
-  handle_error(env, error);
-  return vid;
-}
-
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetUid(JNIEnv *env, jclass typeDeviceInfo,
-                                            jlong handle) {
-  ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  const char *uid = ob_device_info_uid(deviceInfo, &error);
-  handle_error(env, error);
-  uint8_t ret = ensure_utf8(uid);
-  if (ret) {
-    return env->NewStringUTF(uid);
-  }
-  return env->NewStringUTF("null");
-}
-
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetSerialNumber(JNIEnv *env,
-                                                     jclass typeDeviceInfo,
-                                                     jlong handle) {
-  ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  const char *serialNumber = ob_device_info_serial_number(deviceInfo, &error);
-  handle_error(env, error);
-  uint8_t ret = ensure_utf8(serialNumber);
-  if (ret) {
-    return env->NewStringUTF(serialNumber);
-  }
-  return env->NewStringUTF("null");
-}
-
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetUsbType(JNIEnv *env, jclass typeDeviceInfo,
-                                                jlong handle) {
-  ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  const char *usbType = ob_device_info_usb_type(deviceInfo, &error);
-  handle_error(env, error);
-  uint8_t ret = ensure_utf8(usbType);
-  if (ret) {
-    return env->NewStringUTF(usbType);
+    return env->NewStringUTF(connectType);
   }
   return env->NewStringUTF("null");
 }
 
 /*
- * Class:     com_orbbec_obsensor_DeviceInfo
- * Method:    nGetConnectionType
- * Signature: (J)Ljava/lang/String;
+ * Class:     com_orbbec_obsensor_DeviceList
+ * Method:    nGetIpAddress
+ * Signature: (JI)Ljava/lang/String;
  */
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetConnectionType(JNIEnv *env,
-                                                       jclass typeDeviceInfo,
-                                                       jlong handle) {
+Java_com_orbbec_obsensor_DeviceList_nGetIpAddress(JNIEnv *env, jclass typeDeviceList, jlong handle, jint index) {
   ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  const char *connectionType =
-      ob_device_info_connection_type(deviceInfo, &error);
-  handle_error(env, error);
-  uint8_t ret = ensure_utf8(connectionType);
+  auto deviceInfoList = reinterpret_cast<ob_device_list *>(handle);
+  const char *ipAddress = ob_device_list_get_device_ip_address(deviceInfoList, index, &error);
+  ob_handle_error(env, error);
+  auto ret = ensure_utf8(ipAddress);
   if (ret) {
-    return env->NewStringUTF(connectionType);
+    return env->NewStringUTF(ipAddress);
   }
-  return env->NewStringUTF("null");
+  return nullptr;
 }
 
+/*
+ * Class:     com_orbbec_obsensor_DeviceList
+ * Method:    nGetExtensionInfo
+ * Signature: (JI)Ljava/lang/String;
+ */
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetFirmwareVersion(JNIEnv *env,
-                                                        jclass typeDeviceInfo,
-                                                        jlong handle) {
+Java_com_orbbec_obsensor_DeviceList_nGetExtensionInfo(JNIEnv *env, jclass typeDeviceList, jlong handle, jint index) {
   ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  const char *firmwareVer = ob_device_info_firmware_version(deviceInfo, &error);
-  handle_error(env, error);
-  uint8_t ret = ensure_utf8(firmwareVer);
-  if (ret) {
-    return env->NewStringUTF(firmwareVer);
+  auto deviceInfoList = reinterpret_cast<ob_device_list *>(handle);
+  const char *extensionInfo = ob_device_list_get_extension_info(deviceInfoList, index, &error);
+  ob_handle_error(env, error);
+  if (extensionInfo && strlen(extensionInfo) > 0) {
+    return env->NewStringUTF(extensionInfo);
   }
-  return env->NewStringUTF("null");
+  return env->NewStringUTF("");
 }
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetHardwareVersion(JNIEnv *env,
-                                                        jclass typeDeviceInfo,
-                                                        jlong handle) {
+extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_DeviceList_nDelete(
+    JNIEnv *env, jclass typeDeviceList, jlong handle) {
   ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  const char *hardwareVer = ob_device_info_hardware_version(deviceInfo, &error);
-  handle_error(env, error);
-  uint8_t ret = ensure_utf8(hardwareVer);
-  if (ret) {
-    return env->NewStringUTF(hardwareVer);
-  }
-  return env->NewStringUTF("null");
+  auto deviceInfoList = reinterpret_cast<ob_device_list *>(handle);
+  ob_delete_device_list(deviceInfoList, &error);
+  ob_handle_error(env, error);
 }
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetSupportedMinSdkVersion(JNIEnv *env,
-                                                               jclass typeDeviceInfo,
-                                                               jlong handle) {
+/**
+ * DeviceInfo
+ */
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_orbbec_obsensor_Device_nGetDeviceInfo(JNIEnv *env, jclass typeDeviceInfo,
+                                               jlong handle) {
   ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  const char *sdkVer =
-      ob_device_info_supported_min_sdk_version(deviceInfo, &error);
-  handle_error(env, error);
-  uint8_t ret = ensure_utf8(sdkVer);
-  if (ret) {
-    return env->NewStringUTF(sdkVer);
-  }
-  return env->NewStringUTF("null");
-}
-
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetAsicName(JNIEnv *env, jclass typeDeviceInfo,
-                                                 jlong handle) {
-  ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  const char *asicName = ob_device_info_asicName(deviceInfo, &error);
-  handle_error(env, error);
-  uint8_t ret = ensure_utf8(asicName);
-  if (ret) {
-    return env->NewStringUTF(asicName);
-  }
-  return env->NewStringUTF("null");
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_com_orbbec_obsensor_DeviceInfo_nGetDeviceType(JNIEnv *env, jclass typeDevice,
-                                                   jlong handle) {
-  ob_error *error = NULL;
-  auto deviceInfo = reinterpret_cast<ob_device_info *>(handle);
-  auto deviceType = ob_device_info_device_type(deviceInfo, &error);
-  handle_error(env, error);
-  return deviceType;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  auto deviceInfo = ob_device_get_device_info(device, &error);
+  ob_handle_error(env, error);
+  jobject jobjDeviceInfo = obandroid::convert_j_DeviceInfo(env, deviceInfo);
+  ob_delete_device_info(deviceInfo, &error);
+  return jobjDeviceInfo;
 }
 
 /**
@@ -1297,7 +1186,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Device_nDelete(
     }
   }
   ob_delete_device(device, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /*
@@ -1313,7 +1202,7 @@ Java_com_orbbec_obsensor_Device_nGetCurrentDepthWorkMode(JNIEnv *env,
   auto device = reinterpret_cast<ob_device *>(handle);
   ob_depth_work_mode depthWorkMode =
       ob_device_get_current_depth_work_mode(device, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return obandroid::convert_j_DepthWorkMode(env, depthWorkMode);
 }
 
@@ -1330,7 +1219,7 @@ Java_com_orbbec_obsensor_Device_nSwitchDepthWorkMode(JNIEnv *env, jclass typeDev
   auto device = reinterpret_cast<ob_device *>(handle);
   std::string strModeName(getStdString(env, modeName, "Device#nSwitchDepthWorkMode", "modeName"));
   ob_device_switch_depth_work_mode_by_name(device, strModeName.c_str(), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /*
@@ -1344,7 +1233,7 @@ Java_com_orbbec_obsensor_Device_nGetDepthWorkModeList(JNIEnv *env, jclass typeDe
   ob_error *error = NULL;
   auto device = reinterpret_cast<ob_device *>(handle);
   auto workModeList = ob_device_get_depth_work_mode_list(device, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   jclass clsArrayList = env->FindClass("java/util/ArrayList");
   jmethodID methodListConstructor =
@@ -1356,20 +1245,20 @@ Java_com_orbbec_obsensor_Device_nGetDepthWorkModeList(JNIEnv *env, jclass typeDe
   if (error) {
     ob_error *error_1 = NULL;
     ob_delete_depth_work_mode_list(workModeList, &error_1);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return NULL;
   }
 
   for (int i = 0; i < modeCount; i++) {
     auto workMode = ob_depth_work_mode_list_get_item(workModeList, i, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     auto jWorkMode = obandroid::convert_j_DepthWorkMode(env, workMode);
     if (jWorkMode) {
       env->CallBooleanMethod(modeArrayList, methodListAdd, jWorkMode);
     }
   }
   ob_delete_depth_work_mode_list(workModeList, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   return modeArrayList;
 }
@@ -1385,11 +1274,11 @@ Java_com_orbbec_obsensor_Device_nGetSupportDepthPrecisionLevelList(
     LOGI("Device not support property OB_STRUCT_DEPTH_PRECISION_SUPPORT_LIST");
     return NULL;
   }
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   ob_data_bundle *dataBundle = ob_device_get_structured_data_ext(
       device, OB_STRUCT_DEPTH_PRECISION_SUPPORT_LIST, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   if (dataBundle->data == NULL || dataBundle->dataSize <= 0) {
     LOGI("Device get property OB_STRUCT_DEPTH_PRECISION_SUPPORT_LIST return "
          "zero data");
@@ -1426,7 +1315,7 @@ Java_com_orbbec_obsensor_Device_nQuerySensor(JNIEnv *env, jclass typeDevice,
   uint32_t size = 0;
   auto sensors = ob_device_get_sensor_list(device, &error);
   size = ob_sensor_list_get_sensor_count(sensors, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   std::vector<jlong> sensorList;
   for (int i = 0; i < size; i++) {
     ob_sensor *sensor = ob_sensor_list_get_sensor(sensors, i, &error);
@@ -1436,6 +1325,73 @@ Java_com_orbbec_obsensor_Device_nQuerySensor(JNIEnv *env, jclass typeDevice,
   env->SetLongArrayRegion(jSensors, 0, size, sensorList.data());
   ob_delete_sensor_list(sensors, &error);
   return jSensors;
+}
+
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nHasSensor
+ * Signature: (JI)Z
+ */
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_orbbec_obsensor_Device_nHasSensor(JNIEnv *env, jclass typeDevice, jlong handle, jint iSensorType) {
+  ob_error *error = NULL;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  uint32_t size = 0;
+  auto sensor_list  = ob_device_get_sensor_list(device, &error);
+  size = ob_sensor_list_get_sensor_count(sensor_list, &error);
+  ob_handle_error(env, error);
+  bool find = false;
+  for (uint32_t i = 0; i < size; i++) {
+    ob_sensor_type type = ob_sensor_list_get_sensor_type(sensor_list, i, &error);
+    ob_handle_error(env, error);
+    if ((int)type == iSensorType) {
+      find = true;
+      break;
+    }
+  }
+  ob_delete_sensor_list(sensor_list, &error);
+  return find;
+}
+
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nQuerySensorTypes
+ * Signature: (J)[I
+ */
+extern "C" JNIEXPORT jintArray JNICALL
+Java_com_orbbec_obsensor_Device_nQuerySensorTypes(JNIEnv *env, jclass typeDevice, jlong handle) {
+  ob_error *error = NULL;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  uint32_t size = 0;
+  auto sensor_list  = ob_device_get_sensor_list(device, &error);
+  size = ob_sensor_list_get_sensor_count(sensor_list, &error);
+  ob_handle_error(env, error);
+  jintArray iarray = env->NewIntArray(size);
+  std::shared_ptr<int> ibuf(new int[size]{}, std::default_delete<int[]>());
+  for (uint32_t i = 0; i < size; i++) {
+    ob_sensor_type type = ob_sensor_list_get_sensor_type(sensor_list, i, &error);
+    ob_handle_error(env, error);
+    *(ibuf.get() + i) = type;
+  }
+  if (size > 0) {
+    env->SetIntArrayRegion(iarray, 0, size, ibuf.get());
+  }
+  ob_delete_sensor_list(sensor_list, &error);
+  return iarray;
+}
+
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nGetSensor
+ * Signature: (JI)J
+ */
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_orbbec_obsensor_Device_nGetSensor(JNIEnv *env, jclass typeDevice, jlong handle, jint iSensorType) {
+  ob_error *error = NULL;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  ob_sensor *sensor = ob_device_get_sensor(device, (ob_sensor_type)iSensorType, &error);
+  ob_handle_error(env, error);
+  return (jlong)sensor;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
@@ -1449,7 +1405,7 @@ Java_com_orbbec_obsensor_Device_nIsPropertySupported(JNIEnv *env,
   auto isSupported = ob_device_is_property_supported(
       device, static_cast<ob_property_id>(propertyId),
       static_cast<ob_permission_type>(permission), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return isSupported;
 }
 
@@ -1462,7 +1418,7 @@ Java_com_orbbec_obsensor_Device_nGetPropertyRangeB(JNIEnv *env, jclass typeDevic
   auto device = reinterpret_cast<ob_device *>(handle);
   auto range = ob_device_get_bool_property_range(
       device, static_cast<ob_property_id>(propertyId), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   if (error) {
     return;
   }
@@ -1478,7 +1434,7 @@ Java_com_orbbec_obsensor_Device_nGetPropertyRangeI(JNIEnv *env, jclass typeDevic
   auto device = reinterpret_cast<ob_device *>(handle);
   auto range = ob_device_get_int_property_range(
       device, static_cast<ob_property_id>(propertyId), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   if (error) {
     return;
   }
@@ -1494,7 +1450,7 @@ Java_com_orbbec_obsensor_Device_nGetPropertyRangeF(JNIEnv *env, jclass typeDevic
   auto device = reinterpret_cast<ob_device *>(handle);
   auto range = ob_device_get_float_property_range(
       device, static_cast<ob_property_id>(propertyId), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   if (error) {
     return;
   }
@@ -1510,7 +1466,7 @@ Java_com_orbbec_obsensor_Device_nSetPropertyValueB(JNIEnv *env, jclass typeDevic
   auto device = reinterpret_cast<ob_device *>(handle);
   ob_device_set_bool_property(device, static_cast<ob_property_id>(propertyId),
                               value, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -1522,7 +1478,7 @@ Java_com_orbbec_obsensor_Device_nSetPropertyValueI(JNIEnv *env, jclass typeDevic
   auto device = reinterpret_cast<ob_device *>(handle);
   ob_device_set_int_property(device, static_cast<ob_property_id>(propertyId),
                              value, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -1534,7 +1490,7 @@ Java_com_orbbec_obsensor_Device_nSetPropertyValueF(JNIEnv *env, jclass typeDevic
   auto device = reinterpret_cast<ob_device *>(handle);
   ob_device_set_float_property(device, static_cast<ob_property_id>(propertyId),
                                value, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -1550,7 +1506,7 @@ Java_com_orbbec_obsensor_Device_nSetPropertyValueDataType(JNIEnv *env,
   ob_device_set_structured_data(device, static_cast<ob_property_id>(propertyId),
                                 (const void *)bytes, size, &error);
   env->ReleaseByteArrayElements(data, bytes, 0);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /*
@@ -1583,7 +1539,7 @@ Java_com_orbbec_obsensor_Device_nGetPropertyValueB(JNIEnv *env, jclass typeDevic
   auto device = reinterpret_cast<ob_device *>(handle);
   auto value = ob_device_get_bool_property(
       device, static_cast<ob_property_id>(propertyId), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return value;
 }
 
@@ -1595,7 +1551,7 @@ Java_com_orbbec_obsensor_Device_nGetPropertyValueI(JNIEnv *env, jclass typeDevic
   auto device = reinterpret_cast<ob_device *>(handle);
   auto value = ob_device_get_int_property(
       device, static_cast<ob_property_id>(propertyId), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return value;
 }
 
@@ -1607,7 +1563,7 @@ Java_com_orbbec_obsensor_Device_nGetPropertyValueF(JNIEnv *env, jclass typeDevic
   auto device = reinterpret_cast<ob_device *>(handle);
   auto value = ob_device_get_float_property(
       device, static_cast<ob_property_id>(propertyId), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return value;
 }
 
@@ -1625,7 +1581,7 @@ Java_com_orbbec_obsensor_Device_nGetPropertyValueDataType(JNIEnv *env,
                                 (void *)bytes, &size, &error);
   env->SetByteArrayRegion(data, 0, size, bytes);
   env->ReleaseByteArrayElements(data, bytes, 0);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /*
@@ -1640,43 +1596,95 @@ Java_com_orbbec_obsensor_Device_nGetPropertyValueDataTypeExt__JI(
   auto device = reinterpret_cast<ob_device *>(handle);
   auto cdata_bundle = ob_device_get_structured_data_ext(
       device, (ob_property_id)propertyId, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   if (cdata_bundle) {
     jobject ret = obandroid::convert_j_DataBundle(env, cdata_bundle);
     ob_delete_data_bundle(cdata_bundle, &error);
-    handle_error(env, error);
+    ob_handle_error(env, error);
     return ret;
   }
-  throw_error(env, "nGetPropertyValueDataTypeExt",
+  ob_throw_error(env, "nGetPropertyValueDataTypeExt",
               "Invoke get_structured_data_ext return NULL");
   return NULL;
 }
 
-extern "C" JNIEXPORT jlong JNICALL Java_com_orbbec_obsensor_Device_nGetSensor(
-    JNIEnv *env, jclass typeDevice, jlong handle, jint sensorType) {
-  ob_error *error = NULL;
-  auto device = reinterpret_cast<ob_device *>(handle);
-  auto sensor = ob_device_get_sensor(
-      device, static_cast<ob_sensor_type>(sensorType), &error);
-  handle_error(env, error);
-  return (jlong)sensor;
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Device_nUpgrade(
-    JNIEnv *env, jclass typeDevice, jlong handle, jstring fileName,
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nUpgrade
+ * Signature: (JLjava/lang/String;Lcom/orbbec/obsensor/UpgradeCallback;)V
+ */
+extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Device_nUpgrade__JLjava_lang_String_2Lcom_orbbec_obsensor_UpgradeCallback_2
+        (JNIEnv *env, jclass typeDevice, jlong handle, jstring fileName,
     jobject callback) {
   ob_error *error = NULL;
   auto device = reinterpret_cast<ob_device *>(handle);
-  std::string strFileName(getStdString(env, fileName, "Device#nUpgrade", "fileName"));
+  std::string strFileName(getStdString(env, fileName, "Device#nUpgrade(fileName)", "fileName"));
   void *cookie = NULL;
-  std::lock_guard<std::mutex> lk(mutex_);
   if (callback) {
+    std::lock_guard<std::mutex> lk(mutex_);
     jobject gCallback = env->NewGlobalRef(callback);
     cookie = gCallback;
     gListCallback_.push_back(std::pair<jlong, jobject>(handle, gCallback));
   }
-  ob_device_upgrade(device, strFileName.c_str(), onUpgradeCallback, true, cookie, &error);
-  handle_error(env, error);
+  ob_device_upgrade(device, strFileName.c_str(), onUpgradeCallback, false, cookie, &error);
+  if (cookie) {
+    std::lock_guard<std::mutex> lk(mutex_);
+    for (auto callbackIt = gListCallback_.begin();
+         callbackIt != gListCallback_.end();) {
+      if (handle == callbackIt->first && callbackIt->second == cookie) {
+        env->DeleteGlobalRef(callbackIt->second);
+        callbackIt = gListCallback_.erase(callbackIt);
+      } else {
+        callbackIt++;
+      }
+    }
+  }
+  ob_handle_error(env, error);
+}
+
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nUpgrade
+ * Signature: (J[BLcom/orbbec/obsensor/UpgradeCallback;)V
+ */
+extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Device_nUpgrade__JLjava_nio_ByteBuffer_2Lcom_orbbec_obsensor_UpgradeCallback_2
+        (JNIEnv *env, jclass typeDevice, jlong handle, jobject byteBuffer, jobject callback) {
+    ob_error *error = NULL;
+    auto device = reinterpret_cast<ob_device *>(handle);
+
+    jlong capacity = env->GetDirectBufferCapacity(byteBuffer);
+    if (capacity <= 0) {
+      LOGW("nUpgrade(ByteBuffer) failed. capacity < size");
+      ob_throw_error(env, "nUpgradeCallback(ByteBuffer)", "upgrade failed. capacity < size");
+    }
+
+    auto address = reinterpret_cast<char *>(env->GetDirectBufferAddress(byteBuffer));
+    if (nullptr == address) {
+      LOGW("nUpgrade(ByteBuffer) failed. DirectBufferAddress is null");
+      ob_throw_error(env, "nUpgradeCallback(ByteBuffer)", "upgrade failed. DirectBufferAddress is null");
+    }
+
+    void *cookie = NULL;
+    std::lock_guard<std::mutex> lk(mutex_);
+    if (callback) {
+        jobject gCallback = env->NewGlobalRef(callback);
+        cookie = gCallback;
+        gListCallback_.push_back(std::pair<jlong, jobject>(handle, gCallback));
+    }
+    ob_device_upgrade_from_data(device, address, capacity, onUpgradeCallback, false, cookie, &error);
+    if (cookie) {
+      std::lock_guard<std::mutex> lk(mutex_);
+      for (auto callbackIt = gListCallback_.begin();
+           callbackIt != gListCallback_.end();) {
+        if (handle == callbackIt->first && callbackIt->second == cookie) {
+          env->DeleteGlobalRef(callbackIt->second);
+          callbackIt = gListCallback_.erase(callbackIt);
+        } else {
+          callbackIt++;
+        }
+      }
+    }
+    ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -1695,8 +1703,8 @@ Java_com_orbbec_obsensor_Device_nSendFileToDestination(
     gListCallback_.push_back(std::pair<jlong, jobject>(handle, gCallback));
   }
   ob_device_send_file_to_destination(device, strSrcFile.c_str(), strDstFile.c_str(),
-                                     onFileSendCallback, true, cookie, &error);
-  handle_error(env, error);
+                                     onFileSendCallback, false, cookie, &error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
@@ -1708,7 +1716,7 @@ Java_com_orbbec_obsensor_Device_nActivateAuthorization(JNIEnv *env,
   auto device = reinterpret_cast<ob_device *>(handle);
   std::string strAuthCode(getStdString(env, authCode, "Device#nActivateAuthorization", "authCode"));
   auto activate = ob_device_activate_authorization(device, strAuthCode.c_str(), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return activate;
 }
 
@@ -1727,17 +1735,71 @@ Java_com_orbbec_obsensor_Device_nSetStateChangeListener(JNIEnv *env,
     gListCallback_.push_back(std::pair<jlong, jobject>(handle, gCallback));
   }
   ob_device_state_changed(device, onStateChangeCallback, cookie, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_orbbec_obsensor_Device_nSyncDeviceTime(JNIEnv *env, jclass typeDevice,
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nTriggerCapture
+ * Signature: (J)V
+ */
+extern "C" JNIEXPORT void JNICALL
+Java_com_orbbec_obsensor_Device_nTriggerCapture(JNIEnv *env, jclass typeDevice, jlong handle) {
+  ob_error *error = NULL;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  ob_device_trigger_capture(device, &error);
+  ob_handle_error(env, error);
+}
+
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nSetTimestampResetConfig
+ * Signature: (JLcom/orbbec/obsensor/TimestampResetConfig;)V
+ */
+extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Device_nSetTimestampResetConfig
+(JNIEnv *env, jclass typeDevice, jlong handle, jobject jconfig) {
+  ob_error *error = NULL;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  auto config = obandroid::convert_c_TimestampResetConfig(env, jconfig);
+  ob_device_set_timestamp_reset_config(device, &config, &error);
+  ob_handle_error(env, error);
+}
+
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nGetTimestampResetConfig
+ * Signature: (J)Lcom/orbbec/obsensor/TimestampResetConfig;
+ */
+extern "C" JNIEXPORT jobject JNICALL Java_com_orbbec_obsensor_Device_nGetTimestampResetConfig
+        (JNIEnv *env, jclass typeDevice, jlong handle) {
+  ob_error *error = NULL;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  auto config = ob_device_get_timestamp_reset_config(device, &error);
+  ob_handle_error(env, error);
+  auto jobjConfig = obandroid::convert_j_TimestampResetConfig(env, config);
+  return jobjConfig;
+}
+
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nTimestampReset
+ * Signature: (J)V
+ */
+extern "C" JNIEXPORT void JNICALL
+Java_com_orbbec_obsensor_Device_nTimestampReset(JNIEnv *env, jclass typeDevice, jlong handle) {
+  ob_error *error = NULL;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  ob_device_timestamp_reset(device, &error);
+  ob_handle_error(env, error);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_orbbec_obsensor_Device_nTimerSyncWithHost(JNIEnv *env, jclass typeDevice,
                                                 jlong handle) {
   ob_error *error = NULL;
   auto device = reinterpret_cast<ob_device *>(handle);
-  auto rtt = ob_device_sync_device_time(device, &error);
-  handle_error(env, error);
-  return (jlong)rtt;
+  ob_device_timer_sync_with_host(device, &error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -1748,7 +1810,7 @@ Java_com_orbbec_obsensor_Device_nGetCalibrationCameraParamList(JNIEnv *env,
   auto device = reinterpret_cast<ob_device *>(handle);
   auto cameraParamList =
       ob_device_get_calibration_camera_param_list(device, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)cameraParamList;
 }
 
@@ -1758,9 +1820,9 @@ Java_com_orbbec_obsensor_Device_nGetMultiDeviceSyncConfig(JNIEnv *env,
                                                           jlong handle) {
   ob_error *error = NULL;
   auto device = reinterpret_cast<ob_device *>(handle);
-  OBDeviceSyncConfig syncConfig = ob_device_get_sync_config(device, &error);
-  handle_error(env, error);
-  return obandroid::convert_j_DeviceSyncConfig(env, syncConfig);
+  OBMultiDeviceSyncConfig syncConfig = ob_device_get_multi_device_sync_config(device, &error);
+  ob_handle_error(env, error);
+  return obandroid::convert_j_MultiDeviceSyncConfig(env, syncConfig);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -1768,10 +1830,43 @@ Java_com_orbbec_obsensor_Device_nSetMultiDeviceSyncConfig(
     JNIEnv *env, jclass typeDevice, jlong handle, jobject jdeviceSyncConfig) {
   ob_error *error = NULL;
   auto device = reinterpret_cast<ob_device *>(handle);
-  OBDeviceSyncConfig syncConfig =
-      obandroid::convert_c_DeviceSyncConfig(env, jdeviceSyncConfig);
-  ob_device_set_sync_config(device, syncConfig, &error);
-  handle_error(env, error);
+  OBMultiDeviceSyncConfig syncConfig =
+      obandroid::convert_c_MultiDeviceSyncConfig(env, jdeviceSyncConfig);
+  ob_device_set_multi_device_sync_config(device, &syncConfig, &error);
+  ob_handle_error(env, error);
+}
+
+
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nGetNetworkConfig
+ * Signature: (J)Lcom/orbbec/obsensor/OBNetworkConfig;
+ */
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_orbbec_obsensor_Device_nGetNetworkConfig
+        (JNIEnv *env, jclass typeDevice, jlong handle) {
+  ob_error *error = NULL;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  ob_net_ip_config config;
+  uint32_t dataSize = sizeof(config);
+  ob_device_get_structured_data(device, OB_STRUCT_DEVICE_IP_ADDR_CONFIG, &config, &dataSize, &error);
+  ob_handle_error(env, error);
+  return obandroid::convert_j_NetworkConfig(env, config);
+}
+
+/*
+ * Class:     com_orbbec_obsensor_Device
+ * Method:    nSetNetworkConfig
+ * Signature: (JLcom/orbbec/obsensor/OBNetworkConfig;)V
+ */
+extern "C" JNIEXPORT void JNICALL
+Java_com_orbbec_obsensor_Device_nSetNetworkConfig
+        (JNIEnv *env, jclass typeDevice, jlong handle, jobject jobjConfig) {
+  ob_error *error = NULL;
+  auto device = reinterpret_cast<ob_device *>(handle);
+  ob_net_ip_config config = obandroid::convert_c_NetworkConfig(env, jobjConfig);
+  ob_device_set_structured_data(device, OB_STRUCT_DEVICE_IP_ADDR_CONFIG, &config, sizeof(config), &error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Device_nReboot(
@@ -1779,7 +1874,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Device_nReboot(
   ob_error *error = NULL;
   auto device = reinterpret_cast<ob_device *>(handle);
   ob_device_reboot(device, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 
@@ -1793,7 +1888,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Device_nRebootDelayMo
   ob_error *error = NULL;
   auto device = reinterpret_cast<ob_device *>(handle);
   ob_device_reboot_delay_mode(device, static_cast<uint32_t>(delayTimeMs), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /**
@@ -1804,7 +1899,7 @@ extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_Sensor_nGetType(
   ob_error *error = NULL;
   ob_sensor *sensor = reinterpret_cast<ob_sensor *>(handle);
   auto type = ob_sensor_get_type(sensor, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jint)type;
 }
 
@@ -1816,7 +1911,7 @@ Java_com_orbbec_obsensor_Sensor_nGetStreamProfileList(JNIEnv *env,
   ob_sensor *sensor = reinterpret_cast<ob_sensor *>(handle);
   std::vector<jlong> streamProfileList;
   auto streamProfiles = ob_sensor_get_stream_profile_list(sensor, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)streamProfiles;
 }
 
@@ -1829,7 +1924,7 @@ Java_com_orbbec_obsensor_Sensor_nSwitchProfile(JNIEnv *env, jclass instance,
   ob_stream_profile *profile =
       reinterpret_cast<ob_stream_profile *>(streamProfileHandle);
   ob_sensor_switch_profile(sensor, profile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Sensor_nStart(
@@ -1849,7 +1944,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Sensor_nStart(
   ob_stream_profile *streamProfile =
       reinterpret_cast<ob_stream_profile *>(streamProfileHandle);
   ob_sensor_start(sensor, streamProfile, onFrameCallback, cookie, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Sensor_nStop(
@@ -1870,7 +1965,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Sensor_nStop(
       callbackIt++;
     }
   }
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Sensor_nDelete(
@@ -1878,7 +1973,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Sensor_nDelete(
   ob_error *error = NULL;
   ob_sensor *sensor = reinterpret_cast<ob_sensor *>(handle);
   ob_delete_sensor(sensor, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /**
@@ -1892,7 +1987,7 @@ Java_com_orbbec_obsensor_VideoStreamProfile_nGetFps(JNIEnv *env,
   ob_stream_profile *streamProfile =
       reinterpret_cast<ob_stream_profile *>(handle);
   auto fps = ob_video_stream_profile_fps(streamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return fps;
 }
 
@@ -1904,7 +1999,7 @@ Java_com_orbbec_obsensor_VideoStreamProfile_nGetWidth(JNIEnv *env,
   ob_stream_profile *streamProfile =
       reinterpret_cast<ob_stream_profile *>(handle);
   auto width = ob_video_stream_profile_width(streamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return width;
 }
 
@@ -1916,7 +2011,7 @@ Java_com_orbbec_obsensor_VideoStreamProfile_nGetHeight(JNIEnv *env,
   ob_stream_profile *streamProfile =
       reinterpret_cast<ob_stream_profile *>(handle);
   auto height = ob_video_stream_profile_height(streamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return height;
 }
 
@@ -1927,7 +2022,7 @@ Java_com_orbbec_obsensor_StreamProfile_nGetFormat(JNIEnv *env, jclass instance,
   ob_stream_profile *streamProfile =
       reinterpret_cast<ob_stream_profile *>(handle);
   auto format = ob_stream_profile_format(streamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jint)format;
 }
 
@@ -1938,7 +2033,7 @@ Java_com_orbbec_obsensor_StreamProfile_nGetType(JNIEnv *env, jclass instance,
   ob_stream_profile *streamProfile =
       reinterpret_cast<ob_stream_profile *>(handle);
   auto type = ob_stream_profile_type(streamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jint)type;
 }
 
@@ -1949,7 +2044,7 @@ Java_com_orbbec_obsensor_StreamProfile_nDelete(JNIEnv *env, jclass instance,
   ob_stream_profile *streamProfile =
       reinterpret_cast<ob_stream_profile *>(handle);
   ob_delete_stream_profile(streamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /**
@@ -1962,7 +2057,7 @@ Java_com_orbbec_obsensor_StreamProfileList_nGetStreamProfileCount(
   ob_stream_profile_list *streamProfileList =
       reinterpret_cast<ob_stream_profile_list *>(handle);
   auto count = ob_stream_profile_list_count(streamProfileList, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return count;
 }
 
@@ -1976,7 +2071,7 @@ Java_com_orbbec_obsensor_StreamProfileList_nGetStreamProfile(JNIEnv *env,
       reinterpret_cast<ob_stream_profile_list *>(handle);
   auto streamProfile =
       ob_stream_profile_list_get_profile(streamProfileList, index, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)streamProfile;
 }
 
@@ -1990,7 +2085,7 @@ Java_com_orbbec_obsensor_StreamProfileList_nGetVideoStreamProfile(
   auto videoStreamProfile = ob_stream_profile_list_get_video_stream_profile(
       streamProfileList, width, height, static_cast<ob_format>(format), fps,
       &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)videoStreamProfile;
 }
 
@@ -2001,7 +2096,7 @@ Java_com_orbbec_obsensor_StreamProfileList_nDelete(JNIEnv *env, jclass instance,
   ob_stream_profile_list *streamProfileList =
       reinterpret_cast<ob_stream_profile_list *>(handle);
   ob_delete_stream_profile_list(streamProfileList, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /**
@@ -2012,7 +2107,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_orbbec_obsensor_Frame_nGetIndex(
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto index = ob_frame_index(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return index;
 }
 
@@ -2021,7 +2116,7 @@ extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_VideoFrame_nGetWidth(
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto width = ob_video_frame_width(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return width;
 }
 
@@ -2031,7 +2126,7 @@ Java_com_orbbec_obsensor_VideoFrame_nGetHeight(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto height = ob_video_frame_height(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return height;
 }
 
@@ -2055,7 +2150,7 @@ extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_Frame_nGetFormat(
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto format = ob_frame_format(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jint)format;
 }
 
@@ -2069,7 +2164,7 @@ extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_Frame_nGetType(
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto type = ob_frame_get_type(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jint)type;
 }
 
@@ -2083,7 +2178,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_orbbec_obsensor_Frame_nGetTimeStamp(
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto timeStamp = ob_frame_time_stamp(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return timeStamp;
 }
 
@@ -2098,7 +2193,7 @@ Java_com_orbbec_obsensor_Frame_nGetTimeStampUs(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   uint64_t timeStampUs = ob_frame_time_stamp_us(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   char buf[64] = {0};
   std::snprintf(buf, sizeof(buf), "%llu", timeStampUs);
@@ -2116,7 +2211,7 @@ Java_com_orbbec_obsensor_Frame_nGetSystemTimeStamp(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto systemTimeStamp = ob_frame_system_time_stamp(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return systemTimeStamp;
 }
 
@@ -2131,10 +2226,10 @@ Java_com_orbbec_obsensor_Frame_nGetData__JLjava_nio_ByteBuffer_2(
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto frameData = reinterpret_cast<uint8_t *>(ob_frame_data(frame, &error));
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   auto size = ob_frame_data_size(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   jlong capacity = env->GetDirectBufferCapacity(byteBuffer);
   if (capacity < size) {
@@ -2172,7 +2267,7 @@ extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_Frame_nGetData__J_3B(
   }
 
   env->SetByteArrayRegion(jBuf, 0, size, reinterpret_cast<const jbyte *>(data));
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return size;
 }
 
@@ -2183,7 +2278,7 @@ Java_com_orbbec_obsensor_Frame_nGetDirectBuffer(JNIEnv *env, jclass instance,
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto size = ob_frame_data_size(frame, &error);
   auto data = ob_frame_data(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return env->NewDirectByteBuffer(data, size);
 }
 
@@ -2197,7 +2292,7 @@ extern "C" JNIEXPORT jint JNICALL Java_com_orbbec_obsensor_Frame_nGetDataSize(
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto size = ob_frame_data_size(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return size;
 }
 
@@ -2214,7 +2309,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Frame_nGetMetadata(
   jsize length = env->GetArrayLength(jData);
   env->SetByteArrayRegion(jData, 0, length,
                           reinterpret_cast<const jbyte *>(metadata));
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /*
@@ -2228,7 +2323,7 @@ Java_com_orbbec_obsensor_Frame_nGetMetadataSize(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto size = ob_video_frame_metadata_size(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return size;
 }
 
@@ -2242,7 +2337,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Frame_nDelete(
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   ob_delete_frame(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2255,7 +2350,7 @@ Java_com_orbbec_obsensor_PointFrame_nGetPointCloudData(JNIEnv *env,
   auto data = ob_frame_data(frame, &error);
   jsize length = env->GetArrayLength(jData);
   env->SetFloatArrayRegion(jData, 0, length, static_cast<const jfloat *>(data));
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jfloat JNICALL
@@ -2264,7 +2359,7 @@ Java_com_orbbec_obsensor_DepthFrame_nGetValueScale(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   auto scale = ob_depth_frame_get_value_scale(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return scale;
 }
 
@@ -2277,7 +2372,7 @@ Java_com_orbbec_obsensor_FrameSet_nGetFrameCount(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_frame *frameSet = reinterpret_cast<ob_frame *>(handle);
   auto size = ob_frameset_frame_count(frameSet, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return size;
 }
 
@@ -2287,7 +2382,7 @@ Java_com_orbbec_obsensor_FrameSet_nGetDepthFrame(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_frame *frameSet = reinterpret_cast<ob_frame *>(handle);
   auto frame = ob_frameset_depth_frame(frameSet, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)frame;
 }
 
@@ -2297,7 +2392,7 @@ Java_com_orbbec_obsensor_FrameSet_nGetColorFrame(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_frame *frameSet = reinterpret_cast<ob_frame *>(handle);
   auto frame = ob_frameset_color_frame(frameSet, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)frame;
 }
 
@@ -2308,7 +2403,7 @@ Java_com_orbbec_obsensor_FrameSet_nGetInfraredFrame(JNIEnv *env,
   ob_error *error = NULL;
   ob_frame *frameSet = reinterpret_cast<ob_frame *>(handle);
   auto frame = ob_frameset_ir_frame(frameSet, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)frame;
 }
 
@@ -2318,7 +2413,7 @@ Java_com_orbbec_obsensor_FrameSet_nGetPointFrame(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_frame *frameSet = reinterpret_cast<ob_frame *>(handle);
   auto frame = ob_frameset_points_frame(frameSet, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)frame;
 }
 
@@ -2333,7 +2428,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_orbbec_obsensor_FrameSet_nGetFrame(
   ob_frame *frameSet = reinterpret_cast<ob_frame *>(handle);
   auto frame =
       ob_frameset_get_frame(frameSet, (ob_frame_type)frameType, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (long)frame;
 }
 
@@ -2342,7 +2437,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_FrameSet_nDelete(
   ob_error *error = NULL;
   ob_frame *frameSet = reinterpret_cast<ob_frame *>(handle);
   ob_delete_frame(frameSet, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /**
@@ -2352,7 +2447,7 @@ extern "C" JNIEXPORT jlong JNICALL
 Java_com_orbbec_obsensor_Config_nCreate(JNIEnv *env, jclass instance) {
   ob_error *error = NULL;
   ob_config *config = ob_create_config(&error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)config;
 }
 
@@ -2361,7 +2456,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Config_nDelete(
   ob_error *error = NULL;
   ob_config *config = reinterpret_cast<ob_config *>(handle);
   ob_delete_config(config, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Config_nEnableStream(
@@ -2371,7 +2466,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Config_nEnableStream(
   ob_stream_profile *streamProfile =
       reinterpret_cast<ob_stream_profile *>(streamProfileHandle);
   ob_config_enable_stream(config, streamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2380,7 +2475,7 @@ Java_com_orbbec_obsensor_Config_nEnableAllStream(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_config *config = reinterpret_cast<ob_config *>(handle);
   ob_config_enable_all_stream(config, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2390,7 +2485,7 @@ Java_com_orbbec_obsensor_Config_nDisableStream(JNIEnv *env, jclass instance,
   ob_config *config = reinterpret_cast<ob_config *>(handle);
   ob_config_disable_stream(config, static_cast<ob_stream_type>(streamType),
                            &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Config_nSetAlignMode(
@@ -2398,7 +2493,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Config_nSetAlignMode(
   ob_error *error = NULL;
   auto config = reinterpret_cast<ob_config *>(handle);
   ob_config_set_align_mode(config, static_cast<ob_align_mode>(mode), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2409,7 +2504,7 @@ Java_com_orbbec_obsensor_Config_nSetDepthScaleRequire(JNIEnv *env,
   ob_error *error = NULL;
   auto config = reinterpret_cast<ob_config *>(handle);
   ob_config_set_depth_scale_require(config, enable, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2418,7 +2513,7 @@ Java_com_orbbec_obsensor_Config_nSetD2CTargetResolution(
   ob_error *error = NULL;
   auto config = reinterpret_cast<ob_config *>(handle);
   ob_config_set_d2c_target_resolution(config, width, height, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2427,7 +2522,7 @@ Java_com_orbbec_obsensor_Config_nDisableAllStream(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_config *config = reinterpret_cast<ob_config *>(handle);
   ob_config_disable_all_stream(config, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -2437,7 +2532,7 @@ Java_com_orbbec_obsensor_Pipeline_nCreateWithDevice(JNIEnv *env,
   ob_error *error = NULL;
   auto device = reinterpret_cast<ob_device *>(deviceHandle);
   ob_pipeline *pipeline = ob_create_pipeline_with_device(device, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)pipeline;
 }
 
@@ -2448,7 +2543,7 @@ Java_com_orbbec_obsensor_Pipeline_nCreateWithPlaybackFile(JNIEnv *env,
   ob_error *error = NULL;
   std::string strPlaybackFile(getStdString(env, filePath, "Pipeline#nCreateWithPlaybackFile", "filePath"));
   auto pipeline = ob_create_pipeline_with_playback_file(strPlaybackFile.c_str(), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)pipeline;
 }
 
@@ -2457,7 +2552,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Pipeline_nDelete(
   ob_error *error = NULL;
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   ob_delete_pipeline(pipeline, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2468,7 +2563,7 @@ Java_com_orbbec_obsensor_Pipeline_nStartWithConfig(JNIEnv *env, jclass instance,
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   ob_config *config = reinterpret_cast<ob_config *>(configHandle);
   ob_pipeline_start_with_config(pipeline, config, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2489,7 +2584,7 @@ Java_com_orbbec_obsensor_Pipeline_nStartWithCallback(JNIEnv *env,
   }
   ob_pipeline_start_with_callback(pipeline, config, onFrameSetCallback, cookie,
                                   &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Pipeline_nStop(
@@ -2509,7 +2604,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Pipeline_nStop(
       callbackIt++;
     }
   }
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -2519,7 +2614,7 @@ Java_com_orbbec_obsensor_Pipeline_nWaitForFrameSet(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   ob_frame *frameSet = ob_pipeline_wait_for_frameset(pipeline, timeout, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)frameSet;
 }
 
@@ -2528,7 +2623,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_orbbec_obsensor_Pipeline_nGetConfig(
   ob_error *error = NULL;
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   ob_config *config = ob_pipeline_get_config(pipeline, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)config;
 }
 
@@ -2541,7 +2636,7 @@ Java_com_orbbec_obsensor_Pipeline_nGetStreamProfileList(JNIEnv *env,
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   auto streamProfiles = ob_pipeline_get_stream_profile_list(
       pipeline, static_cast<ob_sensor_type>(sensorType), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)streamProfiles;
 }
 
@@ -2551,7 +2646,7 @@ Java_com_orbbec_obsensor_Pipeline_nEnableFrameSync(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   ob_pipeline_enable_frame_sync(pipeline, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2561,7 +2656,7 @@ Java_com_orbbec_obsensor_Pipeline_nDisableFrameSync(JNIEnv *env,
   ob_error *error = NULL;
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   ob_pipeline_disable_frame_sync(pipeline, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2572,7 +2667,7 @@ Java_com_orbbec_obsensor_Pipeline_nSwitchConfig(JNIEnv *env, jclass instance,
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   ob_config *config = reinterpret_cast<ob_config *>(configHandle);
   ob_pipeline_switch_config(pipeline, config, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -2585,7 +2680,7 @@ Java_com_orbbec_obsensor_Pipeline_nGetD2CDepthProfileList(
       reinterpret_cast<ob_stream_profile *>(colorProfileHandle);
   auto profileList = ob_get_d2c_depth_profile_list(
       pipeline, colorProfile, static_cast<ob_align_mode>(mode), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)profileList;
 }
 
@@ -2601,7 +2696,7 @@ Java_com_orbbec_obsensor_Pipeline_nGetD2CValidArea(JNIEnv *env, jclass instance,
   memmove(bytes, &valid_area, size);
   env->SetByteArrayRegion(rect, 0, size, bytes);
   env->ReleaseByteArrayElements(rect, bytes, 0);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2617,7 +2712,7 @@ Java_com_orbbec_obsensor_Pipeline_nGetD2CRangeValidArea(
   memmove(bytes, &valid_area, size);
   env->SetByteArrayRegion(rect, 0, size, bytes);
   env->ReleaseByteArrayElements(rect, bytes, 0);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2631,7 +2726,7 @@ Java_com_orbbec_obsensor_Pipeline_nGetCameraParam(
   jfieldID jfIsMirrored = env->GetFieldID(cameraParamCls, "mIsMirrored", "Z");
 
   ob_camera_param params = ob_pipeline_get_camera_param(pipeline, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   env->SetBooleanField(cameraParam, jfIsMirrored, params.isMirrored);
 
@@ -2667,6 +2762,58 @@ Java_com_orbbec_obsensor_Pipeline_nGetCameraParam(
   env->ReleaseByteArrayElements(trans, transform, 0);
 }
 
+/*
+ * Class:     com_orbbec_obsensor_Pipeline
+ * Method:    nGetCameraParamWithProfile
+ * Signature: (JIIII[B[B[B[B[BLcom/orbbec/obsensor/CameraParam;)V
+ */
+extern "C"
+JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Pipeline_nGetCameraParamWithProfile
+(JNIEnv *env, jclass typePipeline, jlong handle, jint colorWidth, jint colorHeight, jint depthWidth, jint depthHeight,
+jbyteArray depthIntr, jbyteArray colorIntr, jbyteArray depthDisto, jbyteArray colorDisto,
+jbyteArray trans, jobject cameraParam) {
+  ob_error *error = NULL;
+  ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
+  jclass cameraParamCls = env->GetObjectClass(cameraParam);
+  jfieldID jfIsMirrored = env->GetFieldID(cameraParamCls, "mIsMirrored", "Z");
+
+  ob_camera_param params = ob_pipeline_get_camera_param_with_profile(pipeline, colorWidth, colorHeight, depthWidth, depthHeight, &error);
+  ob_handle_error(env, error);
+
+  env->SetBooleanField(cameraParam, jfIsMirrored, params.isMirrored);
+
+  jbyte *depth_intr = env->GetByteArrayElements(depthIntr, JNI_FALSE);
+  jbyte *color_intr = env->GetByteArrayElements(colorIntr, JNI_FALSE);
+  jbyte *depth_disto = env->GetByteArrayElements(depthDisto, JNI_FALSE);
+  jbyte *color_disto = env->GetByteArrayElements(colorDisto, JNI_FALSE);
+  jbyte *transform = env->GetByteArrayElements(trans, JNI_FALSE);
+
+  memmove(depth_intr, &params.depthIntrinsic, sizeof(params.depthIntrinsic));
+  memmove(color_intr, &params.rgbIntrinsic, sizeof(params.rgbIntrinsic));
+  memmove(depth_disto, &params.depthDistortion, sizeof(params.depthDistortion));
+  memmove(color_disto, &params.rgbDistortion, sizeof(params.rgbDistortion));
+  memmove(transform, &params.transform, sizeof(params.transform));
+
+  env->SetByteArrayRegion(depthIntr, 0, sizeof(params.depthIntrinsic),
+  depth_intr);
+  env->ReleaseByteArrayElements(depthIntr, depth_intr, 0);
+
+  env->SetByteArrayRegion(colorIntr, 0, sizeof(params.rgbIntrinsic),
+  color_intr);
+  env->ReleaseByteArrayElements(colorIntr, color_intr, 0);
+
+  env->SetByteArrayRegion(depthDisto, 0, sizeof(params.depthDistortion),
+  depth_disto);
+  env->ReleaseByteArrayElements(depthDisto, depth_disto, 0);
+
+  env->SetByteArrayRegion(colorDisto, 0, sizeof(params.rgbDistortion),
+  color_disto);
+  env->ReleaseByteArrayElements(colorDisto, color_disto, 0);
+
+  env->SetByteArrayRegion(trans, 0, sizeof(params.transform), transform);
+  env->ReleaseByteArrayElements(trans, transform, 0);
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_orbbec_obsensor_Pipeline_nStartRecord(JNIEnv *env, jclass instance,
                                                jlong handle, jstring filePath) {
@@ -2674,7 +2821,7 @@ Java_com_orbbec_obsensor_Pipeline_nStartRecord(JNIEnv *env, jclass instance,
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   std::string strFilePath(getStdString(env, filePath, "Pipeline#nStartRecord", "filePath"));
   ob_pipeline_start_record(pipeline, strFilePath.c_str(), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Pipeline_nStopRecord(
@@ -2682,7 +2829,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Pipeline_nStopRecord(
   ob_error *error = NULL;
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   ob_pipeline_stop_record(pipeline, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -2691,7 +2838,7 @@ Java_com_orbbec_obsensor_Pipeline_nGetPlayback(JNIEnv *env, jclass instance,
   ob_error *error = NULL;
   ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
   auto playback = ob_pipeline_get_playback(pipeline, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)playback;
 }
 
@@ -2725,7 +2872,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Filter_nDelete(
     }
   }
   ob_delete_filter(filter, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jlong JNICALL Java_com_orbbec_obsensor_Filter_nProcess(
@@ -2734,7 +2881,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_orbbec_obsensor_Filter_nProcess(
   auto filter = reinterpret_cast<ob_filter *>(handle);
   auto frame = reinterpret_cast<ob_frame *>(frameHandle);
   auto processFrame = ob_filter_process(filter, frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)processFrame;
 }
 
@@ -2743,7 +2890,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Filter_nReset(
   ob_error *error = NULL;
   auto filter = reinterpret_cast<ob_filter *>(handle);
   ob_filter_reset(filter, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Filter_nSetCallback(
@@ -2758,7 +2905,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Filter_nSetCallback(
     gListCallback_.push_back(std::pair<jlong, jobject>(handle, gCallback));
   }
   ob_filter_set_callback(filter, onFilterCallback, cookie, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Filter_nPushFrame(
@@ -2767,7 +2914,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Filter_nPushFrame(
   auto filter = reinterpret_cast<ob_filter *>(handle);
   auto frame = reinterpret_cast<ob_frame *>(frameHandle);
   ob_filter_push_frame(filter, frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /**
@@ -2777,7 +2924,7 @@ extern "C" JNIEXPORT jlong JNICALL
 Java_com_orbbec_obsensor_PointCloudFilter_nCreate(JNIEnv *env, jclass clazz) {
   ob_error *error = NULL;
   auto filter = ob_create_pointcloud_filter(&error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)filter;
 }
 
@@ -2790,7 +2937,7 @@ Java_com_orbbec_obsensor_PointCloudFilter_nSetPointFormat(JNIEnv *env,
   ob_filter *filter = reinterpret_cast<ob_filter *>(filterPtr);
   ob_pointcloud_filter_set_point_format(filter, static_cast<ob_format>(format),
                                         &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2823,7 +2970,7 @@ Java_com_orbbec_obsensor_PointCloudFilter_nSetCameraParam(
   env->ReleaseByteArrayElements(colorDistor, colorDistortion, 0);
   env->ReleaseByteArrayElements(tran, transform, 0);
 
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2834,7 +2981,7 @@ Java_com_orbbec_obsensor_PointCloudFilter_nSetD2CAlignStatus(
 
   ob_pointcloud_filter_set_frame_align_state(filter, d2c_status, &error);
 
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2847,7 +2994,7 @@ Java_com_orbbec_obsensor_PointCloudFilter_nSetPositionDataScale(JNIEnv *env,
 
   ob_pointcloud_filter_set_position_data_scale(filter, scale, &error);
 
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -2858,7 +3005,7 @@ Java_com_orbbec_obsensor_PointCloudFilter_nSetColorDataNormalization(
 
   ob_pointcloud_filter_set_color_data_normalization(filter, state, &error);
 
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /**
@@ -2869,7 +3016,7 @@ Java_com_orbbec_obsensor_FormatConvertFilter_nCreate(JNIEnv *env,
                                                      jclass instance) {
   ob_error *error = NULL;
   auto filter = ob_create_format_convert_filter(&error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)filter;
 }
 
@@ -2880,7 +3027,7 @@ Java_com_orbbec_obsensor_FormatConvertFilter_nSetFormatConvertType(
   ob_filter *filter = reinterpret_cast<ob_filter *>(filter_ptr);
   ob_format_convert_filter_set_format(
       filter, static_cast<ob_convert_format>(type), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -2890,7 +3037,7 @@ Java_com_orbbec_obsensor_Device_nGetSupportedPropertyCount(JNIEnv *env,
   ob_error *error = NULL;
   auto device = reinterpret_cast<ob_device *>(handle);
   auto count = ob_device_get_supported_property_count(device, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return count;
 }
 
@@ -2926,7 +3073,7 @@ Java_com_orbbec_obsensor_Device_nGetSupportedProperty(JNIEnv *env,
   env->SetIntField(result, property_type_id, (jint)unified_property.type);
   env->SetIntField(result, permission_id, (jint)unified_property.permission);
 
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return result;
 }
 
@@ -2948,7 +3095,7 @@ Java_com_orbbec_obsensor_AccelFrame_nGetAccelData(JNIEnv *env, jclass clazz,
   p_rst[2] = accelValue.z;
   env->ReleaseFloatArrayElements(jarr, p_rst, 0);
 
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   return jarr;
 }
@@ -2960,7 +3107,7 @@ Java_com_orbbec_obsensor_AccelFrame_nGetAccelTemperature(JNIEnv *env,
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   float temperature = ob_accel_frame_temperature(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return temperature;
 }
 
@@ -2972,7 +3119,7 @@ Java_com_orbbec_obsensor_AccelStreamProfile_nGetAccelFullScaleRange(
       reinterpret_cast<ob_stream_profile *>(handle);
   auto type =
       ob_accel_stream_profile_full_scale_range(accelStreamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jint)type;
 }
 
@@ -2984,7 +3131,7 @@ Java_com_orbbec_obsensor_AccelStreamProfile_nGetAccelSampleRate(JNIEnv *env,
   ob_stream_profile *accelStreamProfile =
       reinterpret_cast<ob_stream_profile *>(handle);
   auto type = ob_accel_stream_profile_sample_rate(accelStreamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jint)type;
 }
 
@@ -3006,7 +3153,7 @@ Java_com_orbbec_obsensor_GyroFrame_nGetGyroData(JNIEnv *env, jclass clazz,
   p_rst[2] = gyroValue.z;
   env->ReleaseFloatArrayElements(jarr, p_rst, 0);
 
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   return jarr;
 }
@@ -3018,7 +3165,7 @@ Java_com_orbbec_obsensor_GyroFrame_nGetGyroTemperature(JNIEnv *env,
   ob_error *error = NULL;
   ob_frame *frame = reinterpret_cast<ob_frame *>(handle);
   float temperature = ob_gyro_frame_temperature(frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return temperature;
 }
 
@@ -3030,7 +3177,7 @@ Java_com_orbbec_obsensor_GyroStreamProfile_nGetGyroFullScaleRange(
       reinterpret_cast<ob_stream_profile *>(handle);
   auto type =
       ob_gyro_stream_profile_full_scale_range(gyroStreamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jint)type;
 }
 
@@ -3042,7 +3189,7 @@ Java_com_orbbec_obsensor_GyroStreamProfile_nGetGyroSampleRate(JNIEnv *env,
   ob_stream_profile *gyroStreamProfile =
       reinterpret_cast<ob_stream_profile *>(handle);
   auto type = ob_gyro_stream_profile_sample_rate(gyroStreamProfile, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jint)type;
 }
 
@@ -3051,7 +3198,7 @@ extern "C" JNIEXPORT jlong JNICALL
 Java_com_orbbec_obsensor_Recorder_nCreateRecorder(JNIEnv *env, jclass clazz) {
   ob_error *error = NULL;
   auto recorder = ob_create_recorder(&error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)recorder;
 }
 
@@ -3061,7 +3208,7 @@ Java_com_orbbec_obsensor_Recorder_nCreateRecorderWithDevice(
   ob_error *error = NULL;
   ob_device *device = reinterpret_cast<ob_device *>(deviceHandle);
   auto recorder = ob_create_recorder_with_device(device, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)recorder;
 }
 
@@ -3071,7 +3218,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nStart(
   ob_recorder *recorder = reinterpret_cast<ob_recorder *>(handle);
   std::string strFileName(getStdString(env, fileName, "Recorder#nStart", "fileName"));
   ob_recorder_start(recorder, strFileName.c_str(), async, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nStop(
@@ -3079,7 +3226,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nStop(
   ob_error *error = NULL;
   ob_recorder *recorder = reinterpret_cast<ob_recorder *>(handle);
   ob_recorder_stop(recorder, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nWriteFrame(
@@ -3088,7 +3235,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nWriteFrame(
   ob_recorder *recorder = reinterpret_cast<ob_recorder *>(handle);
   ob_frame *frame = reinterpret_cast<ob_frame *>(frameHandle);
   ob_recorder_write_frame(recorder, frame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nDelete(
@@ -3096,7 +3243,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nDelete(
   ob_error *error = NULL;
   ob_recorder *recorder = reinterpret_cast<ob_recorder *>(handle);
   ob_delete_recorder(recorder, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 // Playback
@@ -3106,7 +3253,7 @@ Java_com_orbbec_obsensor_Playback_nCreatePlayback(JNIEnv *env, jclass clazz,
   ob_error *error = NULL;
   std::string strFileName(getStdString(env, fileName, "Playback#nCreatePlayback", "fileName"));
   auto playback = ob_create_playback(strFileName.c_str(), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return (jlong)playback;
 }
 
@@ -3123,7 +3270,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Playback_nStart(
   }
   ob_playback_start(playback, onPlaybackCallback, cookie,
                     static_cast<ob_media_type>(mediaType), &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Playback_nStop(
@@ -3131,17 +3278,19 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Playback_nStop(
   ob_error *error = NULL;
   ob_playback *playback = reinterpret_cast<ob_playback *>(handle);
   ob_playback_stop(playback, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
-extern "C" JNIEXPORT jlong JNICALL
+extern "C" JNIEXPORT jobject JNICALL
 Java_com_orbbec_obsensor_Playback_nGetDeviceInfo(JNIEnv *env, jclass clazz,
                                                  jlong handle) {
   ob_error *error = NULL;
   ob_playback *playback = reinterpret_cast<ob_playback *>(handle);
   auto deviceInfo = ob_playback_get_device_info(playback, &error);
-  handle_error(env, error);
-  return (jlong)deviceInfo;
+  ob_handle_error(env, error);
+  jobject jobjDeviceInfo = obandroid::convert_j_DeviceInfo(env, deviceInfo);
+  ob_delete_device_info(deviceInfo, &error);
+  return jobjDeviceInfo;
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -3156,7 +3305,7 @@ Java_com_orbbec_obsensor_Playback_nGetCameraParam(
   jfieldID jfIsMirrored = env->GetFieldID(cameraParamCls, "mIsMirrored", "Z");
 
   ob_camera_param params = ob_playback_get_camera_param(playback, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   env->SetBooleanField(cameraParam, jfIsMirrored, params.isMirrored);
 
@@ -3208,7 +3357,7 @@ Java_com_orbbec_obsensor_Playback_nSetMediaStateCallback(JNIEnv *env,
   }
   ob_set_playback_state_callback(playback, onMediaStateCallback, cookie,
                                  &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Playback_nDelete(
@@ -3227,7 +3376,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Playback_nDelete(
     }
   }
   ob_delete_playback(playback, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 // CameraParamList
@@ -3238,7 +3387,7 @@ Java_com_orbbec_obsensor_CameraParamList_nGetCameraParamCount(JNIEnv *env,
   ob_error *error = NULL;
   auto cameraParamList = reinterpret_cast<ob_camera_param_list *>(handle);
   auto count = ob_camera_param_list_count(cameraParamList, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return count;
 }
 
@@ -3254,7 +3403,7 @@ Java_com_orbbec_obsensor_CameraParamList_nGetCameraParam(
 
   OBCameraParam param =
       ob_camera_param_list_get_param(cameraParamList, index, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 
   env->SetBooleanField(cameraParam, jfIsMirrored, param.isMirrored);
 
@@ -3295,7 +3444,7 @@ Java_com_orbbec_obsensor_CameraParamList_nDelete(JNIEnv *env, jclass clazz,
   ob_error *error = NULL;
   auto cameraParamList = reinterpret_cast<ob_camera_param_list *>(handle);
   ob_delete_camera_param_list(cameraParamList, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /**
@@ -3305,7 +3454,7 @@ extern "C" JNIEXPORT jlong JNICALL
 Java_com_orbbec_obsensor_CompressionFilter_nCreate(JNIEnv *env, jclass clazz) {
   ob_error *error = NULL;
   auto compressionFilter = ob_create_compression_filter(&error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return reinterpret_cast<jlong>(compressionFilter);
 }
 
@@ -3319,7 +3468,7 @@ Java_com_orbbec_obsensor_CompressionFilter_nSetCompressionParams(
       compressionFilter, static_cast<ob_compression_mode>(mode),
       compressionParams, &error);
   env->ReleaseByteArrayElements(paramBytes, compressionParams, 0);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 /**
@@ -3330,7 +3479,7 @@ Java_com_orbbec_obsensor_DeCompressionFilter_nCreate(JNIEnv *env,
                                                      jclass clazz) {
   ob_error *error = NULL;
   auto decompressionFilter = ob_create_decompression_filter(&error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return reinterpret_cast<jlong>(decompressionFilter);
 }
 
@@ -3373,7 +3522,7 @@ Java_com_orbbec_obsensor_FrameHelper_nCreateFrameFromBuffer(
                                   reinterpret_cast<uint8_t *>(pBuffer),
                                   bufferSize, destroyCb, cookie, &error);
   env->ReleaseByteArrayElements(buffer, pBuffer, 0);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return reinterpret_cast<jlong>(frame);
 }
 
@@ -3382,7 +3531,7 @@ Java_com_orbbec_obsensor_FrameHelper_nCreateFrameSet(JNIEnv *env,
                                                      jclass clazz) {
   ob_error *error = NULL;
   auto frameSet = ob_create_frameset(&error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
   return reinterpret_cast<jlong>(frameSet);
 }
 
@@ -3395,7 +3544,7 @@ Java_com_orbbec_obsensor_FrameHelper_nPushFrame(JNIEnv *env, jclass clazz,
   auto pFrame = reinterpret_cast<ob_frame *>(frame);
   ob_frameset_push_frame(pFrameSet, static_cast<ob_frame_type>(frameType),
                          pFrame, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -3404,7 +3553,7 @@ Java_com_orbbec_obsensor_FrameHelper_nSetFrameSystemTimestamp(
   ob_error *error = NULL;
   auto pFrame = reinterpret_cast<ob_frame *>(frame);
   ob_frame_set_system_time_stamp(pFrame, systemTimestamp, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -3413,7 +3562,7 @@ Java_com_orbbec_obsensor_FrameHelper_nSetFrameDeviceTimestamp(
   ob_error *error = NULL;
   auto pFrame = reinterpret_cast<ob_frame *>(frame);
   ob_frame_set_device_time_stamp(pFrame, deviceTimestamp, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -3422,5 +3571,5 @@ Java_com_orbbec_obsensor_FrameHelper_nSetFrameDeviceTimestampUs(
   ob_error *error = NULL;
   auto pFrame = reinterpret_cast<ob_frame *>(frame);
   ob_frame_set_device_time_stamp(pFrame, deviceTimestampUs, &error);
-  handle_error(env, error);
+  ob_handle_error(env, error);
 }

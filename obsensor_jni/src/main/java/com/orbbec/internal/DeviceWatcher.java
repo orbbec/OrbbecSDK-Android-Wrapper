@@ -5,10 +5,12 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.util.Log;
 
 import com.orbbec.obsensor.LobClass;
 
+import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -30,14 +32,14 @@ public class DeviceWatcher extends LobClass {
         @Override
         public void onDeviceAttach(UsbDevice usbDevice) {
             Log.d(TAG, " onDeviceAttach Adding device. deviceName: " + usbDevice.getDeviceName()
-                    + ", sn: " + usbDevice.getSerialNumber() + ", deviceId:" + usbDevice.getDeviceId());
+                    + ", sn: " + UsbUtilities.safeGetSerialNumber(usbDevice) + ", deviceId:" + usbDevice.getDeviceId());
             addDevice(usbDevice);
         }
 
         @Override
         public void onDeviceDetach(UsbDevice usbDevice) {
             Log.d(TAG, " onDeviceDetach remove device.  deviceName: " + usbDevice.getDeviceName()
-                    + ", sn: " + usbDevice.getSerialNumber() + ", deviceId:" + usbDevice.getDeviceId());
+                    + ", sn: " + UsbUtilities.safeGetSerialNumber(usbDevice) + ", deviceId:" + usbDevice.getDeviceId());
             removeDevice(usbDevice);
         }
     };
@@ -87,7 +89,7 @@ public class DeviceWatcher extends LobClass {
 
             UsbDeviceInfo usbDevInfo = new UsbDeviceInfo(device.getDeviceName(), device.getDeviceId(),
                     device.getVendorId(), device.getProductId(), miId,
-                    device.getSerialNumber(), cls);
+                    UsbUtilities.safeGetSerialNumber(device), cls);
             Log.d(TAG, "Adding device: " + usbDevInfo.mName
                     + String.format(" uid: 0x%08x vid: 0x%04x  pid: 0x%04x", usbDevInfo.mUid, usbDevInfo.mVid, usbDevInfo.mPid)
                     + " miId: " + usbDevInfo.mMiId + " serialNum: " + usbDevInfo.mSerialNum

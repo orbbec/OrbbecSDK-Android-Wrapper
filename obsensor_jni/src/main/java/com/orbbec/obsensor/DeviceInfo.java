@@ -1,5 +1,7 @@
 package com.orbbec.obsensor;
 
+import android.text.TextUtils;
+
 /**
  * \if English
  * Device information
@@ -7,10 +9,24 @@ package com.orbbec.obsensor;
  * 设备信息
  * \endif
  */
-public class DeviceInfo extends LobClass {
+public class DeviceInfo implements AutoCloseable {
+    private String name;
+    private int vid;
+    private int pid;
+    private String uid;
+    private String serialNumber;
+    private String usbType;
+    private String connectionType;
+    private String ipAddress;
+    private String firmwareVersion;
+    private String hardwareVersion;
+    private String extensionInfo;
+    private String supportedMinSdkVersion;
+    private String asicName;
+    private int deviceTypeValue;
 
-    DeviceInfo(long handle) {
-        mHandle = handle;
+    public DeviceInfo() {
+        // default
     }
 
     /**
@@ -25,8 +41,7 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public String getName() {
-        throwInitializeException();
-        return nGetName(mHandle);
+        return name;
     }
 
     /**
@@ -41,8 +56,7 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public int getPid() {
-        throwInitializeException();
-        return nGetPid(mHandle);
+        return pid;
     }
 
     /**
@@ -57,8 +71,7 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public int getVid() {
-        throwInitializeException();
-        return nGetVid(mHandle);
+        return vid;
     }
 
     /**
@@ -73,8 +86,7 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public String getUid() {
-        throwInitializeException();
-        return nGetUid(mHandle);
+        return uid;
     }
 
     /**
@@ -89,8 +101,7 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public String getSerialNumber() {
-        throwInitializeException();
-        return nGetSerialNumber(mHandle);
+        return serialNumber;
     }
 
     /**
@@ -107,8 +118,7 @@ public class DeviceInfo extends LobClass {
      */
     @Deprecated
     public String getUsbType() {
-        throwInitializeException();
-        return nGetUsbType(mHandle);
+        return usbType;
     }
 
     /**
@@ -122,8 +132,29 @@ public class DeviceInfo extends LobClass {
      * \endif
      */
     public String getConnectionType() {
-        throwInitializeException();
-        return nGetConnectionType(mHandle);
+        return connectionType;
+    }
+
+    /**
+     * \if English
+     * @brief Get the IP address of the device
+     *
+     * @attention Only valid for network devices, otherwise it will return "0.0.0.0".
+     *
+     * @return the IP address of the device, such as "192.168.1.10"
+     * \else
+     * @brief 获取设备的IP地址
+     *
+     * @attention 仅适用于网络设备，否则将返回“0.0.0.0”。
+     *
+     * @return 设备的IP地址，例如："192.168.1.10"
+     * \endif
+     */
+    public String getIpAddress() {
+        if (TextUtils.isEmpty(ipAddress)) {
+            return "0.0.0.0";
+        }
+        return ipAddress;
     }
 
     /**
@@ -138,8 +169,7 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public String getFirmwareVersion() {
-        throwInitializeException();
-        return nGetFirmwareVersion(mHandle);
+        return firmwareVersion;
     }
 
     /**
@@ -154,8 +184,22 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public String getHardwareVersion() {
-        throwInitializeException();
-        return nGetHardwareVersion(mHandle);
+        return hardwareVersion;
+    }
+
+    /**
+     * \if English
+     * @brief Get information about extensions obtained from SDK supported by the device
+     *
+     * @return extended information about the device
+     * \else
+     * @brief 获取SDK支持的设备的拓展信息
+     *
+     * @return 获取设备拓展信息
+     * \endif
+     */
+    public String getExtensionInfo() {
+        return extensionInfo;
     }
 
     /**
@@ -170,8 +214,7 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public String getSupportedMinSdkVersion() {
-        throwInitializeException();
-        return nGetSupportedMinSdkVersion(mHandle);
+        return supportedMinSdkVersion;
     }
 
     /**
@@ -186,8 +229,7 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public String getAsicName() {
-        throwInitializeException();
-        return nGetAsicName(mHandle);
+        return asicName;
     }
 
     /**
@@ -202,8 +244,7 @@ public class DeviceInfo extends LobClass {
 	 * \endif
      */
     public DeviceType getDeviceType() {
-        throwInitializeException();
-        return DeviceType.get(nGetDeviceType(mHandle));
+        return DeviceType.get(deviceTypeValue);
     }
 
     /**
@@ -213,36 +254,29 @@ public class DeviceInfo extends LobClass {
      * 资源释放
      * \endif
      */
+    @Deprecated
     @Override
     public void close() {
-        throwInitializeException();
-        nDelete(mHandle);
-        mHandle = 0;
+        // do nothing
     }
 
-    private static native void nDelete(long handle);
-
-    private static native String nGetName(long handle);
-
-    private static native int nGetPid(long handle);
-
-    private static native int nGetVid(long handle);
-
-    private static native String nGetUid(long handle);
-
-    private static native String nGetSerialNumber(long handle);
-
-    private static native String nGetUsbType(long handle);
-
-    private static native String nGetConnectionType(long handle);
-
-    private static native String nGetFirmwareVersion(long handle);
-
-    private static native String nGetHardwareVersion(long handle);
-
-    private static native String nGetSupportedMinSdkVersion(long handle);
-
-    private static native String nGetAsicName(long handle);
-
-    private static native int nGetDeviceType(long handle);
+    @Override
+    public String toString() {
+        return "DeviceInfo{" +
+                "name='" + name + '\'' +
+                ", vid=" + String.format("0x%04x", vid) +
+                ", pid=" + String.format("0x%04x", pid) +
+                ", uid='" + uid + '\'' +
+                ", serialNumber='" + serialNumber + '\'' +
+                ", usbType='" + usbType + '\'' +
+                ", connectionType='" + connectionType + '\'' +
+                ", ipAddress='" + ipAddress + '\'' +
+                ", firmwareVersion='" + firmwareVersion + '\'' +
+                ", hardwareVersion='" + hardwareVersion + '\'' +
+                ", extensionInfo='" + extensionInfo + '\'' +
+                ", supportedMinSdkVersion='" + supportedMinSdkVersion + '\'' +
+                ", asicName='" + asicName + '\'' +
+                ", deviceType=" + getDeviceType() +
+                '}';
+    }
 }

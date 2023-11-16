@@ -49,6 +49,14 @@
                 android:text="InfraredViewer"/>
 
             <Button
+                android:id="@+id/btn_double_irview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:textAllCaps="false"
+                android:text="DoubleIRViewer"/>
+
+            <Button
                 android:id="@+id/btn_record_playback"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

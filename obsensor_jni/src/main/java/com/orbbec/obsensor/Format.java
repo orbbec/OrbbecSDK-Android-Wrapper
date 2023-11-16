@@ -208,6 +208,24 @@ public enum Format {
 	 * \endif
 	 * */
 	BGRA(25),
+	/**
+	 * \if English
+	 * Compression format
+	 * \else
+	 * 压缩格式
+	 * \endif
+	 *
+	 */
+	COMPRESSED(26),
+	/**
+	 * \if English
+	 * RVL pressure test format (SDK will be unpacked into Y16 by default)
+	 * \else
+	 * RVL格式，SDK输出时会自动解压为Y16格式
+	 * \endif
+	 *
+	 */
+	RVL(27),
     /**
 	 * \if English
 	 * unknown format

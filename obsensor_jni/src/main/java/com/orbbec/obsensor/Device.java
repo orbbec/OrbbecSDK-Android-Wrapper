@@ -6,6 +6,7 @@ import android.util.SparseArray;
 import com.orbbec.internal.OBLocalUtils;
 import com.orbbec.obsensor.datatype.DeviceTemperature;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -89,25 +90,6 @@ public class Device extends LobClass {
      */
     public Device(long handle) {
         mHandle = handle;
-        long[] sensorHandles = nQuerySensor(mHandle);
-        for (long h : sensorHandles) {
-            mSensors.add(new Sensor(h));
-        }
-    }
-
-    /**
-	 * \if English
-	 * Query the list of sensors contained in the device
-     *
-     * @return Sensor list
-	 * \else
-     * 查询设备包含的传感器列表
-     *
-     * @return 传感器列表
-	 * \endif
-     */
-    public List<Sensor> querySensors() {
-        return mSensors;
     }
 
     /**
@@ -354,6 +336,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public int getMinRangeI(DeviceProperty property) {
+        throwInitializeException();
         return getRangeI(property.value()).min;
     }
 
@@ -371,6 +354,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public float getMinRangeF(DeviceProperty property) {
+        throwInitializeException();
         return getRangeF(property.value()).min;
     }
 
@@ -388,6 +372,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public int getMaxRangeI(DeviceProperty property) {
+        throwInitializeException();
         return getRangeI(property.value()).max;
     }
 
@@ -405,6 +390,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public float getMaxRangeF(DeviceProperty property) {
+        throwInitializeException();
         return getRangeF(property.value()).max;
     }
 
@@ -422,6 +408,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public int getStepI(DeviceProperty property) {
+        throwInitializeException();
         return getRangeI(property.value()).step;
     }
 
@@ -439,6 +426,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public float getStepF(DeviceProperty property) {
+        throwInitializeException();
         return getRangeF(property.value()).step;
     }
 
@@ -456,6 +444,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public boolean getDefaultB(DeviceProperty property) {
+        throwInitializeException();
         return getRangeB(property.value()).def;
     }
 
@@ -473,6 +462,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public int getDefaultI(DeviceProperty property) {
+        throwInitializeException();
         return getRangeI(property.value()).def;
     }
 
@@ -490,6 +480,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public float getDefaultF(DeviceProperty property) {
+        throwInitializeException();
         return getRangeF(property.value()).def;
     }
 
@@ -506,7 +497,47 @@ public class Device extends LobClass {
      */
     public DeviceInfo getInfo() {
         throwInitializeException();
-        return new DeviceInfo(nGetDeviceInfo(mHandle));
+        return nGetDeviceInfo(mHandle);
+    }
+
+    /**
+     * \if English
+     * Query the list of sensors contained in the device
+     *
+     * @return Sensor list
+     * \else
+     * 查询设备包含的传感器列表
+     *
+     * @return 传感器列表
+     * \endif
+     */
+    public List<Sensor> querySensors() {
+        throwInitializeException();
+        List<Sensor> retList = new ArrayList<>();
+        synchronized (mSensors) {
+            int iSensorTypes[] = nQuerySensorTypes(mHandle);
+            for (int itype : iSensorTypes) {
+                SensorType type = SensorType.get(itype);
+                if (null != type) {
+                    boolean find = false;
+                    for (Sensor sensor : mSensors) {
+                        if (sensor.getType() == type) {
+                            find = true;
+                            break;
+                        }
+                    }
+
+                    if (!find) {
+                        long sensorHandle = nGetSensor(mHandle, type.value());
+                        mSensors.add(new Sensor(sensorHandle));
+                    }
+                } else {
+                    throw new OBException("Not support sensorType: " + itype);
+                }
+            }
+            retList.addAll(mSensors);
+        }
+        return retList;
     }
 
     /**
@@ -523,8 +554,27 @@ public class Device extends LobClass {
 	 * \endif
      */
     public Sensor getSensor(SensorType type) {
-        for (Sensor sensor : mSensors) {
-            if (sensor.getType() == type) {
+        throwInitializeException();
+        synchronized (mSensors) {
+            for (Sensor sensor : mSensors) {
+                if (sensor.getType() == type) {
+                    return sensor;
+                }
+            }
+
+            int iSensorTypes[] = nQuerySensorTypes(mHandle);
+            boolean find = false;
+            for (int itype : iSensorTypes) {
+                if (itype == type.value()) {
+                    find = true;
+                    break;
+                }
+            }
+
+            if (find) {
+                long sensorHandle = nGetSensor(mHandle, type.value());
+                Sensor sensor = new Sensor(sensorHandle);
+                mSensors.add(sensor);
                 return sensor;
             }
         }
@@ -532,14 +582,32 @@ public class Device extends LobClass {
     }
 
     /**
+     * \if English
+     * Device is support SensorType
+     * @param type sensorType
+     * @return true: support sensorType, false: not support sensorType
+     * \else
+     * 设备是否支持传感器类型
+     * @param type 传感器类型 {@link SensorType}
+     * @return true：支持，false：不支持
+     * \endif
+     */
+    public boolean hasSensor(SensorType type) {
+        throwInitializeException();
+        return nHasSensor(mHandle, type.value());
+    }
+
+    /**
 	 * \if English
 	 * Upgrade device firmware
+     * Cautious: Not supported yet
      *
      * @param fileName firmware path
      * @param callback callback during the upgrade process {@link UpgradeCallback}
      * @throws OBException 	The firmware path is abnormal
 	 * \else
      * 升级设备固件
+     * 说明：开发中，待完善
      *
      * @param fileName 固件路径
      * @param callback 升级过程回调 {@link UpgradeCallback}
@@ -550,6 +618,29 @@ public class Device extends LobClass {
         throwInitializeException();
         OBLocalUtils.checkFileAndThrow(fileName, "Upgrade failed");
         nUpgrade(mHandle, fileName, callback);
+    }
+    /**
+     * \if English
+     * Upgrade device firmware
+     *
+     * @param buffer Firmware file content
+     *               Caution: {@link ByteBuffer#capacity()} is the valid data length.
+     * @param callback callback during the upgrade process {@link UpgradeCallback}
+     * @throws OBException 	The firmware path is abnormal
+     * \else
+     * 升级设备固件
+     *
+     * @param buffer 固件路径的二进制内容，注意{@link ByteBuffer#capacity()}的内容都是有效数据，否则升级会有问题，导致读取冗余脏数据
+     * @param callback 升级过程回调 {@link UpgradeCallback}
+     * @throws OBException 固件路径异常
+     * \endif
+     */
+    public void upgrade(ByteBuffer buffer, UpgradeCallback callback) {
+        if (null == buffer) {
+            throw new OBException("Invalid fileData buffer: null");
+        }
+        throwInitializeException();
+        nUpgrade(mHandle, buffer, callback);
     }
 
     /**
@@ -586,6 +677,7 @@ public class Device extends LobClass {
 	 * \endif
      */
     public DeviceTemperature getDeviceTemperature() {
+        throwInitializeException();
         DeviceTemperature temperature = new DeviceTemperature();
         if (isPropertySupported(DeviceProperty.OB_STRUCT_DEVICE_TEMPERATURE, PermissionType.OB_PERMISSION_READ)) {
             getPropertyValueDataType(DeviceProperty.OB_STRUCT_DEVICE_TEMPERATURE, temperature);
@@ -634,30 +726,122 @@ public class Device extends LobClass {
         });
     }
 
+    /**
+     * \if English
+     * @brief send the capture command to the device.
+     * @brief The device will start one time image capture after receiving the capture command when it is in the @ref
+     * OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING
+     *
+     * @attention The frequency of the user call this function multiplied by the number of frames per trigger should be less than the frame rate of the stream.
+     * The number of frames per trigger can be set by @ref framesPerTrigger.
+     * @attention For some models，receive and execute the capture command will have a certain delay and performance consumption, so the frequency of calling
+     * this function should not be too high, please refer to the product manual for the specific supported frequency.
+     * @attention If the device is not in the @ref OB_MULTI_DEVICE_SYNC_MODE_HARDWARE_TRIGGERING mode, device will ignore the capture command.
+     * \else
+     * @brief 将捕获命令发送到设备
+     * @brief 当设备处于 @ref OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING 模式时，设备会进行一次图像抓拍
+     *
+     * @attention 用户调用此函数的频率乘以每个触发器的帧数应该小于流的帧速率。每个触发器的帧数可以由 @ref framesPerTriggerForTriggeringMode 设置
+     * @attention 对于某些型号，接收和执行捕获命令会有一定的延迟和性能消耗，因此调用的频率此功能不宜过高，具体支持频率请参阅产品说明书
+     * @attention 如果设备未处于 @ref OB_MULTI_device_SYNC_MODE_HARDWARE_TRIGGERING模式，则设备将忽略捕获命令
+     * \endif
+     */
+    public void triggerCapture() {
+        throwInitializeException();
+        nTriggerCapture(mHandle);
+    }
 
     /**
-	 * \if English
-	 * Synchronize the device time (time to the device, synchronize the local system time to the device)
-     *
-     * @return command round trip time delay（round trip time， rtt）
-	 * \else
-     * 同步设备时间（向设备授时，同步本地系统时间到设备）
-     *
-     * @return 命令往返时间延时（round trip time， rtt）
-	 * \endif
+     * \if English
+     * @brief set the timestamp reset configuration of the device.
+     * \else
+     * @brief 设置设备的时间戳重置配置
+     * \endif
      */
-    public long syncDeviceTime() {
+    public void setTimestampResetConfig(TimestampResetConfig config) {
         throwInitializeException();
-        return nSyncDeviceTime(mHandle);
+        nSetTimestampResetConfig(mHandle, config);
+    }
+
+    /**
+     * \if English
+     * @brief get the timestamp reset configuration of the device.
+     *
+     * @return OBDeviceTimestampResetConfig return the timestamp reset configuration of the device.
+     * \else
+     * @brief 获取设备的时间戳重置配置
+     *
+     * @return OBDeviceTimestampResetConfig 设备的时间戳重置配置.
+     * \endif
+     */
+    public TimestampResetConfig getTimestampResetConfig() {
+        throwInitializeException();
+        return nGetTimestampResetConfig(mHandle);
+    }
+
+    /**
+     * \if English
+     * @brief send the timestamp reset command to the device.
+     * @brief The device will reset the timer for calculating the timestamp for output frames to 0 after receiving the timestamp reset command when the
+     * timestamp reset function is enabled. The timestamp reset function can be enabled by call @ref ob_device_set_timestamp_reset_config.
+     * @brief Before calling this function, user should call @ref ob_device_set_timestamp_reset_config to disable the timestamp reset function (It is not
+     * required for some models, but it is still recommended to do so for code compatibility).
+     *
+     * @attention If the stream of the device is started, the timestamp of the continuous frames output by the stream will jump once after the timestamp reset.
+     * @attention Due to the timer of device is not high-accuracy, the timestamp of the continuous frames output by the stream will drift after a long time.
+     * User can call this function periodically to reset the timer to avoid the timestamp drift, the recommended interval time is 60 minutes.
+     * \else
+     * @brief 向设备发送时间戳重置命令
+     * @brief 当时间戳重置功能已启用。时间戳重置功能可以通过调用 @ref ob_device_set_timestamp_reset_config来启用
+     * @brief 在调用此函数之前，用户应该调用 @ref ob_device_set_timestamp_reset_config
+     * 来禁用时间戳重置函数（它不是某些型号需要，但为了代码兼容性，仍然建议这样做）
+     *
+     * @attention 如果设备的流被启动，则流输出的连续帧的时间戳将在时间戳重置后跳一次
+     * @attention 由于设备的定时器精度不高，流输出的连续帧的时间戳在长时间后会漂移，用户可以定期调用此功能来重置计时器，以避免时间戳漂移，建议间隔时间为60分钟
+     * \endif
+     */
+    public void timestampReset() {
+        throwInitializeException();
+        nTimestampReset(mHandle);
+    }
+
+    /**
+     * \if English
+     * @brief synchronize the timer of the device with the host.
+     * @brief After calling this function, the timer of the device will be synchronized with the host. User can call this function to multiple devices to
+     * synchronize all timers of the devices.
+     *
+     * @attention If the stream of the device is started, the timestamp of the continuous frames output by the stream will may jump once after the timer
+     * sync.
+     * @attention Due to the timer of device is not high-accuracy, the timestamp of the continuous frames output by the stream will drift after a long time.
+     * User can call this function periodically to synchronize the timer to avoid the timestamp drift, the recommended interval time is 60 minutes.
+     * \else
+     * @brief 将设备的计时器与主机同步
+     * @brief 调用此功能后，设备的计时器将与主机同步。用户可以将此函数调用到多个设备同步设备的所有定时器
+     *
+     * @attention 如果设备的流被启动，则该流输出的连续帧的时间戳可能在定时器同步之后跳一次
+     * @attention 由于设备的定时器精度不高，流输出的连续帧的时间戳在长时间后会漂移。用户可以定期调用此功能来同步定时器，以避免时间戳漂移，建议间隔时间为60分钟
+     * \endif
+     *
+     */
+    public void timerSyncWithHost() {
+        throwInitializeException();
+        nTimerSyncWithHost(mHandle);
     }
 
     /**
 	 * \if English
-	 * Get a list of calibrated camera parameters
+	 * Get the original parameter list of camera calibration saved in the device.
+     *
+     * @attention The parameters in the list do not correspond to the current open-current configuration. You need to select the parameters according to the
+     * actual situation, and may need to do scaling, mirroring and other processing. Non-professional users are recommended to use the
+     * Pipeline#getCameraParam() interface.
      *
      * @return Camera parameter list {@link CameraParamList}
 	 * \else
-     * 获取标定的相机参数列表
+     * 获取设备内保存的相机标定的原始参数列表，
+     *
+     * @attention 列表内参数不与当前开流配置相对应，需要自行根据实际情况选用参数并可能需要做缩放、镜像等处理。非专业用户建议使用Pipeline#getCameraParam()接口。
      *
      * @return 相机参数列表 {@link CameraParamList}
 	 * \endif
@@ -706,8 +890,10 @@ public class Device extends LobClass {
 
         // 重置sensor
         for (Sensor sensor : mSensors) {
-            sensor.mOwner = true;
-            sensor.close();
+            try {
+                sensor.release();
+            } catch (Exception ignore) {
+            }
         }
         mSensors.clear();
 
@@ -739,16 +925,41 @@ public class Device extends LobClass {
 
     /**
      * \if English
-     * @brief Gets the current device synchronization configuration
-     * @brief Device synchronization: including exposure synchronization function and multi-camera synchronization function of different sensors within a single
-     * machine
-     *
-     * @return OBDeviceSyncConfig returns the device synchronization configuration
+     * Get network config
+     * Only for some network device, Such as Gemini 2 XL,
      * \else
-     * @brief 获取当前设备同步配置
-     * @brief 设备同步：包括单机内的不同 Sensor 的曝光同步功能 和 多机同步功能
+     * 获取网络配置
+     * 说明：仅支持网络功能的设备，例如 Gemini 2 XL
+     * \endif
+     */
+    public OBNetworkConfig getNetworkConfig() {
+        throwInitializeException();
+        return nGetNetworkConfig(mHandle);
+    }
+
+    /**
+     * \if English
+     * Set network config
+     * Only for some network device, Such as Gemini 2 XL,
+     * \else
+     * 设置网络配置
+     * 说明：仅支持网络功能的设备，例如 Gemini 2 XL
+     * \endif
+     */
+    public void setNetworkConfig(OBNetworkConfig config) {
+        nSetNetworkConfig(mHandle, config);
+    }
+
+    /**
+     * \if English
+     * @brief get the multi device sync configuration of the device.
      *
-     * @return OBDeviceSyncConfig 返回设备同步配置
+     * @return OBMultiDeviceSyncConfig return the multi device sync configuration of the device.
+     * \else
+     *
+     * @brief 获取设备的多设备同步配置
+     *
+     * @return OBMultiDeviceSyncConfig 设备的多设备同步配置
      * \endif
      *
      */
@@ -759,20 +970,13 @@ public class Device extends LobClass {
 
     /**
      * \if English
-     * @brief Set the device synchronization configuration
-     * @brief Used to configure the exposure synchronization function and multi-camera synchronization function of different sensors in a single machine
+     * @brief set the multi device sync configuration of the device.
      *
-     * @attention Calling this function will directly write the configuration to the device Flash, and it will still take effect after the device restarts. To
-     * avoid affecting the Flash lifespan, do not update the configuration frequently.
-     *
-     * @param deviceSyncConfig Device synchronization configuration
+     * @param[in] config The multi device sync configuration.
      * \else
-     * @brief 设置设备同步配置
-     * @brief 用于配置 单机内的不同 Sensor 的曝光同步功能 和 多机同步功能
+     * @brief 设置设备的多设备同步配置
      *
-     * @attention 调用本函数会直接将配置写入设备Flash，设备重启后依然会生效。为了避免影响Flash寿命，不要频繁更新配置。
-     *
-     * @param deviceSyncConfig 设备同步配置
+     * @param[in] config 多设备同步配置
      * \endif
      *
      */
@@ -806,8 +1010,10 @@ public class Device extends LobClass {
         throwInitializeException();
         Log.d(TAG, "close: ");
         for (Sensor s : mSensors) {
-            s.mOwner = true;
-            s.close();
+            try {
+                s.release();
+            } catch (Exception ignore) {
+            }
         }
         nDelete(mHandle);
         mHandle = 0;
@@ -845,6 +1051,12 @@ public class Device extends LobClass {
 
     protected static native long[] nQuerySensor(long handle);
 
+    protected static native boolean nHasSensor(long handle, int sensorType);
+
+    protected static native int[] nQuerySensorTypes(long handle);
+
+    protected static native long nGetSensor(long handle, int sensorType);
+
     protected static native DepthWorkMode nGetCurrentDepthWorkMode(long handle);
 
     protected static native void nSwitchDepthWorkMode(long handle, String modeName);
@@ -881,9 +1093,11 @@ public class Device extends LobClass {
 
     protected static native void nGetPropertyRangeF(long handle, int property, PropertyRangeF outParams);
 
-    protected static native long nGetDeviceInfo(long handle);
+    protected static native DeviceInfo nGetDeviceInfo(long handle);
 
     protected static native void nUpgrade(long handle, String fileName, UpgradeCallback callback);
+
+    protected static native void nUpgrade(long handle, ByteBuffer buffer, UpgradeCallback callback);
 
     protected static native void nSendFileToDestination(long handle, String filePath, String dstFilePath, FileSendCallback callback);
 
@@ -897,11 +1111,23 @@ public class Device extends LobClass {
 
     protected static native DevicePropertyInfo nGetSupportedProperty(long handle, int index);
 
-    protected static native long nSyncDeviceTime(long handle);
+    protected static native void nTriggerCapture(long handle);
+
+    protected static native void nSetTimestampResetConfig(long handle, TimestampResetConfig config);
+
+    protected static native TimestampResetConfig nGetTimestampResetConfig(long handle);
+
+    protected static native void nTimestampReset(long handle);
+
+    protected static native void nTimerSyncWithHost(long handle);
 
     protected static native MultiDeviceSyncConfig nGetMultiDeviceSyncConfig(long handle);
 
     protected static native void nSetMultiDeviceSyncConfig(long handle, MultiDeviceSyncConfig deviceSyncConfig);
+
+    protected static native OBNetworkConfig nGetNetworkConfig(long handle);
+
+    protected static native void nSetNetworkConfig(long handle, OBNetworkConfig config);
 
     protected static native long nGetCalibrationCameraParamList(long handle);
 

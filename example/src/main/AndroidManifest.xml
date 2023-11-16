@@ -6,7 +6,11 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-feature android:name="android.hardware.usb.host" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application
         android:name=".application.MyApplication"
@@ -25,6 +29,7 @@
         <activity android:name=".activity.HelloOrbbecActivity" />
         <activity android:name=".activity.DepthViewerActivity" />
         <activity android:name=".activity.InfraredViewerActivity" />
+        <activity android:name=".activity.DoubleIRViewerActivity" />
         <activity android:name=".activity.ColorViewerActivity" />
         <activity android:name=".activity.ImuActivity" />
         <activity android:name=".activity.DepthModeActivity" />

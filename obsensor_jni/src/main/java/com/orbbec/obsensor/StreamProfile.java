@@ -34,6 +34,7 @@ public class StreamProfile extends LobClass {
             case IR_RIGHT:
             case COLOR:
             case DEPTH:
+            case RAW_PHASE:
                 return (T) new VideoStreamProfile(mHandle);
             case ACCEL:
                 return (T) new AccelStreamProfile(mHandle);

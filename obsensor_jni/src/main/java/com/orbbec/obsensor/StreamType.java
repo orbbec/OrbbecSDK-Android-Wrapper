@@ -73,7 +73,16 @@ public enum StreamType {
      * 右路红外流
      * \endif
      */
-    IR_RIGHT(7)
+    IR_RIGHT(7),
+
+    /**
+     * \if English
+     * RawPhase Stream
+     * \else
+     * TODO lumiaozi
+     * \endif
+     */
+    RAW_PHASE(8),
     ;
 
     private final int mValue;

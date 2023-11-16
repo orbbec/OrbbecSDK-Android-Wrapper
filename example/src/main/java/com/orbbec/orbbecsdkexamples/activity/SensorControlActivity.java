@@ -32,7 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SensorControlActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener {
+public class SensorControlActivity extends BaseActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener {
     private static final String TAG = "SensorControlActivity";
     private List<Device> mDeviceList = new ArrayList<>();
     private Map<String, DevicePropertyInfo> mDevicePropertyMap = new HashMap<>();
@@ -48,8 +48,53 @@ public class SensorControlActivity extends AppCompatActivity implements View.OnC
     private Spinner mPropertySp;
     private RecyclerView mInformationSectionRV;
     private InformationAdapter mInformationAdapter;
-    private OBContext mOBContext;
     private Device mSelectDevice;
+
+    private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
+        @Override
+        public void onDeviceAttach(DeviceList deviceList) {
+            try {
+                // 3.Add the obtained device to the device list
+                mDeviceList.add(deviceList.getDevice(0));
+
+                // 4.Update device list
+                updateDeviceSpinnerList();
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                // 5.Release device list resources
+                deviceList.close();
+            }
+        }
+
+        @Override
+        public void onDeviceDetach(DeviceList deviceList) {
+            try {
+                // A device is disconnected, and the device list resource is released
+                for (Device device : mDeviceList) {
+                    device.close();
+                }
+                mDeviceList.clear();
+
+                // Reacquire devices and update device list
+                DeviceList curDeviceList = mOBContext.queryDevices();
+                for (int i = 0; i < curDeviceList.getDeviceCount(); i++) {
+                    mDeviceList.add(curDeviceList.getDevice(i));
+                }
+                curDeviceList.close();
+                updateDeviceSpinnerList();
+
+                // No device connection, clear sensor list and attribute list
+                if (mDeviceList.size() <= 0) {
+                    clearPropertySpinnerList();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                deviceList.close();
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,53 +103,41 @@ public class SensorControlActivity extends AppCompatActivity implements View.OnC
         setContentView(R.layout.activity_sensor_control);
         // 1. Initialize views
         initViews();
+    }
 
-        // 2.Initialize the SDK Context and listen device changes
-        mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
-            @Override
-            public void onDeviceAttach(DeviceList deviceList) {
-                try {
-                    // 3.Add the obtained device to the device list
-                    mDeviceList.add(deviceList.getDevice(0));
+    @Override
+    protected void onStart() {
+        super.onStart();
+        initSDK();
+    }
 
-                    // 4.Update device list
-                    updateDeviceSpinnerList();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    // 5.Release device list resources
-                    deviceList.close();
-                }
+    @Override
+    protected void onStop() {
+        release();
+        releaseSDK();
+        super.onStop();
+    }
+
+    @Override
+    protected DeviceChangedCallback getDeviceChangedCallback() {
+        return mDeviceChangedCallback;
+    }
+
+    /**
+     * Resource release, release all devices in the device list (sensors will be released when the device
+     * is released, there is no need to release sensor resources separately)
+     * Release SDK Context
+     */
+    private void release() {
+        try {
+            // 设备列表资源释放
+            for (Device device : mDeviceList) {
+                device.close();
             }
-
-            @Override
-            public void onDeviceDetach(DeviceList deviceList) {
-                try {
-                    // A device is disconnected, and the device list resource is released
-                    for (Device device : mDeviceList) {
-                        device.close();
-                    }
-                    mDeviceList.clear();
-
-                    // Reacquire devices and update device list
-                    DeviceList curDeviceList = mOBContext.queryDevices();
-                    for (int i = 0; i < curDeviceList.getDeviceCount(); i++) {
-                        mDeviceList.add(curDeviceList.getDevice(i));
-                    }
-                    curDeviceList.close();
-                    updateDeviceSpinnerList();
-
-                    // No device connection, clear sensor list and attribute list
-                    if (mDeviceList.size() <= 0) {
-                        clearPropertySpinnerList();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    deviceList.close();
-                }
-            }
-        });
+            mDeviceList.clear();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void initViews() {
@@ -197,37 +230,6 @@ public class SensorControlActivity extends AppCompatActivity implements View.OnC
         mPropertyAdapter.clear();
         mPropertyAdapter.addAll(mPropertyNameList);
         mPropertyAdapter.notifyDataSetChanged();
-    }
-
-    /**
-     * Resource release, release all devices in the device list (sensors will be released when the device
-     * is released, there is no need to release sensor resources separately)
-     * Release SDK Context
-     */
-    private void release() {
-        try {
-            // 设备列表资源释放
-            for (Device device : mDeviceList) {
-                device.close();
-            }
-            mDeviceList.clear();
-
-            // OBContext资源释放
-            if (null != mOBContext) {
-                mOBContext.close();
-                mOBContext = null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // Release resources
-        release();
     }
 
     //region View.OnClickListener
@@ -362,7 +364,8 @@ public class SensorControlActivity extends AppCompatActivity implements View.OnC
      */
     private String getVersionInfo(Device device) {
         StringBuilder sb = new StringBuilder();
-        try (DeviceInfo deviceInfo = device.getInfo()) {
+        try {
+            DeviceInfo deviceInfo = device.getInfo();
             sb.append(getString(R.string.sensor_control_firmware_version) + deviceInfo.getFirmwareVersion() + "\n"
                     + getString(R.string.sensor_control_hardware_version) + deviceInfo.getHardwareVersion() + "\n"
                     + getString(R.string.sensor_control_sdk_version) + OBContext.getVersionName() + "\n"

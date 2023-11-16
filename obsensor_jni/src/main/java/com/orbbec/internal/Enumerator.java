@@ -15,7 +15,9 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,7 +50,7 @@ public class Enumerator {
                 case UsbManager.ACTION_USB_DEVICE_ATTACHED: {
                     UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
                     Log.i(TAG, "USB Device attach. device: " + deviceText + ", hasPermission: " + usbManager.hasPermission(usbDevice));
-                    if (null != usbDevice) {
+                    if (null != usbDevice && UsbUtilities.isOrbbecDevice(usbDevice)) {
                         if (usbManager.hasPermission(usbDevice)) {
                             if (null != mHandler) {
                                 Message msg = mHandler.obtainMessage(MessagesHandler.MSG_ON_DEVICE_ATTACHED);
@@ -64,13 +66,22 @@ public class Enumerator {
                 }
                 case UsbManager.ACTION_USB_DEVICE_DETACHED: {
                     Log.i(TAG, "USB Device detach. device: " + deviceText);
-                    if (null != usbDevice) {
+                    if (null != usbDevice && UsbUtilities.isOrbbecDevice(usbDevice)) {
                         if (null != mHandler) {
                             Message msg = mHandler.obtainMessage(MessagesHandler.MSG_ON_DEVICE_DETACHED);
                             msg.obj = usbDevice;
                             mHandler.sendMessage(msg);
                         } // if mHandler
                     }
+                    break;
+                }
+                case Intent.ACTION_SCREEN_ON: {
+                    Log.i(TAG, "Screen on check usb device connections!");
+                    if (null != mHandler) {
+                        Message msg = mHandler.obtainMessage(MessagesHandler.MSG_NOTIFY_QUERY_DEVICES);
+                        msg.obj = context;
+                        mHandler.sendMessage(msg);
+                    } // if mHandler
                     break;
                 }
             }
@@ -100,6 +111,7 @@ public class Enumerator {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        intentFilter.addAction(Intent.ACTION_SCREEN_ON);
         context.registerReceiver(mBroadcastReceiver, intentFilter);
 
         mMessagesThread = new HandlerThread("DeviceManager device availability message thread");
@@ -230,13 +242,13 @@ public class Enumerator {
             if (broadUsbDevice != usbDevice) {
                 if (null != broadUsbDevice) {
                     Log.i(TAG, "USBPermissionReceiver#onReceive broadUsbDevice != usbDevice. broadUsbDevice: {name: "
-                            + broadUsbDevice.getDeviceName() + ", SN: " + broadUsbDevice.getSerialNumber()
+                            + broadUsbDevice.getDeviceName() + ", SN: " + UsbUtilities.safeGetSerialNumber(broadUsbDevice)
                             + ", id: " + broadUsbDevice.getDeviceId() + "}"
-                            + ", usbDevice: {name: " + usbDevice.getDeviceName() + ", id: " + usbDevice.getSerialNumber()
+                            + ", usbDevice: {name: " + usbDevice.getDeviceName() + ", SN: " + UsbUtilities.safeGetSerialNumber(usbDevice)
                             + ", id: " + usbDevice.getDeviceId() + "}");
                 } else {
                     Log.i(TAG, "USBPermissionReceiver#onReceive broadUsbDevice = null"
-                            + ", usbDevice: {name: " + usbDevice.getDeviceName() + ", id: " + usbDevice.getSerialNumber()
+                            + ", usbDevice: {name: " + usbDevice.getDeviceName() + ", SN: " + UsbUtilities.safeGetSerialNumber(usbDevice)
                             + ", id: " + usbDevice.getDeviceId() + "}");
                 }
             }
@@ -272,16 +284,16 @@ public class Enumerator {
         }
 
         @Override
-        public void handleMessage(android.os.Message msg) {
+        public void handleMessage(Message msg) {
             try {
                 switch (msg.what) {
                     case MSG_ON_DEVICE_ATTACHED: {
-                        Log.i(TAG, "handleMessage: OrbbecSensor device attached");
+                        Log.i(TAG, "handleMessage: device attached");
                         handleDeviceAttached((UsbDevice) msg.obj);
                         break;
                     }
                     case MSG_ON_DEVICE_DETACHED: {
-                        Log.i(TAG, "handleMessage: OrbbecSensor device detached");
+                        Log.i(TAG, "handleMessage: device detached");
                         handleDeviceDetached((UsbDevice) msg.obj);
                         break;
                     }
@@ -324,7 +336,8 @@ public class Enumerator {
         private void handleQueryDevices(Context context) {
             UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
             Map<String, UsbDevice> deviceMap = usbManager.getDeviceList();
-            Iterator<Map.Entry<String, UsbDevice>> iters =  deviceMap.entrySet().iterator();
+            Iterator<Map.Entry<String, UsbDevice>> iters = deviceMap.entrySet().iterator();
+            // Check need to add attached usb device.
             while (iters.hasNext()) {
                 Map.Entry<String, UsbDevice> e = iters.next();
                 UsbDevice usbDevice = e.getValue();
@@ -347,6 +360,25 @@ public class Enumerator {
                     }
                 } // if isOrbbecDevice
             } // while
+
+            // Check need to remove detached usb device.
+            synchronized (mUsbDeviceMap) {
+                List<Integer> removeKeyList = new ArrayList<>();
+                for (int i = 0, c = mUsbDeviceMap.size(); i < c; i++) {
+                    int key = mUsbDeviceMap.keyAt(i);
+                    UsbDevice usbDevice = mUsbDeviceMap.valueAt(i);
+                    if (!deviceMap.containsValue(usbDevice)) {
+                        removeKeyList.add(key);
+                        if (null != mListener) {
+                            mListener.onDeviceDetach(usbDevice);
+                        }
+                    }
+                }
+
+                for (int i = 0; i < removeKeyList.size(); i++) {
+                    mUsbDeviceMap.remove(removeKeyList.get(i));
+                }
+            } // synchronized (mUsbDeviceMap)
         } // function handleQueryDevices()
     }
 }

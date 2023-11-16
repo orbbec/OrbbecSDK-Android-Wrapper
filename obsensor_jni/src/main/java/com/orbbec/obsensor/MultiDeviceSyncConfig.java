@@ -10,22 +10,19 @@ package com.orbbec.obsensor;
  * \endif
  */
 public class MultiDeviceSyncConfig {
-    private int syncModeValue = SyncMode.OB_SYNC_MODE_UNKNOWN.value();
-    private int irTriggerSignalInDelay;
-    private int rgbTriggerSignalInDelay;
-    private int deviceTriggerSignalOutDelay;
-    private int deviceTriggerSignalOutPolarity;
-    private int mcuTriggerFrequency;
-    private int deviceId;
+    private int syncModeValue = SyncMode.OB_MULTI_DEVICE_SYNC_MODE_FREE_RUN.value();
+    private int depthDelayUs;
+    private int colorDelayUs;
+    private int trigger2ImageDelayUs;
+    private boolean triggerOutEnable;
+    private int triggerOutDelayUs;
+    private int framesPerTrigger;
 
     /**
      * \if English
-     *
-     * @brief Getter
-     * @brief Device synchronize mode
+     * @brief The sync mode of the device.
      * \else
-     * @brief Getter
-     * @brief 同步模式
+     * @brief 设备的同步模式
      * \endif
      */
     public SyncMode getSyncMode() {
@@ -34,232 +31,220 @@ public class MultiDeviceSyncConfig {
 
     /**
      * \if English
-     *
-     * @brief Setter
-     * @brief Device synchronize mode
+     * @brief The sync mode of the device.
      * \else
-     * @brief Setter
-     * @brief 同步模式
+     * @brief 设备的同步模式
      * \endif
      */
-    public void setSyncMode(SyncMode syncMode) {
-        this.syncModeValue = syncMode.value();
+    public void setSyncMode(SyncMode mode) {
+        this.syncModeValue = mode.value();
     }
 
     /**
      * \if English
+     * @brief The delay time of the depth image capture after receiving the capture command or trigger signal in microseconds.
      *
-     * @brief Getter
-     * @brief IR Trigger signal input delay: Used to configure the delay between the IR/Depth/TOF Sensor receiving the trigger signal and starting exposure,
-     * Unit: microsecond
-     * @attention This parameter is invalid when the synchronization MODE is set to @ref OB_SYNC_MODE_PRIMARY_IR_TRIGGER
+     * @attention This parameter is only valid for some models， please refer to the product manual for details.
      * \else
-     * @brief Getter
-     * @brief IR 触发信号输入延时，用于 IR/Depth/TOF Sensor 接收到触发信号后到开始曝光的延时配置，单位为微秒
-     * @attention 同步模式配置为  @ref OB_SYNC_MODE_PRIMARY_IR_TRIGGER 时无效
+     * @brief 深度图像捕获在接收到捕获命令或触发信号之后的延迟时间（以微秒为单位）
+     *
+     * @attention 此参数仅对某些型号有效，请参阅产品手册了解详细信息
      * \endif
      */
-    public int getIrTriggerSignalInDelay() {
-        return irTriggerSignalInDelay;
+    public int getDepthDelayUs() {
+        return depthDelayUs;
     }
 
     /**
      * \if English
+     * @brief The delay time of the depth image capture after receiving the capture command or trigger signal in microseconds.
      *
-     * @brief Setter
-     * @brief IR Trigger signal input delay: Used to configure the delay between the IR/Depth/TOF Sensor receiving the trigger signal and starting exposure,
-     * Unit: microsecond
-     * @attention This parameter is invalid when the synchronization MODE is set to @ref OB_SYNC_MODE_PRIMARY_IR_TRIGGER
+     * @attention This parameter is only valid for some models， please refer to the product manual for details.
      * \else
-     * @brief Setter
-     * @brief IR 触发信号输入延时，用于 IR/Depth/TOF Sensor 接收到触发信号后到开始曝光的延时配置，单位为微秒
-     * @attention 同步模式配置为  @ref OB_SYNC_MODE_PRIMARY_IR_TRIGGER 时无效
+     * @brief 深度图像捕获在接收到捕获命令或触发信号之后的延迟时间（以微秒为单位）
+     *
+     * @attention 此参数仅对某些型号有效，请参阅产品手册了解详细信息
      * \endif
      */
-    public void setIrTriggerSignalInDelay(int irTriggerSignalInDelay) {
-        this.irTriggerSignalInDelay = irTriggerSignalInDelay;
+    public void setDepthDelayUs(int delayUs) {
+        this.depthDelayUs = delayUs;
     }
 
     /**
      * \if English
+     * @brief The delay time of the color image capture after receiving the capture command or trigger signal in microseconds.
      *
-     * @brief Getter
-     * @brief RGB trigger signal input delay is used to configure the delay from the time when an RGB Sensor receives the trigger signal to the time when the
-     * exposure starts. Unit: microsecond
-     * @attention This parameter is invalid when the synchronization MODE is set to @ref OB_SYNC_MODE_PRIMARY
+     * @attention This parameter is only valid for some models， please refer to the product manual for details.
      * \else
-     * @brief Getter
-     * @brief RGB 触发信号输入延时，用于 RGB Sensor 接收到触发信号后到开始曝光的延时配置，单位为微秒
-     * @attention 同步模式配置为  @ref OB_SYNC_MODE_PRIMARY 时无效
+     * @brief 彩色图像捕获在接收到捕获命令或触发信号之后的延迟时间（以微秒为单位）
+     *
+     * @attention 此参数仅对某些型号有效，请参阅产品手册了解详细信息
      * \endif
      */
-    public int getRgbTriggerSignalInDelay() {
-        return rgbTriggerSignalInDelay;
+    public int getColorDelayUs() {
+        return colorDelayUs;
     }
 
     /**
      * \if English
+     * @brief The delay time of the color image capture after receiving the capture command or trigger signal in microseconds.
      *
-     * @brief Setter
-     * @brief RGB trigger signal input delay is used to configure the delay from the time when an RGB Sensor receives the trigger signal to the time when the
-     * exposure starts. Unit: microsecond
-     * @attention This parameter is invalid when the synchronization MODE is set to @ref OB_SYNC_MODE_PRIMARY
+     * @attention This parameter is only valid for some models， please refer to the product manual for details.
      * \else
-     * @brief Setter
-     * @brief RGB 触发信号输入延时，用于 RGB Sensor 接收到触发信号后到开始曝光的延时配置，单位为微秒
-     * @attention 同步模式配置为  @ref OB_SYNC_MODE_PRIMARY 时无效
+     * @brief 彩色图像捕获在接收到捕获命令或触发信号之后的延迟时间（以微秒为单位）
+     *
+     * @attention 此参数仅对某些型号有效，请参阅产品手册了解详细信息
      * \endif
      */
-    public void setRgbTriggerSignalInDelay(int rgbTriggerSignalInDelay) {
-        this.rgbTriggerSignalInDelay = rgbTriggerSignalInDelay;
+    public void setColorDelayUs(int delayUs) {
+        this.colorDelayUs = delayUs;
     }
 
     /**
      * \if English
+     * @brief The delay time of the image capture after receiving the capture command or trigger signal in microseconds.
+     * @brief The depth and color images are captured synchronously as the product design and can not change the delay between the depth and color images.
      *
-     * @brief Getter
-     * @brief Device trigger signal output delay, used to control the delay configuration of the host device to output trigger signals or the slave device to
-     * output trigger signals. Unit: microsecond
-     * @attention This parameter is invalid when the synchronization MODE is set to @ref OB_SYNC_MODE_CLOSE or @ref OB_SYNC_MODE_STANDALONE
+     * @attention For Orbbec Astra 2 device, this parameter is valid only when the @ref triggerOutDelayUs is set to 0.
+     * @attention This parameter is only valid for some models to replace @ref depthDelayUs and @ref colorDelayUs, please refer to the product manual for
+     * details.
      * \else
-     * @brief Getter
-     * @brief 设备触发信号输出延时，用于控制主机设备向外输 或 从机设备向外中继输出 触发信号的延时配置，单位：微秒
-     * @attention 同步模式配置为 @ref OB_SYNC_MODE_CLOSE 和  @ref OB_SYNC_MODE_STANDALONE 时无效
+     * @brief 在接收到捕获命令或触发信号之后的图像捕获的延迟时间（以微秒为单位）
+     * @brief 深度图像和彩色图像是作为产品设计同步捕获的，并且不能改变深度图像和色彩图像之间的延迟
+     *
+     * @attention 此参数仅对某些型号有效，以替换 @ref depthDelayUs和 @ref colorDelayUs，请参阅产品手册了解详细信息
      * \endif
      */
-    public int getDeviceTriggerSignalOutDelay() {
-        return deviceTriggerSignalOutDelay;
+    public int getTrigger2ImageDelayUs() {
+        return trigger2ImageDelayUs;
     }
 
     /**
      * \if English
+     * @brief The delay time of the image capture after receiving the capture command or trigger signal in microseconds.
+     * @brief The depth and color images are captured synchronously as the product design and can not change the delay between the depth and color images.
      *
-     * @brief Setter
-     * @brief Device trigger signal output delay, used to control the delay configuration of the host device to output trigger signals or the slave device to
-     * output trigger signals. Unit: microsecond
-     * @attention This parameter is invalid when the synchronization MODE is set to @ref OB_SYNC_MODE_CLOSE or @ref OB_SYNC_MODE_STANDALONE
+     * @attention For Orbbec Astra 2 device, this parameter is valid only when the @ref triggerOutDelayUs is set to 0.
+     * @attention This parameter is only valid for some models to replace @ref depthDelayUs and @ref colorDelayUs, please refer to the product manual for
+     * details.
      * \else
-     * @brief Setter
-     * @brief 设备触发信号输出延时，用于控制主机设备向外输 或 从机设备向外中继输出 触发信号的延时配置，单位：微秒
-     * @attention 同步模式配置为 @ref OB_SYNC_MODE_CLOSE 和  @ref OB_SYNC_MODE_STANDALONE 时无效
+     * @brief 在接收到捕获命令或触发信号之后的图像捕获的延迟时间（以微秒为单位）
+     * @brief 深度图像和彩色图像是作为产品设计同步捕获的，并且不能改变深度图像和色彩图像之间的延迟
+     *
+     * @attention 此参数仅对某些型号有效，以替换 @ref depthDelayUs和 @ref colorDelayUs，请参阅产品手册了解详细信息
      * \endif
      */
-    public void setDeviceTriggerSignalOutDelay(int deviceTriggerSignalOutDelay) {
-        this.deviceTriggerSignalOutDelay = deviceTriggerSignalOutDelay;
+    public void setTrigger2ImageDelayUs(int delayUs) {
+        this.trigger2ImageDelayUs = delayUs;
     }
 
     /**
      * \if English
+     * @brief Trigger signal output enable flag.
+     * @brief After the trigger signal output is enabled, the trigger signal will be output when the capture command or trigger signal is received. User can
+     * adjust the delay time of the trigger signal output by @ref triggerOutDelayUs.
      *
-     * @brief Getter
-     * @brief The device trigger signal output polarity is used to control the polarity configuration of the trigger signal output from the host device or the
-     * trigger signal output from the slave device
-     * @brief 0: forward pulse; 1: negative pulse
-     * @attention This parameter is invalid when the synchronization MODE is set to @ref OB_SYNC_MODE_CLOSE or @ref OB_SYNC_MODE_STANDALONE
+     * @attention For some models, the trigger signal output is always enabled and cannot be disabled.
+     * @attention If device is in the @ref OB_MULTI_DEVICE_SYNC_MODE_FREE_RUN or @ref OB_MULTI_DEVICE_SYNC_MODE_STANDALONE mode, the trigger signal output is
+     * always disabled. Set this parameter to true will not take effect.
      * \else
-     * @brief Getter
-     * @brief 设备触发信号输出极性，用于控制主机设备向外输 或 从机设备向外中继输出 触发信号的极性配置
-     * @brief 0: 正向脉冲；1: 负向脉冲
-     * @attention 同步模式配置为 @ref OB_SYNC_MODE_CLOSE 和  @ref OB_SYNC_MODE_STANDALONE 时无效
+     * @brief 触发信号输出启用标志
+     * @brief 在触发信号输出被使能之后，当接收到捕获命令或触发信号时，触发信号将被输出。用户可以调整 @ref triggerSignalOutputDelayUs输出的触发信号的延迟时间
+     *
+     * @attention 对于某些型号，触发信号输出始终处于启用状态，在某些模式下无法禁用
+     * @attention 如果设备处于 @ref OB_MULTI_DEVICE_SYNC_MODE_FREE_RUN 或 @ref
+     * OB_MULTI_DEVICE_SYNC_MODE_STANDALONE模式，则触发信号输出始终被禁用。将此参数设置为true将不会生效
      * \endif
      */
-    public int getDeviceTriggerSignalOutPolarity() {
-        return deviceTriggerSignalOutPolarity;
+    public boolean isTriggerOutEnable() {
+        return triggerOutEnable;
     }
 
     /**
      * \if English
+     * @brief Trigger signal output enable flag.
+     * @brief After the trigger signal output is enabled, the trigger signal will be output when the capture command or trigger signal is received. User can
+     * adjust the delay time of the trigger signal output by @ref triggerOutDelayUs.
      *
-     * @brief Setter
-     * @brief The device trigger signal output polarity is used to control the polarity configuration of the trigger signal output from the host device or the
-     * trigger signal output from the slave device
-     * @brief 0: forward pulse; 1: negative pulse
-     * @attention This parameter is invalid when the synchronization MODE is set to @ref OB_SYNC_MODE_CLOSE or @ref OB_SYNC_MODE_STANDALONE
+     * @attention For some models, the trigger signal output is always enabled and cannot be disabled.
+     * @attention If device is in the @ref OB_MULTI_DEVICE_SYNC_MODE_FREE_RUN or @ref OB_MULTI_DEVICE_SYNC_MODE_STANDALONE mode, the trigger signal output is
+     * always disabled. Set this parameter to true will not take effect.
      * \else
-     * @brief Setter
-     * @brief 设备触发信号输出极性，用于控制主机设备向外输 或 从机设备向外中继输出 触发信号的极性配置
-     * @brief 0: 正向脉冲；1: 负向脉冲
-     * @attention 同步模式配置为 @ref OB_SYNC_MODE_CLOSE 和  @ref OB_SYNC_MODE_STANDALONE 时无效
+     * @brief 触发信号输出启用标志
+     * @brief 在触发信号输出被使能之后，当接收到捕获命令或触发信号时，触发信号将被输出。用户可以调整 @ref triggerSignalOutputDelayUs输出的触发信号的延迟时间
+     *
+     * @attention 对于某些型号，触发信号输出始终处于启用状态，在某些模式下无法禁用
+     * @attention 如果设备处于 @ref OB_MULTI_DEVICE_SYNC_MODE_FREE_RUN 或 @ref
+     * OB_MULTI_DEVICE_SYNC_MODE_STANDALONE模式，则触发信号输出始终被禁用。将此参数设置为true将不会生效
      * \endif
      */
-    public void setDeviceTriggerSignalOutPolarity(int deviceTriggerSignalOutPolarity) {
-        this.deviceTriggerSignalOutPolarity = deviceTriggerSignalOutPolarity;
+    public void setTriggerOutEnable(boolean triggerOutEnable) {
+        this.triggerOutEnable = triggerOutEnable;
     }
 
     /**
      * \if English
+     * @brief The delay time of the trigger signal output after receiving the capture command or trigger signal in microseconds.
      *
-     * @brief Getter
-     * @brief MCU trigger frequency, used to configure the output frequency of MCU trigger signal in MCU master mode, unit: Hz
-     * @brief This configuration will directly affect the image output frame rate of the Sensor. Unit: FPS （frame pre second）
-     * @attention This parameter is invalid only when the synchronization MODE is set to @ref OB_SYNC_MODE_PRIMARY_MCU_TRIGGER
+     * @attention For Orbbec Astra 2 device, only supported -1 and 0. -1 means the trigger signal output delay is automatically adjusted by the device, 0 means
+     * the trigger signal output is disabled.
      * \else
-     * @brief Getter
-     * @brief MCU 触发频率，用于 MCU 主模式下，MCU触发信号输出频率配置，单位：Hz
-     * @brief 该配置会直接影响 Sensor 的图像输出帧率，即也可以认为单位为：FPS （frame pre second）
-     * @attention 仅当同步模式配置为 @ref OB_SYNC_MODE_PRIMARY_MCU_TRIGGER 时无效
+     * @brief 接收到捕获命令或触发信号后输出的触发信号的延迟时间，单位为微秒
      * \endif
      */
-    public int getMcuTriggerFrequency() {
-        return mcuTriggerFrequency;
+    public int getTriggerOutDelayUs() {
+        return triggerOutDelayUs;
     }
 
     /**
      * \if English
+     * @brief The delay time of the trigger signal output after receiving the capture command or trigger signal in microseconds.
      *
-     * @brief Setter
-     * @brief MCU trigger frequency, used to configure the output frequency of MCU trigger signal in MCU master mode, unit: Hz
-     * @brief This configuration will directly affect the image output frame rate of the Sensor. Unit: FPS （frame pre second）
-     * @attention This parameter is invalid only when the synchronization MODE is set to @ref OB_SYNC_MODE_PRIMARY_MCU_TRIGGER
+     * @attention For Orbbec Astra 2 device, only supported -1 and 0. -1 means the trigger signal output delay is automatically adjusted by the device, 0 means
+     * the trigger signal output is disabled.
      * \else
-     * @brief Setter
-     * @brief MCU 触发频率，用于 MCU 主模式下，MCU触发信号输出频率配置，单位：Hz
-     * @brief 该配置会直接影响 Sensor 的图像输出帧率，即也可以认为单位为：FPS （frame pre second）
-     * @attention 仅当同步模式配置为 @ref OB_SYNC_MODE_PRIMARY_MCU_TRIGGER 时无效
+     * @brief 接收到捕获命令或触发信号后输出的触发信号的延迟时间，单位为微秒
      * \endif
      */
-    public void setMcuTriggerFrequency(int mcuTriggerFrequency) {
-        this.mcuTriggerFrequency = mcuTriggerFrequency;
+    public void setTriggerOutDelayUs(int delayUs) {
+        this.triggerOutDelayUs = delayUs;
     }
 
     /**
      * \if English
+     * @brief The frame number of each stream after each trigger in triggering mode.
      *
-     * @brief Getter
-     * @brief Device number. Users can mark the device with this number
+     * @attention This parameter is only valid when the triggering mode is set to @ref OB_MULTI_DEVICE_SYNC_MODE_HARDWARE_TRIGGERING or @ref
+     * OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING.
+     * @attention The trigger frequency multiplied by the number of frames per trigger cannot exceed the maximum frame rate of the stream profile which is set
+     * when starting the stream.
      * \else
-     * @brief Getter
-     * @brief 设备编号，用户可用该编号对设备进行标记
+     * @brief 触发模式中每个触发器的帧数
+     *
+     * @attention 仅当触发模式设置为 @ref OB_MULTI_DEVICE_SYNC_MODE_HARDWARE_TRIGGERING 或 @ref OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING时，此参数才有效
+     * @attention 触发频率乘以每个触发的帧数不能超过在启动流时设置的流配置文件的最大帧速率
      * \endif
      */
-    public int getDeviceId() {
-        return deviceId;
+    public int getFramesPerTrigger() {
+        return framesPerTrigger;
     }
 
     /**
      * \if English
+     * @brief The frame number of each stream after each trigger in triggering mode.
      *
-     * @brief Setter
-     * @brief Device number. Users can mark the device with this number
+     * @attention This parameter is only valid when the triggering mode is set to @ref OB_MULTI_DEVICE_SYNC_MODE_HARDWARE_TRIGGERING or @ref
+     * OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING.
+     * @attention The trigger frequency multiplied by the number of frames per trigger cannot exceed the maximum frame rate of the stream profile which is set
+     * when starting the stream.
      * \else
-     * @brief Setter
-     * @brief 设备编号，用户可用该编号对设备进行标记
+     * @brief 触发模式中每个触发器的帧数
+     *
+     * @attention 仅当触发模式设置为 @ref OB_MULTI_DEVICE_SYNC_MODE_HARDWARE_TRIGGERING 或 @ref OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING时，此参数才有效
+     * @attention 触发频率乘以每个触发的帧数不能超过在启动流时设置的流配置文件的最大帧速率
      * \endif
      */
-    public void setDeviceId(int deviceId) {
-        this.deviceId = deviceId;
-    }
-
-    @Override
-    public String toString() {
-        return "DeviceSyncConfig{" +
-                "syncModeValue=" + syncModeValue +
-                ", irTriggerSignalInDelay=" + irTriggerSignalInDelay +
-                ", rgbTriggerSignalInDelay=" + rgbTriggerSignalInDelay +
-                ", deviceTriggerSignalOutDelay=" + deviceTriggerSignalOutDelay +
-                ", deviceTriggerSignalOutPolarity=" + deviceTriggerSignalOutPolarity +
-                ", mcuTriggerFrequency=" + mcuTriggerFrequency +
-                ", deviceId=" + deviceId +
-                '}';
+    public void setFramesPerTrigger(int frameNumPerTrigger) {
+        this.framesPerTrigger = frameNumPerTrigger;
     }
 }

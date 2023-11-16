@@ -1,33 +1,30 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
 import android.os.Bundle;
-import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.orbbec.obsensor.AlignMode;
 import com.orbbec.obsensor.CameraParam;
 import com.orbbec.obsensor.Config;
+import com.orbbec.obsensor.DepthFrame;
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
+import com.orbbec.obsensor.DeviceInfo;
 import com.orbbec.obsensor.DeviceList;
 import com.orbbec.obsensor.Format;
 import com.orbbec.obsensor.Frame;
 import com.orbbec.obsensor.FrameSet;
 import com.orbbec.obsensor.FrameSetCallback;
 import com.orbbec.obsensor.FrameType;
-import com.orbbec.obsensor.OBContext;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.PointCloudFilter;
 import com.orbbec.obsensor.PointFrame;
 import com.orbbec.obsensor.SensorType;
-import com.orbbec.obsensor.StreamProfileList;
-import com.orbbec.obsensor.VideoStreamProfile;
 import com.orbbec.orbbecsdkexamples.R;
 import com.orbbec.orbbecsdkexamples.utils.FileUtils;
 
@@ -36,11 +33,9 @@ import java.io.File;
 /**
  * PointCloud Example
  */
-public class PointCloudActivity extends AppCompatActivity implements View.OnClickListener {
+public class PointCloudActivity extends BaseActivity implements View.OnClickListener {
     private static final String TAG = "PointCloudActivity";
 
-    private File mSdcardDir = Environment.getExternalStorageDirectory();
-    private OBContext mOBContext;
     private Pipeline mPipeline;
     private Device mDevice;
     private Thread mPointFilterThread;
@@ -67,6 +62,117 @@ public class PointCloudActivity extends AppCompatActivity implements View.OnClic
         }
     };
 
+    private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
+        @Override
+        public void onDeviceAttach(DeviceList deviceList) {
+            try {
+                if (null == mPipeline) {
+                    // 2.Create Device and initialize Pipeline through Device
+                    mDevice = deviceList.getDevice(0);
+
+                    if (null == mDevice.getSensor(SensorType.COLOR)) {
+                        mDevice.close();
+                        mDevice = null;
+                        showToast(getString(R.string.device_not_support_color));
+                        runOnUiThread(() -> {
+                            mSaveColorPointsBtn.setEnabled(false);
+                        });
+                    }
+
+                    if (null == mDevice.getSensor(SensorType.DEPTH)) {
+                        mDevice.close();
+                        mDevice = null;
+                        showToast(getString(R.string.device_not_support_depth));
+                        return;
+                    }
+
+                    // 3.Create Device and initialize Pipeline through Device
+                    mPipeline = new Pipeline(mDevice);
+
+                    // 4.Create Config to configure pipeline opening sensors
+                    Config config = genD2CConfig(mPipeline, AlignMode.ALIGN_D2C_HW_ENABLE);
+                    if (null == config) {
+                        mPipeline.close();
+                        mPipeline = null;
+                        mDevice.close();
+                        mDevice = null;
+                        Log.w(TAG, "onDeviceAttach: No target depth and color stream profile!");
+                        showToast(getString(R.string.init_stream_profile_failed));
+                        return;
+                    }
+
+                    // 5.Start sensors stream
+                    mPipeline.start(config, mPointCloudFrameSetCallback);
+
+                    // 6.Start the point cloud asynchronous processing thread
+                    start();
+
+                    // 7.Create point cloud filter
+                    mPointCloudFilter = new PointCloudFilter();
+
+                    // 8.Set the format of the point cloud filter
+                    mPointCloudFilter.setPointFormat(mPointFormat);
+
+                    // 9.Obtain camera intrinsic parameters and set parameters to point cloud filter
+                    CameraParam cameraParam = mPipeline.getCameraParam();
+                    mPointCloudFilter.setCameraParam(cameraParam);
+                    Log.i(TAG, "onDeviceAttach: cameraParam:" + cameraParam);
+
+                    // 10.Release config resources
+                    config.close();
+
+                    runOnUiThread(() -> {
+                        mSaveColorPointsBtn.setEnabled(true);
+                        mSaveDepthPointsBtn.setEnabled(true);
+                    });
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                // 11.Release device list resources
+                deviceList.close();
+            }
+        }
+
+        @Override
+        public void onDeviceDetach(DeviceList deviceList) {
+            try {
+                if (mDevice != null) {
+                    for (int i = 0, N = deviceList.getDeviceCount(); i < N; i++) {
+                        String uid = deviceList.getUid(i);
+                        DeviceInfo deviceInfo = mDevice.getInfo();
+                        if (null != deviceInfo && TextUtils.equals(uid, deviceInfo.getUid())) {
+                            runOnUiThread(() -> {
+                                mSaveColorPointsBtn.setEnabled(false);
+                                mSaveDepthPointsBtn.setEnabled(false);
+                            });
+                            stop();
+                            if (null != mPointCloudFilter) {
+                                mPointCloudFilter.close();
+                                mPointCloudFilter = null;
+                            }
+                            if (null != mPipeline) {
+                                mPipeline.stop();
+                                mPipeline.close();
+                            }
+                            mPipeline = null;
+                            mDevice.close();
+                            mDevice = null;
+                        }
+                        deviceInfo.close();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    deviceList.close();
+                } catch (Exception ignore) {
+                }
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,126 +184,65 @@ public class PointCloudActivity extends AppCompatActivity implements View.OnClic
         mSaveDepthPointsBtn.setOnClickListener(this);
         mSaveColorPointsBtn = findViewById(R.id.btn_save_rgb_points);
         mSaveColorPointsBtn.setOnClickListener(this);
+    }
 
-        // 1.Initialize the SDK Context and listen device changes
-        mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
-            @Override
-            public void onDeviceAttach(DeviceList deviceList) {
-                try {
-                    if (null == mPipeline) {
-                        // 2.Create Device and initialize Pipeline through Device
-                        mDevice = deviceList.getDevice(0);
+    @Override
+    protected void onStart() {
+        super.onStart();
+        initSDK();
+    }
 
-                        if (null == mDevice.getSensor(SensorType.COLOR)) {
-                            showToast(getString(R.string.device_not_support_color));
-                            runOnUiThread(() -> {
-                                mSaveColorPointsBtn.setEnabled(false);
-                            });
-                        }
+    @Override
+    protected void onStop() {
+        try {
+            // Stop and release the point cloud filter processing thread
+            stop();
 
-                        if (null == mDevice.getSensor(SensorType.DEPTH)) {
-                            showToast(getString(R.string.device_not_support_depth));
-                            return;
-                        }
-
-                        // 3.Create Device and initialize Pipeline through Device
-                        mPipeline = new Pipeline(mDevice);
-
-                        // 4.Create Config to configure pipeline opening sensors
-                        Config config = new Config();
-
-                        // 5.Get depth VideoStreamProfile List
-                        StreamProfileList depthProfileList = mPipeline.getStreamProfileList(SensorType.DEPTH);
-                        VideoStreamProfile depthProfileTarget = getVideoStreamProfile(depthProfileList, 640, 0, Format.UNKNOWN, 30);
-                        if (null == depthProfileTarget) {
-                            depthProfileTarget = getVideoStreamProfile(depthProfileList, 0, 0, Format.UNKNOWN, 30);
-                        }
-                        if (null != depthProfileList) {
-                            depthProfileList.close();
-                        }
-
-                        // 6.Enable the configuration after obtaining the specified depth VideoStreamProfile.
-                        int depthProfileW = 0;
-                        int depthProfileH = 0;
-                        if (null != depthProfileTarget) {
-                            printStreamProfile(depthProfileTarget);
-                            config.enableStream(depthProfileTarget);
-                            depthProfileW = depthProfileTarget.getWidth();
-                            depthProfileH = depthProfileTarget.getHeight();
-                            depthProfileTarget.close();
-                        } else {
-                            Log.w(TAG, "onDeviceAttach: No target depth stream profile!");
-                        }
-
-                        // 7.Get color VideoStreamProfile list
-                        try {
-                            StreamProfileList colorProfileList = mPipeline.getStreamProfileList(SensorType.COLOR);
-                            VideoStreamProfile colorProfileTarget = getVideoStreamProfile(colorProfileList, 640, 0, Format.RGB888, 30);
-                            if (null == colorProfileTarget) {
-                                colorProfileTarget = getVideoStreamProfile(colorProfileList, 0, 0, Format.UNKNOWN, 30);
-                            }
-                            if (null != colorProfileList) {
-                                colorProfileList.close();
-                            }
-
-                            // 8.Enable the configuration after obtaining the specified color VideoStreamProfile
-                            if (null != colorProfileTarget) {
-                                printStreamProfile(colorProfileTarget);
-                                config.enableStream(colorProfileTarget);
-                                colorProfileTarget.close();
-                            } else {
-                                Log.w(TAG, "onDeviceAttach: No target color stream profile!");
-                            }
-                        } catch (Exception e) {
-                            // If the color sensor is not supported, an exception will be thrown when
-                            // obtaining the profile. In order to ensure the normal operation of the
-                            // depth point cloud, it is necessary to configure the depth zoom to not zoom,
-                            // and configure the D2C target resolution to be the same as the depth.
-                            e.printStackTrace();
-                            config.setDepthScaleRequire(false);
-                            config.setD2CTargetResolution(depthProfileW, depthProfileH);
-                        }
-
-                        // 9.Enable hardware D2C
-                        config.setAlignMode(AlignMode.ALIGN_D2C_HW_ENABLE);
-
-                        // 10.Start sensors stream
-                        mPipeline.start(config, mPointCloudFrameSetCallback);
-
-                        // 11.Start the point cloud asynchronous processing thread
-                        start();
-
-                        // 12.Create point cloud filter
-                        mPointCloudFilter = new PointCloudFilter();
-
-                        // 13.Set the format of the point cloud filter
-                        mPointCloudFilter.setPointFormat(mPointFormat);
-
-                        // 14.Obtain camera intrinsic parameters and set parameters to point cloud filter
-                        CameraParam cameraParam = mPipeline.getCameraParam();
-                        mPointCloudFilter.setCameraParam(cameraParam);
-                        Log.i(TAG, "onDeviceAttach: cameraParam:" + cameraParam);
-
-                        // 15.Release config resources
-                        config.close();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    // 16.Release device list resources
-                    deviceList.close();
-                }
+            // Stop the Pipeline and close it
+            if (null != mPipeline) {
+                mPipeline.stop();
+                mPipeline.close();
+                mPipeline = null;
             }
 
-            @Override
-            public void onDeviceDetach(DeviceList deviceList) {
+            // Release point cloud filter
+            if (null != mPointCloudFilter) {
                 try {
-                    deviceList.close();
+                    mPointCloudFilter.close();
                 } catch (Exception e) {
-                    e.printStackTrace();
                 }
+                mPointCloudFilter = null;
             }
-        });
+
+            // Release Device
+            if (mDevice != null) {
+                mDevice.close();
+                mDevice = null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        releaseSDK();
+        super.onStop();
+    }
+
+    @Override
+    protected DeviceChangedCallback getDeviceChangedCallback() {
+        return mDeviceChangedCallback;
+    }
+
+    private Config genD2CConfig(Pipeline pipeline, AlignMode alignMode) {
+        BaseActivity.D2CStreamProfile d2CStreamProfile = genD2CStreamProfile(pipeline, alignMode);
+        if (null == d2CStreamProfile) {
+            return null;
+        }
+
+        Config config = new Config();
+        config.setAlignMode(alignMode);
+        config.enableStream(d2CStreamProfile.getColorProfile());
+        config.enableStream(d2CStreamProfile.getDepthProfile());
+        d2CStreamProfile.close();
+        return config;
     }
 
     @Override
@@ -216,23 +261,6 @@ public class PointCloudActivity extends AppCompatActivity implements View.OnClic
 
     private void showToast(String msg) {
         runOnUiThread(() -> Toast.makeText(PointCloudActivity.this, msg, Toast.LENGTH_SHORT).show());
-    }
-
-    private void printStreamProfile(VideoStreamProfile vsp) {
-        Log.i(TAG, "printStreamProfile: "
-                + vsp.getWidth() + "×" + vsp.getHeight()
-                + "@" + vsp.getFps() + "fps " + vsp.getFormat());
-    }
-
-    private VideoStreamProfile getVideoStreamProfile(StreamProfileList profileList,
-                                                     int width, int height, Format format, int fps) {
-        VideoStreamProfile vsp = null;
-        try {
-            vsp = profileList.getVideoStreamProfile(width, height, format, fps);
-        } catch (Exception e) {
-            Log.w(TAG, "getVideoStreamProfile: " + e.getMessage());
-        }
-        return vsp;
     }
 
     private void start() {
@@ -268,6 +296,11 @@ public class PointCloudActivity extends AppCompatActivity implements View.OnClic
                             // Set the save format to color point cloud
                             mPointCloudFilter.setPointFormat(Format.RGB_POINT);
                         }
+                        DepthFrame depthFrame = mPointFrameSet.getDepthFrame();
+                        if (null != depthFrame) {
+                            mPointCloudFilter.setPositionDataScale(depthFrame.getValueScale());
+                            depthFrame.close();
+                        }
                         // Point cloud filter processing generates corresponding point cloud data
                         frame = mPointCloudFilter.process(mPointFrameSet);
 
@@ -275,29 +308,35 @@ public class PointCloudActivity extends AppCompatActivity implements View.OnClic
                             // Get point cloud frames
                             PointFrame pointFrame = frame.as(FrameType.POINTS);
 
-                            if (mIsSavePoints) {
+                            String rootSaveDirPath = FileUtils.getExternalSaveDir();
+                            if (mIsSavePoints && !TextUtils.isEmpty(rootSaveDirPath)) {
+                                File saveDirPath = new File(rootSaveDirPath + File.separator + "point_cloud");
+                                if (!saveDirPath.exists()) {
+                                    saveDirPath.mkdirs();
+                                }
+
                                 if (mPointFormat == Format.POINT) {
                                     // Get the depth point cloud data and save it. The data size of the depth point cloud is w * h * 3
                                     float[] depthPoints = new float[pointFrame.getDataSize() / Float.BYTES];
                                     pointFrame.getPointCloudData(depthPoints);
-                                    String depthPointsPath = mSdcardDir.toString() + "/Orbbec/point.ply";
+                                    String depthPointsPath = saveDirPath.getAbsolutePath() + "/point.ply";
                                     FileUtils.savePointCloud(depthPointsPath, depthPoints);
                                     runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            mInfoTv.append("Save Path:" + depthPointsPath + "\n");
+                                            mInfoTv.append("Save Path:" + FileUtils.convertSDCardPath(depthPointsPath) + "\n");
                                         }
                                     });
                                 } else {
                                     // Get the color point cloud data and save it, the data size of the color point cloud is w * h * 6
                                     float[] colorPoints = new float[pointFrame.getDataSize() / Float.BYTES];
                                     pointFrame.getPointCloudData(colorPoints);
-                                    String colorPointsPath = mSdcardDir.toString() + "/Orbbec/point_rgb.ply";
+                                    String colorPointsPath = saveDirPath.getAbsolutePath() + "/point_rgb.ply";
                                     FileUtils.saveRGBPointCloud(colorPointsPath, colorPoints);
                                     runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
-                                            mInfoTv.append("Save Path:" + colorPointsPath + "\n");
+                                            mInfoTv.append("Save Path:" + FileUtils.convertSDCardPath(colorPointsPath) + "\n");
                                         }
                                     });
                                 }
@@ -320,42 +359,4 @@ public class PointCloudActivity extends AppCompatActivity implements View.OnClic
         }
     };
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        try {
-            // Stop and release the point cloud filter processing thread
-            stop();
-
-            // Stop the Pipeline and close it
-            if (null != mPipeline) {
-                mPipeline.stop();
-                mPipeline.close();
-                mPipeline = null;
-            }
-
-            // Release point cloud filter
-            if (null != mPointCloudFilter) {
-                try {
-                    mPointCloudFilter.close();
-                } catch (Exception e) {
-                }
-                mPointCloudFilter = null;
-            }
-
-            // Release Device
-            if (mDevice != null) {
-                mDevice.close();
-                mDevice = null;
-            }
-
-            // Release SDK Context
-            if (null != mOBContext) {
-                mOBContext.close();
-                mOBContext = null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

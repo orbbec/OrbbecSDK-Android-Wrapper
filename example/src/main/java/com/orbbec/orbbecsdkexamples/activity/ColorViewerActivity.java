@@ -1,26 +1,26 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
-
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.orbbec.obsensor.ColorFrame;
 import com.orbbec.obsensor.Config;
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
+import com.orbbec.obsensor.DeviceInfo;
 import com.orbbec.obsensor.DeviceList;
-import com.orbbec.obsensor.Format;
 import com.orbbec.obsensor.FrameSet;
+import com.orbbec.obsensor.LogSeverity;
 import com.orbbec.obsensor.OBContext;
+import com.orbbec.obsensor.OBException;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.SensorType;
-import com.orbbec.obsensor.StreamProfile;
-import com.orbbec.obsensor.StreamProfileList;
 import com.orbbec.obsensor.StreamType;
 import com.orbbec.obsensor.VideoStreamProfile;
+import com.orbbec.orbbecsdkexamples.BuildConfig;
 import com.orbbec.orbbecsdkexamples.R;
 import com.orbbec.orbbecsdkexamples.view.OBGLView;
 
@@ -29,15 +29,102 @@ import java.nio.ByteBuffer;
 /**
  * Color Viewer
  */
-public class ColorViewerActivity extends AppCompatActivity {
+public class ColorViewerActivity extends BaseActivity {
     private static final String TAG = "ColorViewerActivity";
 
-    private OBContext mOBContext;
     private Pipeline mPipeline;
     private Thread mStreamThread;
     private volatile boolean mIsStreamRunning;
     private OBGLView mColorView;
     private Device mDevice;
+
+    private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
+        @Override
+        public void onDeviceAttach(DeviceList deviceList) {
+            try {
+                if (null == mPipeline) {
+                    // 2.Create Device and initialize Pipeline through Device
+                    mDevice = deviceList.getDevice(0);
+                    Sensor colorSensor = mDevice.getSensor(SensorType.COLOR);
+                    if (null == colorSensor) {
+                        showToast(getString(R.string.device_not_support_color));
+                        mDevice.close();
+                        mDevice = null;
+                        return;
+                    }
+                    // 3. Create Device and initialize Pipeline through Device
+                    mPipeline = new Pipeline(mDevice);
+
+                    // 4.Create Pipeline configuration
+                    Config config = new Config();
+
+                    // 5.Get the color sensor configuration and configure it to Config
+                    // Here, matching is performed based on the width, frame rate and RGB888 format.
+                    // If the configuration is not changed, the matching meets the configuration
+                    // of a width of 640 and a frame rate of 30fps.
+                    VideoStreamProfile streamProfile = getStreamProfile(mPipeline, SensorType.COLOR);
+
+                    // 6.Enable color StreamProfile
+                    if (null != streamProfile) {
+                        printStreamProfile(streamProfile.as(StreamType.VIDEO));
+                        config.enableStream(streamProfile);
+                        streamProfile.close();
+                    } else {
+                        mPipeline.close();
+                        mPipeline = null;
+                        mDevice.close();
+                        mDevice = null;
+                        config.close();
+                        Log.w(TAG, "No target stream profile!");
+                        showToast(getString(R.string.init_stream_profile_failed));
+                        return;
+                    }
+
+                    // 7.Start sensor stream
+                    mPipeline.start(config);
+
+                    // 8.Release config
+                    config.close();
+
+                    // 9.Create a thread to obtain Pipeline data
+                    start();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                // 10.Release device list resources
+                deviceList.close();
+            }
+        }
+
+        @Override
+        public void onDeviceDetach(DeviceList deviceList) {
+            try {
+                if (mDevice != null) {
+                    for (int i = 0, N = deviceList.getDeviceCount(); i < N; i++) {
+                        String uid = deviceList.getUid(i);
+                        DeviceInfo deviceInfo = mDevice.getInfo();
+                        if (null != deviceInfo && TextUtils.equals(uid, deviceInfo.getUid())) {
+                            stop();
+                            mPipeline.stop();
+                            mPipeline.close();
+                            mPipeline = null;
+                            mDevice.close();
+                            mDevice = null;
+                        }
+                        deviceInfo.close();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    deviceList.close();
+                } catch (Exception ignore) {
+                }
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,73 +132,41 @@ public class ColorViewerActivity extends AppCompatActivity {
         setTitle("ColorView");
         setContentView(R.layout.activity_color_viewer);
         mColorView = findViewById(R.id.colorview_id);
-        // 1.Initialize the SDK Context and listen device changes
-        mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
-            @Override
-            public void onDeviceAttach(DeviceList deviceList) {
-                try {
-                    if (null == mPipeline) {
-                        // 2.Create Device and initialize Pipeline through Device
-                        mDevice = deviceList.getDevice(0);
-                        Sensor colorSensor = mDevice.getSensor(SensorType.COLOR);
-                        if (null == colorSensor) {
-                            showToast(getString(R.string.device_not_support_color));
-                            return;
-                        }
-                        // 3. Create Device and initialize Pipeline through Device
-                        mPipeline = new Pipeline(mDevice);
+    }
 
-                        // 4.Create Pipeline configuration
-                        Config config = new Config();
+    @Override
+    protected void onStart() {
+        super.onStart();
+        initSDK();
+    }
 
-                        // 5.Get the color sensor configuration and configure it to Config
-                        // Here, matching is performed based on the width, frame rate and RGB888 format.
-                        // If the configuration is not changed, the matching meets the configuration
-                        // of a width of 640 and a frame rate of 30fps.
-                        StreamProfileList colorProfileList = mPipeline.getStreamProfileList(SensorType.COLOR);
-                        StreamProfile streamProfile = getVideoStreamProfile(colorProfileList, 640, 0, Format.RGB888, 30);
-                        if (null == streamProfile) {
-                            streamProfile = getVideoStreamProfile(colorProfileList, 0, 0, Format.RGB888, 30);
-                        }
-                        if (null != colorProfileList) {
-                            colorProfileList.close();
-                        }
+    @Override
+    protected void onStop() {
+        try {
+            // Stop getting Pipeline data
+            stop();
 
-                        // 6.Enable color StreamProfile
-                        if (null != streamProfile) {
-                            printStreamProfile(streamProfile.as(StreamType.VIDEO));
-                            config.enableStream(streamProfile);
-                            streamProfile.close();
-                        } else {
-                            Log.w(TAG, "No target stream profile!");
-                        }
-
-                        // 7.Start sensor stream
-                        mPipeline.start(config);
-
-                        // 8.Release config
-                        config.close();
-
-                        // 9.Create a thread to obtain Pipeline data
-                        start();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    // 10.Release device list resources
-                    deviceList.close();
-                }
+            // Stop the Pipeline and release
+            if (null != mPipeline) {
+                mPipeline.stop();
+                mPipeline.close();
             }
 
-            @Override
-            public void onDeviceDetach(DeviceList deviceList) {
-                try {
-                    deviceList.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            // Release Device
+            if (mDevice != null) {
+                mDevice.close();
             }
-        });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        releaseSDK();
+        super.onStop();
+    }
+
+    @Override
+    protected DeviceChangedCallback getDeviceChangedCallback() {
+        return mDeviceChangedCallback;
     }
 
     private void showToast(String msg) {
@@ -144,6 +199,7 @@ public class ColorViewerActivity extends AppCompatActivity {
                 // Obtain the data set in blocking mode. If it cannot be obtained after waiting for 100ms, it will time out.
                 FrameSet frameSet = mPipeline.waitForFrameSet(100);
 
+                Log.d(TAG, "frameSet=" + frameSet);
                 if (null == frameSet) {
                     continue;
                 }
@@ -154,7 +210,9 @@ public class ColorViewerActivity extends AppCompatActivity {
                     buffer.clear();
                 }
 
+                Log.d(TAG, "frameSet=" + frameSet + ", colorFrame=" + colorFrame);
                 if (null != colorFrame) {
+                    Log.d(TAG, "color frame: " + colorFrame.getSystemTimeStamp());
                     // Initialize buffer
                     int dataSize = colorFrame.getDataSize();
                     if (null == buffer || buffer.capacity() != dataSize) {
@@ -174,48 +232,4 @@ public class ColorViewerActivity extends AppCompatActivity {
             }
         }
     };
-
-    private void printStreamProfile(VideoStreamProfile vsp) {
-        Log.i(TAG, "printStreamProfile: "
-                + vsp.getWidth() + "×" + vsp.getHeight()
-                + "@" + vsp.getFps() + "fps " + vsp.getFormat());
-    }
-
-    private VideoStreamProfile getVideoStreamProfile(StreamProfileList profileList,
-                                                     int width, int height, Format format, int fps) {
-        VideoStreamProfile vsp = null;
-        try {
-            vsp = profileList.getVideoStreamProfile(width, height, format, fps);
-        } catch (Exception e) {
-            Log.w(TAG, "getVideoStreamProfile: " + e.getMessage());
-        }
-        return vsp;
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        try {
-            // Stop getting Pipeline data
-            stop();
-
-            // Stop the Pipeline and release
-            if (null != mPipeline) {
-                mPipeline.stop();
-                mPipeline.close();
-            }
-
-            // Release Device
-            if (mDevice != null) {
-                mDevice.close();
-            }
-
-            // Release SDK Context
-            if (null != mOBContext) {
-                mOBContext.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

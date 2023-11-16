@@ -1,6 +1,7 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -11,18 +12,17 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.orbbec.obsensor.ColorFrame;
 import com.orbbec.obsensor.Config;
 import com.orbbec.obsensor.DepthFrame;
+import com.orbbec.obsensor.DepthWorkMode;
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceInfo;
 import com.orbbec.obsensor.DeviceList;
 import com.orbbec.obsensor.DeviceProperty;
-import com.orbbec.obsensor.Format;
 import com.orbbec.obsensor.FrameSet;
 import com.orbbec.obsensor.FrameType;
 import com.orbbec.obsensor.IRFrame;
@@ -32,10 +32,8 @@ import com.orbbec.obsensor.PermissionType;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.SensorType;
-import com.orbbec.obsensor.StreamProfileList;
 import com.orbbec.obsensor.StreamType;
 import com.orbbec.obsensor.VideoStreamProfile;
-import com.orbbec.obsensor.DepthWorkMode;
 import com.orbbec.orbbecsdkexamples.R;
 import com.orbbec.orbbecsdkexamples.view.OBGLView;
 
@@ -45,9 +43,9 @@ import java.util.List;
 
 /**
  * DepthWorkMode example
- * Support product: Gemini 2, Gemini 2 L, Astra 2
+ * Support product: Gemini 2, Gemini 2 L, Gemini 2 XL, Astra 2
  */
-public class DepthModeActivity extends AppCompatActivity {
+public class DepthModeActivity extends BaseActivity {
     private static final String TAG = DepthModeActivity.class.getSimpleName();
     private OBGLView mGlView;
     private Spinner mDepthModeSpinner;
@@ -55,7 +53,6 @@ public class DepthModeActivity extends AppCompatActivity {
     private Button mStartPlayBtn;
     private Button mStopPlayBtn;
 
-    private OBContext mOBContext;
     private Device   mDevice;
     private Object mDeviceLock = new Object();
     private List<DepthWorkMode> mDepthModeList = new ArrayList<DepthWorkMode>();
@@ -66,6 +63,47 @@ public class DepthModeActivity extends AppCompatActivity {
 
     private ArrayAdapter<String> mDepthModeAdapter = null;
     private ArrayAdapter<String> mSensorAdapter = null;
+
+    private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
+        @Override
+        public void onDeviceAttach(DeviceList deviceList) {
+            try {
+                // Create Device and initialize Pipeline through Device
+                Device device = deviceList.getDevice(0);
+                onDeviceConnected(device);
+            } catch (OBException e) {
+                e.printStackTrace();
+            } finally {
+                deviceList.close();
+            }
+        }
+
+        @Override
+        public void onDeviceDetach(DeviceList deviceList) {
+            try {
+                String curUid = "";
+                synchronized (mDeviceLock) {
+                    if (null != mDevice) {
+                        DeviceInfo deviceInfo = mDevice.getInfo();
+                        curUid = deviceInfo.getUid();
+                        deviceInfo.close();
+                    }
+                }
+
+                int count = deviceList.getDeviceCount();
+                for (int i = 0; i < count; i++) {
+                    String uid = deviceList.getUid(i);
+                    if (TextUtils.equals(curUid, uid)) {
+                        onDeviceDisconnected(mDevice);
+                    }
+                }
+            } catch (OBException e) {
+                e.printStackTrace();
+            } finally {
+                deviceList.close();
+            }
+        }
+    };
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -78,26 +116,34 @@ public class DepthModeActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        initSDK();
         refreshUIState();
-        initOBContext();
     }
 
     @Override
     protected void onStop() {
-        super.onStop();
         stopPlayThread();
         synchronized (mDeviceLock) {
             mCurDepthMode = null;
             mDepthModeList.clear();
             mSensorList.clear();
-            if (null != mDevice) {
-                mDevice.close();
-                mDevice = null;
+            try {
+                if (null != mDevice) {
+                    mDevice.close();
+                    mDevice = null;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
-        if (null != mOBContext) {
-            mOBContext.close();
-        }
+
+        releaseSDK();
+        super.onStop();
+    }
+
+    @Override
+    protected DeviceChangedCallback getDeviceChangedCallback() {
+        return mDeviceChangedCallback;
     }
 
     private void initView() {
@@ -283,50 +329,6 @@ public class DepthModeActivity extends AppCompatActivity {
         runOnUiThread(() -> Toast.makeText(this, msg, Toast.LENGTH_SHORT).show());
     }
 
-    private void initOBContext() {
-        // 1.Initialize the SDK Context and listen device changes
-        mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
-            @Override
-            public void onDeviceAttach(DeviceList deviceList) {
-                try {
-                    // 2.Create Device and initialize Pipeline through Device
-                    Device device = deviceList.getDevice(0);
-                    onDeviceConnected(device);
-                } catch (OBException e) {
-                    e.printStackTrace();
-                } finally {
-                    deviceList.close();
-                }
-            }
-
-            @Override
-            public void onDeviceDetach(DeviceList deviceList) {
-                try {
-                    String curSn = "";
-                    synchronized (mDeviceLock) {
-                        if (null != mDevice) {
-                            DeviceInfo deviceInfo = mDevice.getInfo();
-                            curSn = deviceInfo.getSerialNumber();
-                            deviceInfo.close();
-                        }
-                    }
-
-                    int count = deviceList.getDeviceCount();
-                    for (int i = 0; i < count; i++) {
-                        String sn = deviceList.getDeviceSerialNumber(i);
-                        if (null != sn && sn.length() > 0 && sn.equals(curSn)) {
-                            onDeviceDisconnected(mDevice);
-                        }
-                    }
-                } catch (OBException e) {
-                    e.printStackTrace();
-                } finally {
-                    deviceList.close();
-                }
-            }
-        });
-    }
-
     private void onDeviceConnected(Device device) {
         synchronized (mDeviceLock) {
             Device oldDevice = mDevice;
@@ -408,14 +410,8 @@ public class DepthModeActivity extends AppCompatActivity {
             try {
                 // Create Device and initialize Pipeline through Device
                 this.pipeline = new Pipeline(mDevice);
-                // Get a list of VideoStreamProfile supported by the Color sensor
-                StreamProfileList profileList = pipeline.getStreamProfileList(SensorType.COLOR);
                 // Get a list of target VideoStreamProfile
-                VideoStreamProfile profile = getVideoStreamProfile(profileList, 640, 0, Format.RGB888, 30);
-                if (null == profile) {
-                    profile = getVideoStreamProfile(profileList, 0, 0, Format.RGB888, 30);
-                }
-                profileList.close();
+                VideoStreamProfile profile = getStreamProfile(pipeline, SensorType.COLOR);
                 if (null == profile) {
                     Log.e(TAG, "ColorSensorThread not profile");
                     return;
@@ -519,14 +515,8 @@ public class DepthModeActivity extends AppCompatActivity {
             try {
                 // Build a pipeline through the device object
                 this.pipeline = new Pipeline(mDevice);
-                // Get a list of VideoStreamProfile supported by the Depth sensor.
-                StreamProfileList profileList = pipeline.getStreamProfileList(SensorType.DEPTH);
                 // Get a list of target VideoStreamProfile
-                VideoStreamProfile profile = getVideoStreamProfile(profileList, 640, 0, Format.UNKNOWN, 30);
-                if (null == profile) {
-                    profile = getVideoStreamProfile(profileList, 0, 0, Format.UNKNOWN, 30);
-                }
-                profileList.close();
+                VideoStreamProfile profile = getStreamProfile(pipeline, SensorType.DEPTH);
                 if (null == profile) {
                     Log.e(TAG, "DepthSensorThread not profile");
                     return;
@@ -639,14 +629,8 @@ public class DepthModeActivity extends AppCompatActivity {
             try {
                 // Build a pipeline through the device object
                 this.pipeline = new Pipeline(mDevice);
-                // Get a list of VideoStreamProfile supported by the current sensor type
-                StreamProfileList profileList = pipeline.getStreamProfileList(sensorType);
                 // Get a list of target VideoStreamProfile
-                VideoStreamProfile profile = getVideoStreamProfile(profileList, 640, 0, Format.UNKNOWN, 30);
-                if (null == profile) {
-                    profile = getVideoStreamProfile(profileList, 0, 0, Format.UNKNOWN, 30);
-                }
-                profileList.close();
+                VideoStreamProfile profile = getStreamProfile(pipeline, sensorType);
                 if (null == profile) {
                     Log.e(TAG, "IRSensorThread not profile");
                     return;
@@ -732,16 +716,4 @@ public class DepthModeActivity extends AppCompatActivity {
             }
         }
     };
-
-    private VideoStreamProfile getVideoStreamProfile(StreamProfileList profileList,
-                                                     int width, int height, Format format, int fps) {
-        VideoStreamProfile vsp = null;
-        try {
-            vsp = profileList.getVideoStreamProfile(width, height, format, fps);
-        } catch (Exception e) {
-            Log.w(TAG, "getVideoStreamProfile: " + e.getMessage() + ", width: " + width
-                    + ", height: " + height + ", format: " + format + ", fps: " + fps);
-        }
-        return vsp;
-    }
 }

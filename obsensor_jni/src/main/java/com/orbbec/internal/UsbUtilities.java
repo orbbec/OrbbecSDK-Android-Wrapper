@@ -3,6 +3,7 @@ package com.orbbec.internal;
 import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -69,7 +70,14 @@ public class UsbUtilities {
                 usbDevice.getDeviceId(),
                 usbDevice.getVendorId(),
                 usbDevice.getProductId(),
-                String.valueOf(usbDevice.getSerialNumber()),
+                safeGetSerialNumber(usbDevice),
                 String.valueOf(isOrbbecDevice(usbDevice)));
+    }
+
+    public static String safeGetSerialNumber(UsbDevice usbDevice) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return "";
+        }
+        return usbDevice.getSerialNumber();
     }
 }

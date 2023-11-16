@@ -5,10 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center"
-    android:orientation="vertical"
     tools:context=".activity.SyncAlignViewerActivity">
 
-    <LinearLayout
+    <FrameLayout
         android:id="@+id/ll_color_view"
         android:layout_width="640px"
         android:layout_height="480px"
@@ -17,15 +16,38 @@
         android:layout_marginTop="5dp"
         android:layout_marginEnd="5dp"
         android:layout_marginBottom="5dp"
-        android:background="@android:color/black"
-        android:gravity="center"
-        android:orientation="vertical">
-
+        android:background="@android:color/black">
         <com.orbbec.orbbecsdkexamples.view.OBGLView
             android:id="@+id/colorview_id"
-            android:layout_width="0dp"
-            android:layout_height="0dp" />
-    </LinearLayout>
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#45010101"
+            android:paddingLeft="10dip"
+            android:paddingTop="8dip"
+            android:paddingRight="10dip"
+            android:paddingBottom="8dip"
+            android:orientation="vertical"
+            android:layout_gravity="left|top">
+            <TextView
+                android:id="@+id/tv_color_profile_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16px"
+                android:textColor="@android:color/white" />
+
+            <TextView
+                android:id="@+id/tv_depth_profile_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16px"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+    </FrameLayout>
 
     <SeekBar
         android:id="@+id/sb_transparency"

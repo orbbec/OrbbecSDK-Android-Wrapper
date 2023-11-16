@@ -1,8 +1,7 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -16,18 +15,12 @@ import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceInfo;
 import com.orbbec.obsensor.DeviceList;
-import com.orbbec.obsensor.DeviceProperty;
-import com.orbbec.obsensor.Format;
 import com.orbbec.obsensor.FrameSet;
 import com.orbbec.obsensor.MediaState;
 import com.orbbec.obsensor.MediaStateCallback;
-import com.orbbec.obsensor.OBContext;
-import com.orbbec.obsensor.PermissionType;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Playback;
 import com.orbbec.obsensor.SensorType;
-import com.orbbec.obsensor.StreamProfile;
-import com.orbbec.obsensor.StreamProfileList;
 import com.orbbec.obsensor.StreamType;
 import com.orbbec.obsensor.VideoStreamProfile;
 import com.orbbec.orbbecsdkexamples.R;
@@ -40,10 +33,8 @@ import java.io.File;
 /**
  * Record and Playback example
  */
-public class RecordPlaybackActivity extends AppCompatActivity implements View.OnClickListener {
+public class RecordPlaybackActivity extends BaseActivity implements View.OnClickListener {
     private static final String TAG = "RecordPlaybackActivity";
-
-    private static final String BAG_FILE_PATH = "/sdcard/Orbbec/recorder.bag";
 
     private LinearLayout mRecordCtlPanelLL;
     private LinearLayout mPlaybackCtlPanelLL;
@@ -59,7 +50,6 @@ public class RecordPlaybackActivity extends AppCompatActivity implements View.On
     private Playback mPlayback;
     private Config mConfig;
     private Device mDevice;
-    private OBContext mOBContext;
     private Thread mStreamThread;
     private Thread mPlaybackThread;
     private volatile boolean mIsStreamRunning;
@@ -68,6 +58,85 @@ public class RecordPlaybackActivity extends AppCompatActivity implements View.On
     private volatile boolean mIsRecording;
 
     private final Object mSync = new Object();
+
+    private String mRecordFilePath;
+
+    private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
+        @Override
+        public void onDeviceAttach(DeviceList deviceList) {
+            try {
+                if (null == mPipeline) {
+                    // 2.Create Device and initialize Pipeline through Device
+                    mDevice = deviceList.getDevice(0);
+
+                    if (null == mDevice.getSensor(SensorType.DEPTH)) {
+                        showToast(getString(R.string.device_not_support_depth));
+                        return;
+                    }
+
+                    mPipeline = new Pipeline(mDevice);
+
+                    // 3.Update device information view
+                    updateDeviceInfoView(false);
+
+                    // 4.Create Pipeline configuration
+                    mConfig = new Config();
+
+                    // 5.Get the depth flow configuration and configure it to Config
+                    VideoStreamProfile streamProfile = getStreamProfile(mPipeline, SensorType.DEPTH);
+                    // 6.Enable deep sensor configuration
+                    if (null != streamProfile) {
+                        printStreamProfile(streamProfile.as(StreamType.VIDEO));
+                        mConfig.enableStream(streamProfile);
+                        streamProfile.close();
+                    } else {
+                        mDevice.close();
+                        mDevice = null;
+                        mPipeline.close();
+                        mPipeline = null;
+                        mConfig.close();
+                        mConfig = null;
+                        Log.w(TAG, "onDeviceAttach: No target stream profile!");
+                        showToast(getString(R.string.init_stream_profile_failed));
+                        return;
+                    }
+
+                    // 7.Start pipeline
+                    mPipeline.start(mConfig);
+
+                    // 8.Create a thread to obtain Pipeline data
+                    start();
+
+                    runOnUiThread(() -> {
+                        mStartRecordBtn.setEnabled(true);
+                    });
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                // 9.Release DeviceList
+                deviceList.close();
+            }
+        }
+
+        @Override
+        public void onDeviceDetach(DeviceList deviceList) {
+            try {
+                release();
+
+                runOnUiThread(() -> {
+                    mStartRecordBtn.setEnabled(false);
+                    mStopRecordBtn.setEnabled(false);
+                    mStartPlaybackBtn.setEnabled(isPlayFileValid());
+                    mStopPlaybackBtn.setEnabled(false);
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                deviceList.close();
+            }
+        }
+    };
 
     // Playback status callback
     private MediaStateCallback mMediaStateCallback = new MediaStateCallback() {
@@ -85,7 +154,7 @@ public class RecordPlaybackActivity extends AppCompatActivity implements View.On
         setTitle("RecordPlayback");
         setContentView(R.layout.activity_record_playback);
         initViews();
-        initSdk();
+        initRecorderFilePath();
     }
 
     private void initViews() {
@@ -110,88 +179,41 @@ public class RecordPlaybackActivity extends AppCompatActivity implements View.On
         mStopPlaybackBtn.setEnabled(false);
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        initSDK();
+    }
+
+    @Override
+    protected void onStop() {
+        release();
+        releaseSDK();
+        super.onStop();
+    }
+
+    @Override
+    protected DeviceChangedCallback getDeviceChangedCallback() {
+        return mDeviceChangedCallback;
+    }
+
     private void showToast(String msg) {
         runOnUiThread(() -> Toast.makeText(RecordPlaybackActivity.this, msg, Toast.LENGTH_SHORT).show());
     }
 
-    private void initSdk() {
-        // 1.Initialize the SDK Context and listen device changes
-        mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
-            @Override
-            public void onDeviceAttach(DeviceList deviceList) {
-                try {
-                    if (null == mPipeline) {
-                        // 2.Create Device and initialize Pipeline through Device
-                        mDevice = deviceList.getDevice(0);
+    private void initRecorderFilePath() {
+        String rootSaveDir = FileUtils.getExternalSaveDir();
+        if (TextUtils.isEmpty(rootSaveDir)) {
+            return;
+        }
 
-                        if (null == mDevice.getSensor(SensorType.DEPTH)) {
-                            showToast(getString(R.string.device_not_support_depth));
-                            return;
-                        }
-
-                        mPipeline = new Pipeline(mDevice);
-
-                        // 3.Update device information view
-                        updateDeviceInfoView(false);
-
-                        // 4.Create Pipeline configuration
-                        mConfig = new Config();
-
-                        // 5.Get the depth flow configuration and configure it to Config
-                        StreamProfileList depthProfileList = mPipeline.getStreamProfileList(SensorType.DEPTH);
-                        StreamProfile streamProfile = getVideoStreamProfile(depthProfileList, 640, 0, Format.UNKNOWN, 30);
-                        if (null == streamProfile) {
-                            streamProfile = getVideoStreamProfile(depthProfileList, 0, 0, Format.UNKNOWN, 30);
-                        }
-                        if (null != depthProfileList) {
-                            depthProfileList.close();
-                        }
-
-                        // 6.Enable deep sensor configuration
-                        if (null != streamProfile) {
-                            printStreamProfile(streamProfile.as(StreamType.VIDEO));
-                            mConfig.enableStream(streamProfile);
-                            streamProfile.close();
-                        } else {
-                            Log.w(TAG, "onDeviceAttach: No target stream profile!");
-                        }
-
-                        // 7.Start pipeline
-                        mPipeline.start(mConfig);
-
-                        // 8.Create a thread to obtain Pipeline data
-                        start();
-
-                        runOnUiThread(() -> {
-                            mStartRecordBtn.setEnabled(true);
-                        });
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    // 9.Release DeviceList
-                    deviceList.close();
-                }
-            }
-
-            @Override
-            public void onDeviceDetach(DeviceList deviceList) {
-                try {
-                    release();
-
-                    runOnUiThread(() -> {
-                        mStartRecordBtn.setEnabled(false);
-                        mStopRecordBtn.setEnabled(false);
-                        mStartPlaybackBtn.setEnabled(isPlayFileValid());
-                        mStopPlaybackBtn.setEnabled(false);
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    deviceList.close();
-                }
-            }
-        });
+        File file = new File(rootSaveDir + File.separator + "record");
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        if (file.exists()) {
+            mRecordFilePath = file.getAbsolutePath() + "/Recorder.bag";
+        }
     }
 
     private void updateDeviceInfoView(boolean isPlayback) {
@@ -256,7 +278,7 @@ public class RecordPlaybackActivity extends AppCompatActivity implements View.On
      */
     private void startPlayback() {
         try {
-            if (!FileUtils.isFileExists(BAG_FILE_PATH)) {
+            if (!FileUtils.isFileExists(mRecordFilePath)) {
                 Toast.makeText(RecordPlaybackActivity.this, "File not found!", Toast.LENGTH_LONG).show();
                 return;
             }
@@ -274,7 +296,8 @@ public class RecordPlaybackActivity extends AppCompatActivity implements View.On
                     mPlaybackPipe.close();
                     mPlaybackPipe = null;
                 }
-                mPlaybackPipe = new Pipeline(BAG_FILE_PATH);
+                // Create Playback Pipeline
+                mPlaybackPipe = new Pipeline(mRecordFilePath);
 
                 // Get the Playback from Pipeline
                 mPlayback = mPlaybackPipe.getPlayback();
@@ -300,23 +323,6 @@ public class RecordPlaybackActivity extends AppCompatActivity implements View.On
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void printStreamProfile(VideoStreamProfile vsp) {
-        Log.i(TAG, "printStreamProfile: "
-                + vsp.getWidth() + "×" + vsp.getHeight()
-                + "@" + vsp.getFps() + "fps " + vsp.getFormat());
-    }
-
-    private VideoStreamProfile getVideoStreamProfile(StreamProfileList profileList,
-                                                     int width, int height, Format format, int fps) {
-        VideoStreamProfile vsp = null;
-        try {
-            vsp = profileList.getVideoStreamProfile(width, height, format, fps);
-        } catch (Exception e) {
-            Log.w(TAG, "getVideoStreamProfile: " + e.getMessage());
-        }
-        return vsp;
     }
 
     /**
@@ -363,7 +369,7 @@ public class RecordPlaybackActivity extends AppCompatActivity implements View.On
             if (!mIsRecording) {
                 if (null != mPipeline) {
                     // Start recording
-                    mPipeline.startRecord(BAG_FILE_PATH);
+                    mPipeline.startRecord(mRecordFilePath);
                     mIsRecording = true;
 
                     mStartRecordBtn.setEnabled(false);
@@ -541,23 +547,11 @@ public class RecordPlaybackActivity extends AppCompatActivity implements View.On
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        try {
-            release();
-
-            // Release SDK Context
-            if (null != mOBContext) {
-                mOBContext.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private boolean isPlayFileValid() {
-        File file = new File(BAG_FILE_PATH);
+        if (TextUtils.isEmpty(mRecordFilePath)) {
+            return false;
+        }
+        File file = new File(mRecordFilePath);
         return file.exists() && file.isFile() && file.canRead() && file.length() > 0;
     }
 }

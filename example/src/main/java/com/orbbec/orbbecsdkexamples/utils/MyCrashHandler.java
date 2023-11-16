@@ -38,7 +38,7 @@ public class MyCrashHandler implements Thread.UncaughtExceptionHandler{
         // Determine whether the sd card can be used normally
         if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             // Log file storage location
-            String path = Environment.getExternalStorageDirectory().getPath() + "/OrbbecSample/crash/";
+            String path = FileUtils.getExternalSaveDir() + "/crash/";
             File file = new File(path);
             // Create folder
             Log.d("TAG", "file.exists() :" + file.exists());

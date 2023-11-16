@@ -1,14 +1,15 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.orbbec.obsensor.AccelFrame;
 import com.orbbec.obsensor.AccelStreamProfile;
@@ -30,12 +31,10 @@ import com.orbbec.orbbecsdkexamples.R;
 /**
  * Imu Viewer
  */
-public class ImuActivity extends AppCompatActivity {
+public class ImuActivity extends BaseActivity {
     private static final String TAG = "ImuActivity";
 
     private int MSG_UPDATE_IMU_INFO = 1;
-
-    private OBContext mOBContext;
 
     private Device mDevice;
     private Sensor mSensorAccel;
@@ -76,6 +75,67 @@ public class ImuActivity extends AppCompatActivity {
         }
     };
 
+    private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
+        @Override
+        public void onDeviceAttach(DeviceList deviceList) {
+            try {
+                if (deviceList == null || deviceList.getDeviceCount() == 0) {
+                    showToast(getString(R.string.please_access_device));
+                } else {
+                    // 2.Create Device
+                    mDevice = deviceList.getDevice(0);
+
+                    // 3.Get Acceleration Sensor through Device
+                    mSensorAccel = mDevice.getSensor(SensorType.ACCEL);
+
+                    // 4.Get Gyroscope Sensor through Device
+                    mSensorGyro = mDevice.getSensor(SensorType.GYRO);
+
+                    if (mSensorAccel == null || mSensorGyro == null) {
+                        showToast(getString(R.string.device_not_support_imu));
+                        return;
+                    }
+
+                    if (mSensorAccel != null && mSensorGyro != null) {
+                        // 5.Get accelerometer StreamProfile List
+                        StreamProfileList accelProfileList = mSensorAccel.getStreamProfileList();
+                        if (null != accelProfileList) {
+                            mAccelStreamProfile = accelProfileList.getStreamProfile(0).as(StreamType.ACCEL);
+                            accelProfileList.close();
+                        }
+
+                        // 6.Get gyroscope StreamProfile List
+                        StreamProfileList gyroProfileList = mSensorGyro.getStreamProfileList();
+                        if (null != gyroProfileList) {
+                            mGyroStreamProfile = gyroProfileList.getStreamProfile(0).as(StreamType.GYRO);
+                            gyroProfileList.close();
+                        }
+
+                        // 7. start IMU
+                        if (mIsActivityStarted) {
+                            startIMU();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                // 8.Release DeviceList
+                deviceList.close();
+            }
+        }
+
+        @Override
+        public void onDeviceDetach(DeviceList deviceList) {
+            try {
+                showToast(getString(R.string.please_access_device));
+                deviceList.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,67 +149,60 @@ public class ImuActivity extends AppCompatActivity {
         super.onStart();
         mIsActivityStarted = true;
         mHandler.sendEmptyMessage(MSG_UPDATE_IMU_INFO);
-        // 1.Initialize the SDK Context and listen device changes
-        mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
-            @Override
-            public void onDeviceAttach(DeviceList deviceList) {
-                try {
-                    if (deviceList == null || deviceList.getDeviceCount() == 0) {
-                        showToast(getString(R.string.please_access_device));
-                    } else {
-                        // 2.Create Device
-                        mDevice = deviceList.getDevice(0);
+        initSDK();
+    }
 
-                        // 3.Get Acceleration Sensor through Device
-                        mSensorAccel = mDevice.getSensor(SensorType.ACCEL);
 
-                        // 4.Get Gyroscope Sensor through Device
-                        mSensorGyro = mDevice.getSensor(SensorType.GYRO);
+    @Override
+    protected void onStop() {
+        mIsActivityStarted = false;
+        mHandler.removeMessages(MSG_UPDATE_IMU_INFO);
+        try {
+            stopIMU();
 
-                        if (mSensorAccel == null || mSensorGyro == null) {
-                            showToast(getString(R.string.device_not_support_imu));
-                            return;
-                        }
-
-                        if (mSensorAccel != null && mSensorGyro != null) {
-                            // 5.Get accelerometer StreamProfile List
-                            StreamProfileList accelProfileList = mSensorAccel.getStreamProfileList();
-                            if (null != accelProfileList) {
-                                mAccelStreamProfile = accelProfileList.getStreamProfile(0).as(StreamType.ACCEL);
-                                accelProfileList.close();
-                            }
-
-                            // 6.Get gyroscope StreamProfile List
-                            StreamProfileList gyroProfileList = mSensorGyro.getStreamProfileList();
-                            if (null != gyroProfileList) {
-                                mGyroStreamProfile = gyroProfileList.getStreamProfile(0).as(StreamType.GYRO);
-                                gyroProfileList.close();
-                            }
-
-                            // 7. start IMU
-                            if (mIsActivityStarted) {
-                                startIMU();
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    // 8.Release DeviceList
-                    deviceList.close();
+            // Release Frame
+            synchronized (mAccelLock) {
+                if (null != mAccelFrame) {
+                    mAccelFrame.close();
+                    mAccelFrame = null;
                 }
             }
 
-            @Override
-            public void onDeviceDetach(DeviceList deviceList) {
-                try {
-                    showToast(getString(R.string.please_access_device));
-                    deviceList.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
+            // Release Frame
+            synchronized (mGyroLock) {
+                if (null != mGyroFrame) {
+                    mGyroFrame.close();
+                    mGyroFrame = null;
                 }
             }
-        });
+
+            // Release accelerometer StreamProfile
+            if (null != mAccelStreamProfile) {
+                mAccelStreamProfile.close();
+                mAccelStreamProfile = null;
+            }
+
+            // Release gyroscope StreamProfile
+            if (null != mGyroStreamProfile) {
+                mGyroStreamProfile.close();
+                mGyroStreamProfile = null;
+            }
+
+            // Release Device
+            if (null != mDevice) {
+                mDevice.close();
+                mDevice = null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        releaseSDK();
+        super.onStop();
+    }
+
+    @Override
+    protected DeviceChangedCallback getDeviceChangedCallback() {
+        return mDeviceChangedCallback;
     }
 
     private void startAccelStream() {
@@ -282,57 +335,5 @@ public class ImuActivity extends AppCompatActivity {
         mGyroXView = findViewById(R.id.view_gyro_x);
         mGyroYView = findViewById(R.id.view_gyro_y);
         mGyroZView = findViewById(R.id.view_gyro_z);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        mIsActivityStarted = false;
-        mHandler.removeMessages(MSG_UPDATE_IMU_INFO);
-        try {
-            stopIMU();
-
-            // Release Frame
-            synchronized (mAccelLock) {
-                if (null != mAccelFrame) {
-                    mAccelFrame.close();
-                    mAccelFrame = null;
-                }
-            }
-
-            // Release Frame
-            synchronized (mGyroLock) {
-                if (null != mGyroFrame) {
-                    mGyroFrame.close();
-                    mGyroFrame = null;
-                }
-            }
-
-            // Release accelerometer StreamProfile
-            if (null != mAccelStreamProfile) {
-                mAccelStreamProfile.close();
-                mAccelStreamProfile = null;
-            }
-
-            // Release gyroscope StreamProfile
-            if (null != mGyroStreamProfile) {
-                mGyroStreamProfile.close();
-                mGyroStreamProfile = null;
-            }
-
-            // Release Device
-            if (null != mDevice) {
-                mDevice.close();
-                mDevice = null;
-            }
-
-            // Release SDK Context
-            if (null != mOBContext) {
-                mOBContext.close();
-                mOBContext = null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }

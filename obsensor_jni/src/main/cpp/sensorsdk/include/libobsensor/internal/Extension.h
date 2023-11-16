@@ -1,10 +1,16 @@
-#pragma once
+﻿#pragma once
 
 #include "libobsensor/h/ObTypes.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @brief Check network device enumeration enable state
+ * @return true: enable, false: disable
+ */
+bool ob_context_is_net_device_enumeration_enable(ob_context *context, ob_error **error);
 
 /**
  * @brief set logger to rotating file
@@ -30,6 +36,35 @@ void ob_set_logger_to_rotating_file(ob_log_severity severity, const char *direct
  * @param[out] error Log error messages
  */
 void ob_device_reboot_delay_mode(ob_device *device, uint32_t delay_ms, ob_error **error);
+
+/**
+ * @brief Sending packets
+ * @param[in] device Device Object
+ * @param[in] pBuffer The data buffer to be sent
+ * @param[in] nSize The size of the data buffer to be sent
+ * @param[out] error Log error messages
+ * @return Sending status
+ */
+ob_hp_status_code ob_device_send_data(ob_device *device, uint8_t *pBuffer, uint32_t nSize, ob_error **error);
+
+/**
+ * @brief Receiving packets
+ * @param[in] device Device Object
+ * @param[in] pBuffer The data buffer to be received
+ * @param[in] nReceived The size of the data buffer to be received
+ * @param[out] error Log error messages
+ * @return Receiving status
+ */
+ob_hp_status_code ob_device_recv_data(ob_device *device, uint8_t *pBuffer, uint32_t *nReceived, ob_error **error);
+
+/**
+ * @brief Get Imu data.
+ *
+ * @param[in] device Device object
+ * @param[in] cb data callback
+ * @param[out] error Log error messages
+ */
+void ob_device_get_imu_data_ext(ob_device *device, ob_get_imu_data_callback cb, ob_error **error);
 
 #ifdef __cplusplus
 }

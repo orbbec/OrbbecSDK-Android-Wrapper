@@ -123,6 +123,65 @@ public class DeviceList extends LobClass {
     }
 
     /**
+     * \if English
+     * @brief Get device connection type
+     *
+     * @param index device index
+     * @return const char* returns connection type，currently supports："USB", "USB1.0", "USB1.1", "USB2.0", "USB2.1", "USB3.0", "USB3.1", "USB3.2", "Ethernet"
+     * \else
+     * @brief 获取设备连接类型
+     *
+     * @param index 设备索引
+     * @return const char* 返回连接类型，当前支持的类型有："USB", "USB1.0", "USB1.1", "USB2.0", "USB2.1", "USB3.0", "USB3.1", "USB3.2", "Ethernet"
+     * \endif
+     */
+    public String getConnectionType(int index) {
+        throwInitializeException();
+        return nGetConnectionType(mHandle, index);
+    }
+
+    /**
+     * \if English
+     * @brief get the ip address of the device at the specified index
+     *
+     * @attention Only valid for network devices, otherwise it will return "0.0.0.0".
+     *
+     * @param index the index of the device
+     * @return the ip address of the device
+     * \else
+     * @brief 获取指定索引处设备的 IP 地址
+     *
+     * @attention 仅适用于网络设备，否则将返回 "0.0.0.0"
+     *
+     * @param index 设备索引
+     * @return 设备的 IP 地址，例如：“192.168.1.10”
+     * \endif
+     */
+    public String getIpAddress(int index) {
+        throwInitializeException();
+        return nGetIpAddress(mHandle, index);
+    }
+
+    /**
+     * \if English
+     * @brief Get the device extension information.
+     *
+     * @param[in] info Device Information
+     * @param[in] index Device index
+     * @param[out] error Log error messages
+     * @return const char* The device extension information
+     * \else
+     * @brief 获取SDK支持的设备的拓展信息
+     * @param index 设备索引
+     * @return 设备扩展信息
+     * \endif
+     */
+    public String getExtensionInfo(int index) {
+        throwInitializeException();
+        return nGetExtensionInfo(mHandle, index);
+    }
+
+    /**
 	 * \if English
 	 * Get the device object according to the specified index in the device list
      *
@@ -215,6 +274,12 @@ public class DeviceList extends LobClass {
     private static native String nGetUid(long handle, int index);
 
     private static native String nGetDeviceSerialNumber(long handle, int index);
+
+    private static native String nGetConnectionType(long handle, int index);
+
+    private static native String nGetIpAddress(long handle, int index);
+
+    private static native String nGetExtensionInfo(long handle, int index);
 
     private static native long nGetDevice(long handle, int index);
 

@@ -1,6 +1,7 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.ListView;
 
@@ -21,13 +22,65 @@ import java.util.List;
 /**
  * Multi-Device
  */
-public class MultiDeviceActivity extends AppCompatActivity {
+public class MultiDeviceActivity extends BaseActivity {
     private static final String TAG = "MultiDeviceCopyActivity";
-    private OBContext mOBContext;
 
     private ListView mListView;
     private DeviceControllerAdapter mDeviceControllerAdapter;
     private List<DeviceBean> mDeviceBeanList = new ArrayList<>();
+
+    private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
+        @Override
+        public void onDeviceAttach(DeviceList deviceList) {
+            try {
+                int count = deviceList.getDeviceCount();
+                for (int i = 0; i < count; i++) {
+                    // Create Device from deviceList with index
+                    Device device = deviceList.getDevice(i);
+                    // Get device information
+                    DeviceInfo devInfo = device.getInfo();
+                    // Get device name
+                    String name = devInfo.getName();
+                    // Get device uid
+                    String uid = devInfo.getUid();
+                    // Get device connection type
+                    String connectionType = devInfo.getConnectionType();
+                    // Release DeviceInfo resources
+                    devInfo.close();
+                    runOnUiThread(() -> {
+                        mDeviceControllerAdapter.addItem(new DeviceBean(name, uid, connectionType, device));
+                    });
+
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                // Release DeviceList resources
+                deviceList.close();
+            }
+        }
+
+        @Override
+        public void onDeviceDetach(DeviceList deviceList) {
+            try {
+                for (DeviceBean deviceBean : mDeviceBeanList) {
+                    // Determine disconnection devices by uid
+                    if (deviceBean.getDeviceUid().equals(deviceList.getUid(0))) {
+                        // Release disconnection equipment resources
+                        deviceBean.getDevice().close();
+                        runOnUiThread(() -> {
+                            mDeviceControllerAdapter.deleteItem(deviceBean);
+                        });
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "onDeviceDetach: " + e.getMessage());
+            } finally {
+                // Release DeviceList resources
+                deviceList.close();
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,65 +93,16 @@ public class MultiDeviceActivity extends AppCompatActivity {
         mDeviceControllerAdapter = new DeviceControllerAdapter(mDeviceBeanList, this);
 
         mListView.setAdapter(mDeviceControllerAdapter);
-
-        // Initialize the SDK Context and listen device changes
-        mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
-            @Override
-            public void onDeviceAttach(DeviceList deviceList) {
-                try {
-                    int count = deviceList.getDeviceCount();
-                    for (int i = 0; i < count; i++) {
-                        // Create Device from deviceList with index
-                        Device device = deviceList.getDevice(i);
-                        // Get device information
-                        DeviceInfo devInfo = device.getInfo();
-                        // Get device name
-                        String name = devInfo.getName();
-                        // Get device uid
-                        String uid = devInfo.getUid();
-                        // Get device connection type
-                        String connectionType = devInfo.getConnectionType();
-                        // Release DeviceInfo resources
-                        devInfo.close();
-                        runOnUiThread(() -> {
-                            mDeviceControllerAdapter.addItem(new DeviceBean(name, uid, connectionType, device));
-                        });
-
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    // Release DeviceList resources
-                    deviceList.close();
-                }
-            }
-
-            @Override
-            public void onDeviceDetach(DeviceList deviceList) {
-                try {
-                    for (DeviceBean deviceBean : mDeviceBeanList) {
-                        // Determine disconnection devices by uid
-                        if (deviceBean.getDeviceUid().equals(deviceList.getUid(0))) {
-                            // Release disconnection equipment resources
-                            deviceBean.getDevice().close();
-                            runOnUiThread(() -> {
-                                mDeviceControllerAdapter.deleteItem(deviceBean);
-                            });
-                        }
-                    }
-                } catch (Exception e) {
-                    Log.w(TAG, "onDeviceDetach: " + e.getMessage());
-                } finally {
-                    // Release DeviceList resources
-                    deviceList.close();
-                }
-            }
-        });
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    protected void onStart() {
+        super.onStart();
+        initSDK();
+    }
+
+    @Override
+    protected void onStop() {
         try {
             // Release resources
             for (DeviceBean deviceBean : mDeviceBeanList) {
@@ -110,13 +114,15 @@ public class MultiDeviceActivity extends AppCompatActivity {
                 }
             }
             mDeviceBeanList.clear();
-
-            // Release SDK Context
-            if (null != mOBContext) {
-                mOBContext.close();
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        releaseSDK();
+        super.onStop();
+    }
+
+    @Override
+    protected DeviceChangedCallback getDeviceChangedCallback() {
+        return mDeviceChangedCallback;
     }
 }

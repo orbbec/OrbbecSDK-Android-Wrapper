@@ -412,43 +412,78 @@ public class OBContext extends LobClass {
 
     /**
 	 * \if English
-	 * Start the multi-device synchronization function to synchronize the clock of the created device (the device needs to support this function)
+     * Activates device clock synchronization to synchronize the clock of the host and all created devices (if supported).
      *
-     * @param repeatInterval Timing synchronization time interval (unit ms; if repeatInterval=0, it means that it is only synchronized once, and no longer executed regularly)
-	 * \else
-     * 启动多设备同步功能，同步已创建设备的时钟(需要使用的设备支持该功能)
+     * @param repeatIntervalMs The interval for auto-repeated synchronization, in milliseconds. If the value is 0, synchronization is performed only once.
+     * \else
+     * 使能设备时钟同步以同步主机和所有已创建设备的时钟（如果支持）。
      *
-     * @param repeatInterval 定时同步时间间隔（单位ms；如果repeatInterval=0，表示只同步一次，不再定时执行）
-	 * \endif
+     * @param repeatIntervalMs 自动重复同步的时间间隔，以毫秒为单位。如果值为0，则仅执行一次同步。
+     * \endif
      */
-    public void enableMultiDeviceSync(long repeatInterval) {
+    public void enableDeviceClockSync(long repeatIntervalMs) {
         throwInitializeException();
-        nEnableMultiDeviceSync(mHandle, repeatInterval);
+        nEnableDeviceClockSync(mHandle, repeatIntervalMs);
     }
 
-//    /**
-//     * \if English
-//     * @brief Create a network device object
-//     *
-//     * @param address  ip address
-//     * @param port port
-//     * @return Target network device object
-//     * \else
-//     * @brief 创建网络设备对象
-//     *
-//     * @param address  ip 地址
-//     * @param port 端口号
-//     * @return 返回创建好的设备对象
-//     * \endif
-//     */
-//    public Device createNetDevice(String address, int port) {
-//        throwInitializeException();
-//        long devHandle = nCreateNetDevice(mHandle, address, port);
-//        if (0 != devHandle) {
-//            return new Device(devHandle);
-//        }
-//        return null;
-//    }
+    /**
+     * \if English
+     * @brief enable or disable net device enumeration.
+     * @brief after enable, the net device will be discovered automatically and can be retrieved by @ref queryDeviceList. The default state can be set in the
+     * configuration file.
+     *
+     * @attention Net device enumeration by gvcp protocol, if the device is not in the same subnet as the host, it will be discovered but cannot be connected.
+     *
+     * @param enable true to enable, false to disable
+     * \else
+     * @brief 使能或禁用网络设备枚举。
+     * @brief 使能后，网络设备会自动被发现，并且可以通过@ref queryDeviceList获取。默认状态可以在配置文件中设置。
+     *
+     * @attention 网络设备枚举通过gvcp协议，如果设备和主机不在同一个子网，会被发现但是无法连接。
+     *
+     * @param enable true 使能，false 禁用
+     * \endif
+     */
+    public void enableNetDeviceEnumeration(boolean enable) {
+        throwInitializeException();
+        nEnableNetDeviceEnumeration(mHandle, enable);
+    }
+
+    /**
+     * \if English
+     * Network device enumeration is enable
+     * \else
+     * 网络设备枚举是否启用
+     * \endif
+     */
+    public boolean isNetDeviceEnumerationEnable() {
+        throwInitializeException();
+        return nIsNetDeviceEnumerationEnable(mHandle);
+    }
+
+    /**
+     * \if English
+     * @brief Create a network device object
+     *
+     * @param address  ip address
+     * @param port port
+     * @return Target network device object
+     * \else
+     * @brief 创建网络设备对象
+     *
+     * @param address  ip 地址
+     * @param port 端口号
+     * @return 返回创建好的设备对象
+     * \endif
+     */
+    public Device createNetDevice(String address, int port) {
+        throwInitializeException();
+        long devHandle = nCreateNetDevice(mHandle, address, port);
+        if (0 != devHandle) {
+            return new Device(devHandle);
+        }
+        return null;
+    }
 
     /**
 	 * \if English
@@ -501,7 +536,11 @@ public class OBContext extends LobClass {
 
     private static native void nSetDeviceChangedCallback(long handle, DeviceChangedCallbackImpl callback);
 
-    private static native void nEnableMultiDeviceSync(long handle, long repeatInterval);
+    private static native void nEnableDeviceClockSync(long handle, long repeatInterval);
 
     private static native long nCreateNetDevice(long handle, String address, int port);
+
+    private static native void nEnableNetDeviceEnumeration(long handle, boolean enable);
+
+    private static native boolean nIsNetDeviceEnumerationEnable(long handle);
 }

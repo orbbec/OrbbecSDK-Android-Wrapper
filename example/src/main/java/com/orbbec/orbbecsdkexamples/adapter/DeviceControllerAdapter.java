@@ -17,6 +17,7 @@ import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.Format;
 import com.orbbec.obsensor.FrameType;
 import com.orbbec.obsensor.IRFrame;
+import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.SensorType;
 import com.orbbec.obsensor.StreamProfile;
@@ -27,6 +28,9 @@ import com.orbbec.orbbecsdkexamples.R;
 import com.orbbec.orbbecsdkexamples.bean.DeviceBean;
 import com.orbbec.orbbecsdkexamples.view.OBGLView;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -123,9 +127,16 @@ public class DeviceControllerAdapter extends BaseAdapter {
         // Get device connection type
         String connectionType = deviceBean.getDeviceConnectionType();
         viewHolder.deviceNameTv.setText(devName + "#" + uid + " " + connectionType);
-        Sensor depthSensor = device.getSensor(SensorType.DEPTH);
-        Sensor colorSensor = device.getSensor(SensorType.COLOR);
-        Sensor irSensor = device.getSensor(SensorType.IR);
+        final Sensor depthSensor = device.getSensor(SensorType.DEPTH);
+        final Sensor colorSensor = device.getSensor(SensorType.COLOR);
+        final Sensor irSensor;
+        if (null != device.getSensor(SensorType.IR)) {
+            viewHolder.irCtlBtn.setText("IR");
+            irSensor = device.getSensor(SensorType.IR);
+        } else {
+            viewHolder.irCtlBtn.setText("IR_LEFT");
+            irSensor = device.getSensor(SensorType.IR_LEFT);
+        }
 
         viewHolder.depthCtlLayout.setVisibility(null != depthSensor ? View.VISIBLE : View.INVISIBLE);
         viewHolder.colorCtlLayout.setVisibility(null != colorSensor ? View.VISIBLE : View.INVISIBLE);
@@ -210,15 +221,96 @@ public class DeviceControllerAdapter extends BaseAdapter {
                 + "@" + vsp.getFps() + "fps " + vsp.getFormat());
     }
 
-    private VideoStreamProfile getVideoStreamProfile(StreamProfileList profileList,
-                                                     int width, int height, Format format, int fps) {
-        VideoStreamProfile vsp = null;
-        try {
-            vsp = profileList.getVideoStreamProfile(width, height, format, fps);
-        } catch (Exception e) {
-            Log.w(TAG, "getVideoStreamProfile: " + e.getMessage());
+    /**
+     * Get best VideoStreamProfile of sensor support by OrbbecSdkExamples.
+     * Note: OrbbecSdkExamples just sample code to render and save frame, it support limit VideoStreamProfile Format.
+     * @param sensor Target sensor
+     * @return If success return a VideoStreamProfile, otherwise return null.
+     */
+    protected final VideoStreamProfile getStreamProfile(Sensor sensor) {
+        // Select prefer Format
+        Format format;
+        SensorType sensorType = sensor.getType();
+        if (sensorType == SensorType.COLOR) {
+            format = Format.RGB888;
+        } else if (sensorType == SensorType.IR
+                || sensorType == SensorType.IR_LEFT
+                || sensorType == SensorType.IR_RIGHT) {
+            format = Format.Y8;
+        } else if (sensorType == SensorType.DEPTH) {
+            format = Format.Y16;
+        } else {
+            Log.w(TAG, "getStreamProfile not support sensorType: " + sensorType);
+            return null;
         }
-        return vsp;
+
+        try {
+            // Get StreamProfileList from sensor
+            StreamProfileList profileList = sensor.getStreamProfileList();
+            List<VideoStreamProfile> profiles = new ArrayList<>();
+            for (int i = 0, N = profileList.getStreamProfileCount(); i < N; i++) {
+                // Get StreamProfile by index and convert it to VideoStreamProfile
+                VideoStreamProfile profile = profileList.getStreamProfile(i).as(StreamType.VIDEO);
+                // Match target with and format.
+                // Note: width >= 640 && width <= 1280 is consider best render for OrbbecSdkExamples
+                if ((profile.getWidth() >= 640 && profile.getWidth() <= 1280) && profile.getFormat() == format) {
+                    profiles.add(profile);
+                } else {
+                    profile.close();
+                }
+            }
+            // If not match StreamProfile with prefer format, Try other.
+            // Note: OrbbecSdkExamples not support render Format of MJPEG and RVL
+            if (profiles.isEmpty() && profileList.getStreamProfileCount() > 0) {
+                for (int i = 0, N = profileList.getStreamProfileCount(); i < N; i++) {
+                    VideoStreamProfile profile = profileList.getStreamProfile(i).as(StreamType.VIDEO);
+                    if ((profile.getWidth() >= 640 && profile.getWidth() <= 1280)
+                            && (profile.getFormat() != Format.MJPG && profile.getFormat() != Format.RVL)) {
+                        profiles.add(profile);
+                    } else {
+                        profile.close();
+                    }
+                }
+            }
+            // Release StreamProfileList
+            profileList.close();
+
+            // Sort VideoStreamProfile list and let recommend profile at first
+            // Priority:
+            // 1. high fps at first.
+            // 2. large width at first
+            // 3. large height at first
+            Collections.sort(profiles, new Comparator<VideoStreamProfile>() {
+                @Override
+                public int compare(VideoStreamProfile o1, VideoStreamProfile o2) {
+                    if (o1.getFps() != o2.getFps()) {
+                        return o2.getFps() - o1.getFps();
+                    }
+                    if (o1.getWidth() != o2.getWidth()) {
+                        return o2.getWidth() - o1.getWidth();
+                    }
+                    return o2.getHeight() - o1.getHeight();
+                }
+            });
+            for (VideoStreamProfile p : profiles) {
+                Log.d(TAG, "getStreamProfile " + p.getWidth() + "x" + p.getHeight() + "--" + p.getFps());
+            }
+
+            if (profiles.isEmpty()) {
+                return null;
+            }
+
+            // Get first stream profile which is the best for OrbbecSdkExamples.
+            VideoStreamProfile retProfile = profiles.get(0);
+            // Release other stream profile
+            for (int i = 1; i < profiles.size(); i++) {
+                profiles.get(i).close();
+            }
+            return retProfile;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private void stopStream(Sensor sensor) {
@@ -244,13 +336,10 @@ public class DeviceControllerAdapter extends BaseAdapter {
                 return;
             }
             switch (sensor.getType()) {
-                case DEPTH:
+                case DEPTH: {
                     OBGLView depthGLView = glView;
                     // Obtain open stream configuration through StreamProfileList
-                    StreamProfile depthProfile = getVideoStreamProfile(profileList, 640, 0, Format.UNKNOWN, 30);
-                    if (null == depthProfile) {
-                        depthProfile = getVideoStreamProfile(profileList, 0, 0, Format.UNKNOWN, 30);
-                    }
+                    VideoStreamProfile depthProfile = getStreamProfile(sensor);
                     if (null != depthProfile) {
                         printStreamProfile(depthProfile.as(StreamType.VIDEO));
                         // Start sensor through specified VideoStreamVideoProfile
@@ -271,14 +360,11 @@ public class DeviceControllerAdapter extends BaseAdapter {
                         Log.w(TAG, "start depth stream failed, depthProfile is null!");
                     }
                     break;
-                case COLOR:
+                }
+                case COLOR: {
                     OBGLView colorGLView = glView;
                     // Obtain open stream configuration through StreamProfileList
-                    StreamProfile colorProfile = getVideoStreamProfile(profileList, 640, 0, Format.RGB888, 30);
-                    if (null == colorProfile) {
-                        colorProfile = getVideoStreamProfile(profileList, 0, 0, Format.RGB888, 30);
-                    }
-
+                    VideoStreamProfile colorProfile = getStreamProfile(sensor);
                     if (null != colorProfile) {
                         printStreamProfile(colorProfile.as(StreamType.VIDEO));
                         // Start sensor through specified VideoStreamVideoProfile
@@ -298,13 +384,11 @@ public class DeviceControllerAdapter extends BaseAdapter {
                         Log.w(TAG, "start color stream failed, colorProfile is null!");
                     }
                     break;
-                case IR:
+                }
+                case IR: {
                     OBGLView irGLView = glView;
                     // Obtain open stream configuration through StreamProfileList
-                    StreamProfile irProfile = getVideoStreamProfile(profileList, 640, 0, Format.UNKNOWN, 30);
-                    if (null == irProfile) {
-                        irProfile = getVideoStreamProfile(profileList, 0, 0, Format.UNKNOWN, 30);
-                    }
+                    VideoStreamProfile irProfile = getStreamProfile(sensor);
                     if (null != irProfile) {
                         printStreamProfile(irProfile.as(StreamType.VIDEO));
                         // Start sensor through specified VideoStreamVideoProfile
@@ -325,6 +409,32 @@ public class DeviceControllerAdapter extends BaseAdapter {
                         Log.w(TAG, "start ir stream failed, irProfile is null!");
                     }
                     break;
+                }
+                case IR_LEFT: {
+                    OBGLView irGLView = glView;
+                    // Obtain open stream configuration through StreamProfileList
+                    VideoStreamProfile irProfile = getStreamProfile(sensor);
+                    if (null != irProfile) {
+                        printStreamProfile(irProfile.as(StreamType.VIDEO));
+                        // Start sensor through specified VideoStreamVideoProfile
+                        sensor.start(irProfile, frame -> {
+                            IRFrame irFrame = frame.as(FrameType.IR_LEFT);
+                            // Get Frame data
+                            byte[] bytes = new byte[irFrame.getDataSize()];
+                            irFrame.getData(bytes);
+                            // Render data
+                            irGLView.update(irFrame.getWidth(), irFrame.getHeight(),
+                                    StreamType.IR, irFrame.getFormat(), bytes, 1.0f);
+                            // Release frame
+                            frame.close();
+                        });
+                        // Release IR profile
+                        irProfile.close();
+                    } else {
+                        Log.w(TAG, "start ir stream failed, irProfile is null!");
+                    }
+                    break;
+                }
             }
 
             // Release the profileList resource

@@ -1,15 +1,15 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.orbbec.orbbecsdkexamples.R;
 
@@ -47,6 +47,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         Button irView = findViewById(R.id.btn_irview);
         irView.setOnClickListener(this);
+
+        Button doubleIRView = findViewById(R.id.btn_double_irview);
+        doubleIRView.setOnClickListener(this);
 
         Button depthView = findViewById(R.id.btn_depthview);
         depthView.setOnClickListener(this);
@@ -89,6 +92,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             toActivity(ColorViewerActivity.class);
         } else if (id == R.id.btn_irview) {
             toActivity(InfraredViewerActivity.class);
+        } else if (id == R.id.btn_double_irview) {
+            toActivity(DoubleIRViewerActivity.class);
         } else if (id == R.id.btn_depthview) {
             toActivity(DepthViewerActivity.class);
         } else if (id == R.id.btn_record_playback) {

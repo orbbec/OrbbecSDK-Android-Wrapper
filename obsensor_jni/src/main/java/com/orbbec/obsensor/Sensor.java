@@ -124,13 +124,17 @@ public class Sensor extends LobClass {
      */
     @Override
     public void close() {
+        // do nothing
+    }
+
+    /**
+     * Because {@link Device} hold all sensors and manage
+     */
+    /*package*/ void release() {
         throwInitializeException();
-        if (mOwner) {
-            Log.d(TAG, "close sensor !");
-            nDelete(mHandle);
-            mHandle = 0;
-            mOwner = false;
-        }
+        Log.d(TAG, "close sensor(" + getType() + ") !");
+        nDelete(mHandle);
+        mHandle = 0;
     }
 
     private static native void nDelete(long handle);

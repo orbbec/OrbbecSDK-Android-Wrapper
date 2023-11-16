@@ -20,7 +20,7 @@ android {
         def dataFormat = format.format(new Date())
         dataFormat+="01"//01是当天得第几版。默认是第一版
         versionCode  Integer.parseInt(project.hasProperty('JENKINS_BUILD_VERSION_CODE')?JENKINS_BUILD_VERSION_CODE:dataFormat)
-        versionName project.hasProperty('JENKINS_BUILD_VERSION_NAME') ? JENKINS_BUILD_VERSION_NAME : "1.6.3"
+        versionName project.hasProperty('JENKINS_BUILD_VERSION_NAME') ? JENKINS_BUILD_VERSION_NAME : "1.8.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
@@ -98,6 +98,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+	implementation 'com.google.code.gson:gson:2.10.1'
 
     implementation project(':obsensor_jni')
 }

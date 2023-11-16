@@ -27,13 +27,25 @@ add_library( # Sets the name of the library.
         utils/LocalUtils.cpp
         jdatatype/DataBundle.h
         jdatatype/DataBundle.cpp
+        jdatatype/NetworkConfig.h
+        jdatatype/NetworkConfig.cpp
         jdatatype/DepthWorkMode.h
         jdatatype/DepthWorkMode.cpp
-        jdatatype/DeviceSyncConfig.h
-        jdatatype/DeviceSyncConfig.cpp
+        jdatatype/DeviceInfo.h
+        jdatatype/DeviceInfo.cpp
+        jdatatype/MultiDeviceSyncConfig.h
+        jdatatype/MultiDeviceSyncConfig.cpp
+        jdatatype/TimestampResetConfig.h
+        jdatatype/TimestampResetConfig.cpp
         obsensor_jni.h
         obsensor_jni.cpp
         )
+
+target_compile_definitions(obsensor_jni PRIVATE BUILD_NET_PORT)
+
+target_include_directories(obsensor_jni
+        PUBLIC ${OB_ROOT_DIR}/libobsensor/include
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by

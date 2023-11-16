@@ -343,6 +343,45 @@ public class Pipeline extends LobClass {
     }
 
     /**
+     * \if English
+     * @brief Get camera parameters by entering color and depth resolution
+     * @attention If D2C is enabled, it will return the camera parameters after D2C, if not, it will return to the default parameters
+     *
+     * @param colorWidth Width of color resolution
+     * @param colorHeight High of color resolution
+     * @param depthWidth Width of depth resolution
+     * @param depthHeight High of depth resolution
+     *
+     * @return  OBCameraParam returns camera parameters
+     * \else
+     * TODO lumiaozi
+     * \endif
+     */
+    public CameraParam getCameraParamWithProfile(int colorWidth, int colorHeight, int depthWidth, int depthHeight) {
+        throwInitializeException();
+        CameraIntrinsic depthIntrinsic = new CameraIntrinsic();
+        CameraIntrinsic colorIntrinsic = new CameraIntrinsic();
+        CameraDistortion depthDistortion = new CameraDistortion();
+        CameraDistortion colorDistortion = new CameraDistortion();
+        D2CTransform d2CTransform = new D2CTransform();
+        CameraParam params = new CameraParam();
+
+        nGetCameraParamWithProfile(mHandle, colorWidth, colorHeight, depthWidth, depthHeight, depthIntrinsic.getBytes(), colorIntrinsic.getBytes(),
+                depthDistortion.getBytes(), colorDistortion.getBytes(), d2CTransform.getBytes(), params);
+        if (depthIntrinsic.parseBytes() && colorIntrinsic.parseBytes()
+                && depthDistortion.parseBytes() && colorDistortion.parseBytes() && d2CTransform.parseBytes()) {
+            params.mDepthIntrinsic = depthIntrinsic;
+            params.mColorIntrinsic = colorIntrinsic;
+            params.mDepthDistortion = depthDistortion;
+            params.mColorDistortion = colorDistortion;
+            params.mTransform = d2CTransform;
+
+            return params;
+        }
+        return null;
+    }
+
+    /**
 	 * \if English
 	 * Start recording
      *
@@ -437,6 +476,8 @@ public class Pipeline extends LobClass {
     private static native void nGetD2CRangeValidArea(long handle, int minimumDistance, int maximumDistance, byte[] rect);
 
     private static native void nGetCameraParam(long handle, byte[] depthIntr, byte[] colorIntr, byte[] depthDisto, byte[] colorDisto, byte[] trans, CameraParam cameraParam);
+
+    private static native void nGetCameraParamWithProfile(long handle, int colorWidth, int colorHeight, int depthWidth, int depthHeight, byte[] depthIntr, byte[] colorIntr, byte[] depthDisto, byte[] colorDisto, byte[] trans, CameraParam cameraParam);
 
     private static native void nStartRecord(long handle, String filePath);
 

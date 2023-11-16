@@ -1,9 +1,4 @@
-//
-// Created by lumiaozi on 2022/12/22.
-//
-
-#ifndef ANDROID_DATABUNDLE_H
-#define ANDROID_DATABUNDLE_H
+#pragma once
 
 #include <jni.h>
 
@@ -15,4 +10,3 @@ namespace obandroid{
     ob_data_bundle *convert_c_DataBundle(JNIEnv *env, jobject jdata_bundle);
 }
 
-#endif //ANDROID_DATABUNDLE_H

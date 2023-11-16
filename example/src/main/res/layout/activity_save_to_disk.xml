@@ -11,6 +11,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="50dp"
-        android:text="@string/save_to_disk_save_path"/>
+        android:text="@null"/>
 
 </LinearLayout>

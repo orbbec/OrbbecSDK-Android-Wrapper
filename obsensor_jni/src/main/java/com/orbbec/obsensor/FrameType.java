@@ -89,7 +89,15 @@ public enum FrameType {
      * 右路红外帧
      * \endif
      */
-    IR_RIGHT(9)
+    IR_RIGHT(9),
+    /**
+     * \if English
+     * Rawphase frame
+     * \else
+     * TODO lumiaozi
+     * \endif
+     */
+    RAW_PHASE(10)
     ;
 
     private final int mValue;

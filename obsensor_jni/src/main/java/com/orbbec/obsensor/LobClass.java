@@ -14,7 +14,6 @@ public abstract class LobClass implements AutoCloseable {
     }
 
     protected long mHandle = 0;
-    protected boolean mOwner = false;
 
     /**
 	 * \if English

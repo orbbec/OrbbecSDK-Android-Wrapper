@@ -109,7 +109,7 @@ public class Playback extends LobClass {
      */
     public DeviceInfo getDeviceInfo() {
         throwInitializeException();
-        return new DeviceInfo(nGetDeviceInfo(mHandle));
+        return nGetDeviceInfo(mHandle);
     }
 
     /**
@@ -192,7 +192,7 @@ public class Playback extends LobClass {
 
     private static native void nStop(long handle);
 
-    private static native long nGetDeviceInfo(long handle);
+    private static native DeviceInfo nGetDeviceInfo(long handle);
 
     private static native void nGetCameraParam(long handle, byte[] depthIntr, byte[] colorIntr, byte[] depthDisto, byte[] colorDisto, byte[] trans, CameraParam cameraParam);
 

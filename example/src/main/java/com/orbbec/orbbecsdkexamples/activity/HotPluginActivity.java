@@ -1,10 +1,11 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
@@ -30,10 +31,8 @@ import java.nio.ShortBuffer;
 /**
  * Hot plugin Viewer
  */
-public class HotPluginActivity extends AppCompatActivity {
+public class HotPluginActivity extends BaseActivity {
     private static final String TAG = "HotPluginActivity";
-
-    private OBContext mOBContext;
 
     private Device mDevice;
 
@@ -47,6 +46,109 @@ public class HotPluginActivity extends AppCompatActivity {
     private int mDepthFps;
     private int mColorFps;
     private int mIrFps;
+
+    private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
+        @Override
+        public void onDeviceAttach(DeviceList deviceList) {
+            try {
+                if (deviceList == null || deviceList.getDeviceCount() <= 0) {
+                    setText(mNameTv, getString(R.string.device_not_connected));
+                }
+
+                // 2.Create a device and get the device name
+                mDevice = deviceList.getDevice(0);
+                DeviceInfo devInfo = mDevice.getInfo();
+                String deviceName = devInfo.getName();
+                setText(mNameTv, deviceName);
+                devInfo.close();
+
+                // 3.Get depth sensor
+                mDepthSensor = mDevice.getSensor(SensorType.DEPTH);
+
+                // 4.Open the depth stream, and pass null to profile, which means using the parameters
+                // configured in the configuration file to open the stream. If there is no such configuration
+                // in the device, or the configuration file does not exist, it means using the
+                // first configuration in the Profile list.
+                if (null != mDepthSensor) {
+                    mDepthSensor.start(null, mDepthFrameCallback);
+                } else {
+                    Log.w(TAG, "onDeviceAttach: depth sensor is unsupported!");
+                }
+
+                // 5.Get color sensor
+                mColorSensor = mDevice.getSensor(SensorType.COLOR);
+
+                // 6.Open the color stream, and pass null to profile, which means using the
+                // parameters configured in the configuration file to open the stream. If there is
+                // no such configuration in the device, or the configuration file does not exist,
+                // it means using the first configuration in the Profile list.
+                if (null != mColorSensor) {
+                    mColorSensor.start(null, mColorFrameCallback);
+                } else {
+                    Log.w(TAG, "onDeviceAttach: color sensor is unsupported!");
+                }
+
+                // 7.Get IR sensor
+                mIrSensor = mDevice.getSensor(SensorType.IR);
+
+                // 8.Open the infrared stream, if the profile is passed in null, it means that the
+                // parameters configured in the configuration file are used to open the stream,
+                // if there is no such configuration in the device, or there is no configuration file,
+                // it means that the first configuration in the profile list is used
+                if (null != mIrSensor) {
+                    mIrSensor.start(null, mIrFrameCallback);
+                } else {
+                    Log.w(TAG, "onDeviceAttach: ir sensor is unsupported!");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                // 9. New open sensor configuration information
+                setText(mProfileInfoTv, formatProfileInfo());
+
+                // 10.Release deviceList resources
+                deviceList.close();
+            }
+        }
+
+        @Override
+        public void onDeviceDetach(DeviceList deviceList) {
+            try {
+                setText(mNameTv, "No device connected !");
+                setText(mProfileInfoTv, "");
+
+                mDepthFps = 0;
+                mColorFps = 0;
+                mIrFps = 0;
+
+                // Stop depth sensor
+                if (null != mDepthSensor) {
+                    mDepthSensor.stop();
+                }
+
+                // Stop color sensor
+                if (null != mColorSensor) {
+                    mColorSensor.stop();
+                }
+
+                // Stop IR sensor
+                if (null != mIrSensor) {
+                    mIrSensor.stop();
+                }
+
+                // Release Device
+                if (null != mDevice) {
+                    mDevice.close();
+                    mDevice = null;
+                }
+
+                // Release deviceList
+                deviceList.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    };
 
     private FrameCallback mDepthFrameCallback = frame -> {
         printFrameInfo(frame.as(FrameType.DEPTH), mDepthFps);
@@ -76,110 +178,47 @@ public class HotPluginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_hot_plugin);
         mNameTv = findViewById(R.id.tv_device_name);
         mProfileInfoTv = findViewById(R.id.tv_profile_info);
+    }
 
-        // 1.Initialize the SDK Context and listen device changes
-        mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
-            @Override
-            public void onDeviceAttach(DeviceList deviceList) {
-                try {
-                    if (deviceList == null || deviceList.getDeviceCount() <= 0) {
-                        setText(mNameTv, getString(R.string.device_not_connected));
-                    }
+    @Override
+    protected void onStart() {
+        super.onStart();
+        initSDK();
+    }
 
-                    // 2.Create a device and get the device name
-                    mDevice = deviceList.getDevice(0);
-                    DeviceInfo devInfo = mDevice.getInfo();
-                    String deviceName = devInfo.getName();
-                    setText(mNameTv, deviceName);
-                    devInfo.close();
-
-                    // 3.Get depth sensor
-                    mDepthSensor = mDevice.getSensor(SensorType.DEPTH);
-
-                    // 4.Open the depth stream, and pass null to profile, which means using the parameters
-                    // configured in the configuration file to open the stream. If there is no such configuration
-                    // in the device, or the configuration file does not exist, it means using the
-                    // first configuration in the Profile list.
-                    if (null != mDepthSensor) {
-                        mDepthSensor.start(null, mDepthFrameCallback);
-                    } else {
-                        Log.w(TAG, "onDeviceAttach: depth sensor is unsupported!");
-                    }
-
-                    // 5.Get color sensor
-                    mColorSensor = mDevice.getSensor(SensorType.COLOR);
-
-                    // 6.Open the color stream, and pass null to profile, which means using the
-                    // parameters configured in the configuration file to open the stream. If there is
-                    // no such configuration in the device, or the configuration file does not exist,
-                    // it means using the first configuration in the Profile list.
-                    if (null != mColorSensor) {
-                        mColorSensor.start(null, mColorFrameCallback);
-                    } else {
-                        Log.w(TAG, "onDeviceAttach: color sensor is unsupported!");
-                    }
-
-                    // 7.Get IR sensor
-                    mIrSensor = mDevice.getSensor(SensorType.IR);
-
-                    // 8.Open the infrared stream, if the profile is passed in null, it means that the
-                    // parameters configured in the configuration file are used to open the stream,
-                    // if there is no such configuration in the device, or there is no configuration file,
-                    // it means that the first configuration in the profile list is used
-                    if (null != mIrSensor) {
-                        mIrSensor.start(null, mIrFrameCallback);
-                    } else {
-                        Log.w(TAG, "onDeviceAttach: ir sensor is unsupported!");
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    // 9. New open sensor configuration information
-                    setText(mProfileInfoTv, formatProfileInfo());
-
-                    // 10.Release deviceList resources
-                    deviceList.close();
-                }
+    @Override
+    protected void onStop() {
+        try {
+            // Stop depth sensor
+            if (null != mDepthSensor) {
+                mDepthSensor.stop();
             }
 
-            @Override
-            public void onDeviceDetach(DeviceList deviceList) {
-                try {
-                    setText(mNameTv, "No device connected !");
-                    setText(mProfileInfoTv, "");
-
-                    mDepthFps = 0;
-                    mColorFps = 0;
-                    mIrFps = 0;
-
-                    // Stop depth sensor
-                    if (null != mDepthSensor) {
-                        mDepthSensor.stop();
-                    }
-
-                    // Stop color sensor
-                    if (null != mColorSensor) {
-                        mColorSensor.stop();
-                    }
-
-                    // Stop IR sensor
-                    if (null != mIrSensor) {
-                        mIrSensor.stop();
-                    }
-
-                    // Release Device
-                    if (null != mDevice) {
-                        mDevice.close();
-                        mDevice = null;
-                    }
-
-                    // Release deviceList
-                    deviceList.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            // Stop color sensor
+            if (null != mColorSensor) {
+                mColorSensor.stop();
             }
-        });
+
+            // Stop Ir sensor
+            if (null != mIrSensor) {
+                mIrSensor.stop();
+            }
+
+            // Release Device
+            if (null != mDevice) {
+                mDevice.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        releaseSDK();
+
+        super.onStop();
+    }
+
+    @Override
+    protected DeviceChangedCallback getDeviceChangedCallback() {
+        return mDeviceChangedCallback;
     }
 
     private void setText(TextView tv, String text) {
@@ -271,38 +310,5 @@ public class HotPluginActivity extends AppCompatActivity {
         depthBuffer.order(ByteOrder.nativeOrder());
         ShortBuffer depthShortBuffer = depthBuffer.asShortBuffer();
         return depthShortBuffer.get(w * h / 2 + w / 2);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        try {
-            // Stop depth sensor
-            if (null != mDepthSensor) {
-                mDepthSensor.stop();
-            }
-
-            // Stop color sensor
-            if (null != mColorSensor) {
-                mColorSensor.stop();
-            }
-
-            // Stop Ir sensor
-            if (null != mIrSensor) {
-                mIrSensor.stop();
-            }
-
-            // Release Device
-            if (null != mDevice) {
-                mDevice.close();
-            }
-
-            // Release SDK Context
-            if (null != mOBContext) {
-                mOBContext.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }

@@ -1,9 +1,8 @@
-#pragma once
+﻿#pragma once
 #include "ObTypeHelper.hpp"
 #include "libobsensor/hpp/StreamProfile.hpp"
-#include "libobsensor/h/ObTypes.h"
 
-// SDK internal API, no publish
+// SDK 内部不可使用
 OB_EXTENSION_INTERNAL_API std::ostream &operator<<(std::ostream &os, const ob::StreamProfile &profile);
 OB_EXTENSION_INTERNAL_API std::ostream &operator<<(std::ostream &os, const ob::VideoStreamProfile &profile);
 

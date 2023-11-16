@@ -51,6 +51,8 @@ public class Frame extends LobClass implements Cloneable {
                 return (T) new FrameSet(mHandle);
             case POINTS:
                 return (T) new PointFrame(mHandle);
+            case RAW_PHASE:
+                return (T) new RawPhaseFrame(mHandle);
         }
         throw new OBException("this frame is not extendable to " + frameType.name());
     }

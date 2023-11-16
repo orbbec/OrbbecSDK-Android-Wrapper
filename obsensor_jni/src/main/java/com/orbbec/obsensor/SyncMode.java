@@ -2,141 +2,145 @@ package com.orbbec.obsensor;
 
 /**
  * \if English
- * Sync mode
+ * The synchronization mode of the device.
  * \else
- * 同步模式
+ * 设备同步模式
  * \endif
  */
 public enum SyncMode {
     /**
      * \if English
-     * @brief Close synchronize mode
-     * @brief Single device, neither process input trigger signal nor output trigger signal
-     * @brief Each Sensor in a single device automatically triggers
+     * @brief free run mode
+     * @brief The device does not synchronize with other devices,
+     * @brief The Color and Depth can be set to different frame rates.
      * \else
-     * @brief 同步关闭
-     * @brief 单机，不接收外部触发信号，不输出触发信号
-     * @brief 单机内各 Sensor 自触发
+     * @brief free run 模式
+     * @brief 该设备不与其他设备同步
+     * @brief “彩色”和“深度”可以设置为不同的帧速率
      * \endif
-     *
      */
-    OB_SYNC_MODE_CLOSE(0x00),
+    OB_MULTI_DEVICE_SYNC_MODE_FREE_RUN(1 << 0),
 
     /**
      * \if English
-     * @brief Standalone synchronize mode
-     * @brief Single device, neither process input trigger signal nor output trigger signal
-     * @brief Inside single device, RGB as Major sensor: RGB -> IR/Depth/TOF
+     * @brief standalone mode
+     * @brief The device does not synchronize with other devices.
+     * @brief The Color and Depth should be set to same frame rates, the Color and Depth will be synchronized.
      * \else
-     * @brief 单机模式
-     * @brief 单机，不接收外部触发信号，不输出触发信号
-     * @brief 单机内 RGB 做主： RGB -> IR/Depth/TOF
+     * @brief standalone 模式
+     * @brief 该设备不与其他设备同步
+     * @brief “彩色”和“深度”应设置为相同的帧速率，“彩色”与“深度”将同步
      * \endif
      */
-    OB_SYNC_MODE_STANDALONE(0x01),
+    OB_MULTI_DEVICE_SYNC_MODE_STANDALONE(1 << 1),
 
     /**
      * \if English
-     * @brief Primary synchronize mode
-     * @brief Primary device. Ignore process input trigger signal, only output trigger signal to secondary devices.
-     * @brief Inside single device, RGB as Major sensor: RGB -> IR/Depth/TOF
+     * @brief primary mode
+     * @brief The device is the primary device in the multi-device system, it will output the trigger signal via VSYNC_OUT pin on synchronization port by
+     * default.
+     * @brief The Color and Depth should be set to same frame rates, the Color and Depth will be synchronized and can be adjusted by @ref colorDelayUs, @ref
+     * depthDelayUs or @ref trigger2ImageDelayUs.
      * \else
-     * @brief 主机模式
-     * @brief 主机，不接收外部触发信号，向外输出触发信号
-     * @brief 单机内 RGB 做主：RGB -> IR/Depth/TOF
-     *
-     * @attention 部分设备型号不支持该模式： Gemini 2 设备设置该模式会自动变更为 OB_SYNC_MODE_PRIMARY_MCU_TRIGGER 模式
-     *
+     * @brief primary 模式
+     * @brief 该设备是多设备系统中的主要设备，默认情况下会通过同步端口上的VSYNC_OUT引脚输出触发信号
+     * @brief 颜色和深度应设置为相同的帧速率，颜色和深度将同步，并可通过 @ref colorDelayUs、@refdepthDelayUs 或 @ref trigger2ImageDelayUs 进行调整
+     * \endif
      */
-    OB_SYNC_MODE_PRIMARY(0x02),
+    OB_MULTI_DEVICE_SYNC_MODE_PRIMARY(1 << 2),
 
     /**
      * \if English
-     * @brief Secondary synchronize mode
-     * @brief Secondary device. Both process input trigger signal and output trigger signal to other devices.
-     * @brief Different sensors in a single devices receive trigger signals respectively：ext trigger -> RGB && ext trigger -> IR/Depth/TOF
+     * @brief secondary mode
+     * @brief The device is the secondary device in the multi-device system, it will receive the trigger signal via VSYNC_IN pin on synchronization port. It
+     * will out the trigger signal via VSYNC_OUT pin on synchronization port by default.
+     * @brief The Color and Depth should be set to same frame rates, the Color and Depth will be synchronized and can be adjusted by @ref colorDelayUs, @ref
+     * depthDelayUs or @ref trigger2ImageDelayUs.
+     * @brief After starting the stream, the device will wait for the trigger signal to start capturing images, and will stop capturing images when the trigger
+     * signal is stopped.
      *
-     * @attention With the current Gemini 2 device set to this mode, each Sensor receives the first external trigger signal
-     *     after the stream is turned on and starts timing self-triggering at the set frame rate until the stream is turned off
+     * @attention The frequency of the trigger signal should be same as the frame rate of the stream profile which is set when starting the stream.
      * \else
-     * @brief 从机模式
-     * @brief 从机，接收外部触发信号，同时向外中继输出触发信号
-     * @brief 单机内不同 Sensor 各自接收触发信号：ext trigger -> RGB && ext trigger -> IR/Depth/TOF
+     * @brief secondary 模式
+     * @brief 该设备是多设备系统中的从设备，它将通过同步端口上的 VSYNC_IN 引脚接收触发信号。默认情况下，它将从同步端口上 VSYNC_OUT 引脚输出触发信号
+     * @brief 颜色和深度应设置为相同的帧速率，颜色和深度将同步，并可通过 @ref colorDelayUs、 @ref depthDelayUss或 @ref trigger2ImageDelayUs进行调整
+     * @brief 在启动流之后，设备将等待触发信号开始捕获图像，并且当触发信号停止时将停止捕获图像
      *
-     * @attention 当前 Gemini 2 设备设置为该模式后，各Sensor在开流后，接收到第一次外部触发信号即开始按照设置的帧率进行定时自触发，直到流关闭
+     * @attention 触发信号的频率应当与在启动流时设置的流简档的帧速率相同
      * \endif
-     *
      */
-    OB_SYNC_MODE_SECONDARY(0x03),
+    OB_MULTI_DEVICE_SYNC_MODE_SECONDARY(1 << 3),
 
     /**
      * \if English
-     * @brief MCU Primary synchronize mode
-     * @brief Primary device. Ignore process input trigger signal, only output trigger signal to secondary devices.
-     * @brief Inside device, MCU is the primary signal source:  MCU -> RGB && MCU -> IR/Depth/TOF
+     * @brief secondary synced mode
+     * @brief The device is the secondary device in the multi-device system, it will receive the trigger signal via VSYNC_IN pin on synchronization port. It
+     * will out the trigger signal via VSYNC_OUT pin on synchronization port by default.
+     * @brief The Color and Depth should be set to same frame rates, the Color and Depth will be synchronized and can be adjusted by @ref colorDelayUs, @ref
+     * depthDelayUs or @ref trigger2ImageDelayUs.
+     * @brief After starting the stream, the device will be immediately start capturing images, and will adjust the capture time when the trigger signal is
+     * received to synchronize with the primary device. If the trigger signal is stopped, the device will still capture images.
+     *
+     * @attention The frequency of the trigger signal should be same as the frame rate of the stream profile which is set when starting the stream.
      * \else
-     * @brief MCU 主模式
-     * @brief 主机，不接收外部触发信号，向外输出触发信号
-     * @brief 单机内 MCU 做主： MCU -> RGB && MCU -> IR/Depth/TOF
+     * @brief secondary synced 模式
+     * @brief 该设备是多设备系统中的从设备，它将通过同步端口上的VSYNC_IN引脚接收触发信号,默认情况下，它将从同步端口上VSYNC_OUT引脚输出触发信号
+     * @brief 颜色和深度应设置为相同的帧速率，颜色和深度将同步，并可通过 @ref colorDelayUs、 @ref depthDelayUss或 @ref trigger2ImageDelayUs进行调整
+     * @brief 启动流后，设备将立即开始捕捉图像，并在接收到触发信号时调整捕捉时间，以与主设备同步。如果触发信号停止，设备仍将捕获图像
+     *
+     * @attention 触发信号的频率应当与在启动流时设置的流简档的帧速率相同
      * \endif
      */
-    OB_SYNC_MODE_PRIMARY_MCU_TRIGGER(0x04),
+    OB_MULTI_DEVICE_SYNC_MODE_SECONDARY_SYNCED(1 << 4),
 
     /**
      * \if English
-     * @brief IR Primary synchronize mode
-     * @brief Primary device. Ignore process input trigger signal, only output trigger signal to secondary devices.
-     * @brief Inside device, IR is the primary signal source: IR/Depth/TOF -> RGB
+     * @brief software triggering mode
+     * @brief The device will start one time image capture after receiving the capture command and will output the trigger signal via VSYNC_OUT pin by default.
+     * The capture command can be sent form host by call @ref ob_device_trigger_capture. The number of images captured each time can be set by @ref
+     * framesPerTrigger.
+     * @brief The Color and Depth should be set to same frame rates, the Color and Depth will be synchronized and can be adjusted by @ref colorDelayUs, @ref
+     * depthDelayUs or @ref trigger2ImageDelayUs.
      *
+     * @brief The frequency of the user call @ref ob_device_trigger_capture to send the capture command multiplied by the number of frames per trigger should be
+     * less than the frame rate of the stream profile which is set when starting the stream.
      * \else
-     * @brief IR 主模式
-     * @brief 主机，不接收外部触发信号，向外输出触发信号
-     * @brief 单机内 IR 做主：IR/Depth/TOF -> RGB
+     * @brief software triggering 模式
+     * @brief 该设备在接收到捕获命令后将开始一次图像捕获，并且默认情况下将通过VSYNC_OUT引脚输出触发信号。捕获命令可以
+     * 通过调用 @ref ob_device_trigger_capture从主机发送。每次拍摄的图像数量可以由 @ref 设置framesPerTriggerForTriggeringMode
+     * @brief 颜色和深度应设置为相同的帧速率，颜色和深度将同步，并可通过 @ref colorDelayUs、 @ref depthDelayUss或 @ref trigger2ImageDelayUs进行调整
+     * @brief 用户调用@ref ob_device_trigger_capture发送捕获命令的频率乘以每个触发器的帧数应该小于启动流时设置的流配置文件的帧速率
      * \endif
      */
-    OB_SYNC_MODE_PRIMARY_IR_TRIGGER(0x05),
+    OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING(1 << 5),
 
     /**
      * \if English
-     * @brief Software trigger synchronize mode
-     * @brief Host, triggered by software control (receive the upper computer command trigger), at the same time to the trunk output trigger signal
-     * @brief Different sensors in a single machine receive trigger signals respectively: soft trigger -> RGB && soft trigger -> IR/Depth/TOF
+     * @brief hardware triggering mode
+     * @brief The device will start one time image capture after receiving the trigger signal via VSYNC_IN pin on synchronization port and will output the
+     * trigger signal via VSYNC_OUT pin by default. The number of images captured each time can be set by @ref framesPerTrigger.
+     * @brief The Color and Depth should be set to same frame rates, the Color and Depth will be synchronized and can be adjusted by @ref colorDelayUs, @ref
+     * depthDelayUs or @ref trigger2ImageDelayUs.
      *
-     * @attention Support product: Gemini2
+     * @attention The frequency of the trigger signal multiplied by the number of frames per trigger should be less than the frame rate of the stream profile
+     * which is set when starting the stream.
+     * @attention The trigger signal input via VSYNC_IN pin on synchronization port should be ouput by other device via VSYNC_OUT pin in hardware triggering
+     * mode or software triggering mode.
+     * @attention Due to different models may have different signal input requirements, please do not use different models to output trigger
+     * signal as input-trigger signal.
      * \else
-     * @brief 软触发模式
-     * @brief 主机，由软件控制触发（接收上位机命令触发），同时向外中继输出触发信号
-     * @brief 单机内不同 Sensor 各自接收触发信号：soft trigger -> RGB && soft trigger -> IR/Depth/TOF
+     * @brief hardware triggering 模式
+     * @brief 该设备将在通过同步端口上的 VSYNC_IN 引脚接收到触发信号后开始一次图像捕获，并将输出默认情况下，通过 VSYNC_OUT
+     * 引脚触发信号。每次捕获的图像数量可以由
+     * @ref framesPerTriggerForTriggeringMode设置。
+     * @brief 颜色和深度应设置为相同的帧速率，颜色和深度将同步，并可通过 @ref colorDelayUs、 @ref depthDelayUss或 @ref trigger2ImageDelayUs进行调整
      *
-     * @attention 当前仅 Gemini2 支持该模式
+     * @attention 触发信号的频率乘以每个触发的帧数应该小于在启动流时设置的流配置文件的帧速率
+     * @attention 在硬件触发模式或软件触发模式下，通过同步端口上的VSYNC_IN引脚输入的触发信号应由其他设备通过VSYNC_OUT引脚输出
+     * @attention 由于不同的型号设备可能有不同的信号输入要求，请不要使用不同的型号设备输出触发信号作为输入触发信号
      * \endif
      */
-    OB_SYNC_MODE_PRIMARY_SOFT_TRIGGER(0x06),
-
-    /**
-     * \if English
-     * @brief Software trigger synchronize mode as secondary device
-     * @brief The slave receives the external trigger signal (the external trigger signal comes from the soft trigger host) and outputs the trigger signal to
-     * the external relay.
-     * @brief Different sensors in a single machine receive trigger signals respectively：ext trigger -> RGB && ext  trigger -> IR/Depth/TOF
-     * \else
-     * @brief 软触发从机模式
-     * @brief 从机，接收外部触发信号（外部触发信号来自软触发的主机），同时向外中继输出触发信号。
-     * @brief 单机内不同 Sensor 各自接收触发信号：ext trigger -> RGB && ext  trigger -> IR/Depth/TOF
-     *
-     * @attention 当前仅 Gemini2 支持该模式
-     * \endif
-     */
-    OB_SYNC_MODE_SECONDARY_SOFT_TRIGGER(0x07),
-
-    /**
-     * \if English
-     * @brief Unknown type
-     * \else
-     * @brief 未知类型
-     * \endif
-     */
-    OB_SYNC_MODE_UNKNOWN (0xff)
+    OB_MULTI_DEVICE_SYNC_MODE_HARDWARE_TRIGGERING(1 << 6)
     ;
 
     private final int mValue;
@@ -147,13 +151,9 @@ public enum SyncMode {
 
     /**
 	 * \if English
-	 * Get the index corresponding to the data stream format
-     *
-     * @return index value
+     * Enum value of int
 	 * \else
-     * 获取数据流格式对应的索引
-     *
-     * @return 索引值
+     * 枚举对应的int值
 	 * \endif
      */
     public int value() {
@@ -162,15 +162,9 @@ public enum SyncMode {
 
     /**
 	 * \if English
-	 * Get the data stream format corresponding to the specified index
-     *
-     * @param value index value
-     * @return data stream format
+     * Convert int value to SyncMode
 	 * \else
-     * 获取指定索引对应的数据流格式
-     *
-     * @param value 索引值
-     * @return 数据流格式
+     * 将int转换为SyncMode
 	 * \endif
      */
     public static SyncMode get(int value) {

@@ -24,8 +24,11 @@
     <string name="device_not_support_depth_mode">Current device is not support DepthWorkMode</string>
     <string name="device_not_support_color">This device does not support Color sensor</string>
     <string name="device_not_support_ir">This device does not support IR sensor</string>
+    <string name="device_not_support_ir_left">This device does not support IR Left sensor</string>
+    <string name="device_not_support_ir_right">This device does not support IR Right sensor</string>
     <string name="device_not_support_depth">This device does not support Depth sensor</string>
     <string name="device_not_support_imu">This device does not support IMU</string>
+    <string name="init_stream_profile_failed">Initialize StreamProfile failed</string>
     <string name="please_access_device">Please access the device</string>
     <string name="sensor_control_select_device">Select device: </string>
     <string name="sensor_control_select_command">Select command: </string>
@@ -41,5 +44,5 @@
     <string name="cannot_set_exposure_and_gain_when_ae_on">Auto exposure is not turned off and exposure or gain cannot be set</string>
     <string name="cannot_set_brightness_when_ae_off">The automatic exposure is not turned on, and the brightness cannot be set</string>
     <string name="cannot_set_white_balance_when_auto_white_balance_on">Auto white balance is not turned off and white balance cannot be set</string>
-    <string name="save_to_disk_save_path">SavePath: /sdcard/imagePng/</string>
+    <string name="save_to_disk_save_path">SavePath: </string>
 </resources>

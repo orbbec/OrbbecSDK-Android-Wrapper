@@ -13,7 +13,7 @@ jobject convert_j_DepthWorkMode(JNIEnv *env,
       env->GetMethodID(clsDepthWorkMode, "<init>", "()V");
   jobject jobjWorkMode = env->NewObject(clsDepthWorkMode, constructMethod);
   if (!jobjWorkMode) {
-    obandroid::throw_error(env, "nGetCurrentDepthWorkMode",
+    ob_throw_error(env, "nGetCurrentDepthWorkMode",
                            "Create Java DepthWorkMode failed.");
     return NULL;
   }

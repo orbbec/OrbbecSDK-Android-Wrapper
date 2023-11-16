@@ -24,8 +24,11 @@
     <string name="device_not_support_depth_mode">本设备不支持深度工作模式</string>
     <string name="device_not_support_color">本设备不支持Color</string>
     <string name="device_not_support_ir">本设备不支持IR</string>
+    <string name="device_not_support_ir_left">本设备不支持IR_LEFT</string>
+    <string name="device_not_support_ir_right">本设备不支持IR_RIGHT</string>
     <string name="device_not_support_depth">本设备不支持Depth</string>
     <string name="device_not_support_imu">本设备不支持IMU</string>
+    <string name="init_stream_profile_failed">初始化播放配置失败</string>
     <string name="please_access_device">请插入设备</string>
     <string name="sensor_control_select_device">选择设备名：</string>
     <string name="sensor_control_select_command">选择操作指令：</string>
@@ -41,5 +44,5 @@
     <string name="cannot_set_exposure_and_gain_when_ae_on">自动曝光未关闭，不能设置曝光或增益</string>
     <string name="cannot_set_brightness_when_ae_off">自动曝光未开启，不能设置亮度</string>
     <string name="cannot_set_white_balance_when_auto_white_balance_on">自动白平衡未关闭，不能设置白平衡</string>
-    <string name="save_to_disk_save_path">保存路径：/sdcard/imagePng/</string>
+    <string name="save_to_disk_save_path">保存路径：</string>
 </resources>

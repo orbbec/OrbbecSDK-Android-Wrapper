@@ -73,7 +73,15 @@ public enum SensorType {
      * 右红外
      * \endif
      */
-    IR_RIGHT(7)
+    IR_RIGHT(7),
+    /**
+     * \if English
+     * Raw Phase
+     * \else
+     * TODO lumiaozi
+     * \endif
+     */
+    RAW_PHASE(8),
     ;
 
     private final int mValue;
