@@ -120,7 +120,7 @@ Support device list (firmware version):
 ||Gemini E||
 ||Gemini E Lite||
 
-# Quick Start
+# Simple code of open depth stream
 Create OBContext global member to manager attach devices
 ```java
 // Application hold only one OBContext instance.
@@ -194,14 +194,18 @@ Start Depth stream
 ```java
 try {
    mPipeline = new Pipeline(mCurrentDevice);
+
    StreamProfileList depthProfileList = mPipeline.getStreamProfileList(SensorType.DEPTH);
-   StreamProfile streamProfile = depthProfileList.getStreamProfile(0);
    if (null != depthProfileList) {
       depthProfileList.close();
       return;
    }
-
+   StreamProfile streamProfile = depthProfileList.getStreamProfile(0);
    Config config = new Config();
+   config.enableStream(streamProfile);
+   streamProfile.close();
+   depthProfileList.close();
+
    mPipeline.start(config, new FrameSetCallback() {
       public void onFrameSet(FrameSet frameSet) {
          DepthFrame depthFrame = frameSet.getDepthFrame()
