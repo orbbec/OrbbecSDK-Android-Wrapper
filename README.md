@@ -91,8 +91,8 @@ targetSdk 27
 **targetSdkVersion** 27 to fixed bug 'Android 10 Devices Do NOT Support USB Camera Connection' which fixed on android 11.
 
 # Support orbbec device
-OrbbecSDK：v1.6.3
-Publish: 2023-06-31
+OrbbecSDK：v1.8.1
+Publish: 2023-11-16
 Support device list (firmware version):
 |Class|Product|Firmware|
 |-|-|-|
@@ -103,6 +103,7 @@ Support device list (firmware version):
 ||Astra2|V2.8.20|
 ||Gemini2|V1.4.60|
 ||Gemini2L|V1.4.32|
+||Gemini2XL|Obox: V2.0.1 VL:1.4.56|
 |OpenNI|Gemini||
 ||Dabai DW||
 ||Dabai DCW||
@@ -118,6 +119,118 @@ Support device list (firmware version):
 ||A1 Pro||
 ||Gemini E||
 ||Gemini E Lite||
+
+# Quick Start
+Create OBContext global member to manager attach devices
+```java
+// Application hold only one OBContext instance.
+private OBContext mOBContext;
+private Object mCurrentDeviceLock = new Object();
+private Device mCurrentDevice;
+private DeviceInfo mCurrentDeviceInfo;
+```
+
+Initialize OBContext with DeviceChangedCallback
+```java
+mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
+   @Override
+   public void onDeviceAttach(DeviceList deviceList) {
+         synchronized (mCurrentDeviceLock) {
+            if (null == mCurrentDevice) {
+               // DeviceList#getDevice(index) can only call once inside onDeviceAttach()
+               mCurrentDevice = deviceList.getDevice(0);
+               mCurrentDeviceInfo = mCurrentDevice.getInfo();
+               Log.d("Orbbec", "Device connection. name: " + mCurrentDeviceInfo.getName() + ", uid: " + mCurrentDeviceInfo.getUid());
+            }
+         }
+         try {
+            deviceList.close();
+         } catch (Exception e) {
+            e.printStackTrace();
+         }
+   }
+
+   @Override
+   public void onDeviceDetach(DeviceList deviceList) {
+         try {
+            int deviceCount = deviceList.getDeviceCount();
+            for (int i = 0; i < deviceCount; i++) {
+               String uid = deviceList.getUid();
+               if (null != mCurrentDevice) {
+                  synchronized (mCurrentDeviceLock) {
+                      if (null != mCurrentDeviceInfo && mCurrentDeviceInfo.getUid().equals(uid)) {
+                           // handle device disconnection
+                           // do something
+
+                           Log.d("Orbbec", "Device disconnection. name: " + mCurrentDeviceInfo.getName() + ", uid: " + mCurrentDeviceInfo.getUid());
+                           mCurrentDevice.close();
+                           mCurrentDevice = null;
+
+                           mCurrentDeviceInfo.close();
+                           mCurrentDeviceInfo null;
+                      }
+                  } // synchronized
+               }
+            } // for
+         } catch (Exception e) {
+            e.printStackTrace();
+         }
+
+         try {
+            deviceList.close();
+         } catch (Exception e) {
+            e.printStackTrace();
+         }
+   }
+});
+```
+
+Define Pipeline and Device
+```java
+private Pipeline mPipeline;
+```
+
+Start Depth stream
+```java
+try {
+   mPipeline = new Pipeline(mCurrentDevice);
+   StreamProfileList depthProfileList = mPipeline.getStreamProfileList(SensorType.DEPTH);
+   StreamProfile streamProfile = depthProfileList.getStreamProfile(0);
+   if (null != depthProfileList) {
+      depthProfileList.close();
+      return;
+   }
+
+   Config config = new Config();
+   mPipeline.start(config, new FrameSetCallback() {
+      public void onFrameSet(FrameSet frameSet) {
+         DepthFrame depthFrame = frameSet.getDepthFrame()
+         if (null != depthFrame) {
+            Log.d("Orbbec", "onFrameSet depthFrame index: " + depthFrame.getFrameIndex() + ", timeStamp: " + depthFrame.getTimeStamp());
+
+            // do Render
+
+            depthFrame.close();
+         }
+      }
+   });
+   config.close();
+} catch (OBException e) {
+   e.printStackTrace();
+}
+```
+
+Stop stream
+```java
+try {
+   mPipeline.stop();
+   mPipeline.close();
+   mPipeline = null;
+} catch (OBException e) {
+   e.printStackTrace();
+}
+```
+
 
 
 # QA
