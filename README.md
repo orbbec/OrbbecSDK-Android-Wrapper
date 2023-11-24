@@ -94,31 +94,23 @@ targetSdk 27
 OrbbecSDK：v1.8.1
 Publish: 2023-11-16
 Support device list (firmware version):
-|Class|Product|Firmware|
-|-|-|-|
-|UVC Device|Astra+ & Astra+s|V1.0.20|
-||Femto|V1.6.9|
-||Femto-W|V1.1.8|
-||Femto-Live|V1.1.1|
-||Astra2|V2.8.20|
-||Gemini2|V1.4.60|
-||Gemini2L|V1.4.32|
-||Gemini2XL|Obox: V2.0.1 VL:1.4.56|
-|OpenNI|Gemini||
-||Dabai DW||
-||Dabai DCW||
-||Dabai DC1||
-||Astra Mini||
-||AstraMini S||
-||Astra Mini Pro||
-||Dabai||
-||Dabai Pro||
-||Deeya||
-||Astra Plus||
-||Dabai D1||
-||A1 Pro||
-||Gemini E||
-||Gemini E Lite||
+| SDK version | Product | Firmware version |
+| --- | --- | --- |  
+| v1.8.1	  | Gemini 2 XL     | Obox: V1.2.5  VL:1.4.54 |
+|       	  | Astra 2         | 2.8.20                    |
+| 		      | Gemini 2 L      | 1.4.32                     |
+| 		      | Gemini 2        | 1.4.60 /1.4.76             |
+|             | Astra+         | 1.0.22/1.0.21/1.0.20/1.0.19 |
+|             | Femto          | 1.6.7                       |
+|             | Femto W       | 1.1.8                        |
+|             | DaBai          | 2436                        |
+|             | DaBai DCW      | 2460                        |
+|             | DaBai DW       | 2606                        |
+|             | Astra Mini Pro | 1007                        |
+|             | Gemini E       | 3460                        |
+|             | Gemini E Lite  | 3606                        |
+|             | Gemini         | 3.0.18                      |
+|             | Astra Mini S Pro | 1.0.05                    |
 
 # Simple code of open depth stream
 Create OBContext global member to manager attach devices
