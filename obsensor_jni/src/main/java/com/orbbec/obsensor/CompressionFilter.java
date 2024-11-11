@@ -16,8 +16,7 @@ public class CompressionFilter extends Filter {
      * \endif
      */
     public CompressionFilter() {
-        super();
-        mHandle = nCreate();
+        super(nCreate());
     }
 
     /**

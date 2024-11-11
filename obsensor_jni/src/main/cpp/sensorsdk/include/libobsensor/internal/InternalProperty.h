@@ -99,7 +99,7 @@ typedef enum {
     OB_PROP_DEVICE_WORK_MODE_INT       = 95, /**< 设备工作模式（功耗）*/
     OB_PROP_DEVICE_COMMUNICATION_TYPE_INT = 97,  /**< 设备通信方式 0: USB; 1: Ethernet(RTSP) */
     OB_PROP_SWITCH_IR_MODE_INT            = 98,  /**< 切换IR模式,0为主动IR模式,1为被动IR模式*/
-    OB_PROP_LASER_ENERGY_LEVEL_INT        = 99,  /**< 激光能量层级 */
+    OB_PROP_LASER_POWER_LEVEL_CONTROL_INT = 99,  /**< 激光能量层级 */
     OB_PROP_LDP_MEASURE_DISTANCE_INT      = 100, /**< 获取激光近距离保护的测量值 */
     OB_PROP_LDP_CALIBRATION_BOOL          = 101, /**< 进行激光近距离保护校准 */
     OB_PROP_POWER_VOLTAGE_FLOAT           = 102, /**< 获取USB供电电压 */
@@ -119,8 +119,8 @@ typedef enum {
     OB_PROP_IR_ROTATE_INT                       = 116, /**< IR旋转, 翻转角度范围{0, 90, 180, 270}, 默认为0 */
     OB_PROP_IR_RIGHT_ROTATE_INT                 = 117, /**< 右IR旋转, 翻转角度范围{0, 90, 180, 270}, 默认为0 */
     OB_PROP_DEPTH_ROTATE_INT                    = 118, /**< 深度旋转, 翻转角度范围{0, 90, 180, 270}, 默认为0 */
-    OB_PROP_LASER_HW_ENERGY_LEVEL_INT =
-        119, /**< 查询激光硬件的实际能量层级, OB_PROP_LASER_ENERGY_LEVEL_INT（99）指令用于设置能级,该指令用于查询设置后硬件实际能级 */
+    OB_PROP_LASER_POWER_ACTUAL_LEVEL_INT =
+        119, /**< 查询激光硬件的实际能量层级, OB_PROP_LASER_POWER_LEVEL_CONTROL_INT（99）指令用于设置能级,该指令用于查询设置后硬件实际能级 */
     OB_PROP_FAN_WORK_SPEED_INT      = 120, /**< 风扇转速 */
     OB_PROP_USB_POWER_STATE_INT     = 121, /**< USB供电状态，状态值枚举: OBUSBPowerState */
     OB_PROP_DC_POWER_STATE_INT      = 122, /**< DC供电状态,状态值枚举: OBDCPowerState */
@@ -135,24 +135,48 @@ typedef enum {
     OB_PROP_RESTORE_FACTORY_SETTINGS_BOOL = 131, /**< 恢复出厂设置和参数，只写，参数值必须为true，重启设备后生效 */
     OB_PROP_BOOT_INTO_RECOVERY_MODE_BOOL  = 132, /**< 启动设备时进入恢复模式（刷机模式）, 在该模式下可对设备系统进行升级 */
     OB_PROP_DEVICE_IN_RECOVERY_MODE_BOOL  = 133, /**< 获取当前设备是否运行在恢复模式（刷机模式） */
-    OB_PROP_STOP_IR_RIGHT_STREAM_BOOL     = 139, /**< 关闭右IR流, 用于无法通过标准UVC协议关流的设备 */
-    OB_PROP_DEVICE_USB3_REPEAT_IDENTIFY_BOOL =
-        141, /**<  设置设备端USB3.0重复识别的使能开关{true:打开USB3.0识别失败识别3次，false:关闭USB3.0识别失败识别3次，仅识别一次} */
+
+    /**
+     * Capture interval mode, 0:time interval, 1:number interval
+     */
+    OB_PROP_CAPTURE_INTERVAL_MODE_INT = 134,
+
+    OB_PROP_CAPTURE_IMAGE_TIME_INTERVAL_INT   = 135, /**< \if English Capture time interval \else 抓拍时间间隔 \endif */
+    OB_PROP_CAPTURE_IMAGE_NUMBER_INTERVAL_INT = 136, /**< \if English Capture number interval \else 抓拍数量间隔 \endif */
+    OB_PROP_STOP_IR_RIGHT_STREAM_BOOL         = 139, /**< 关闭右IR流, 用于无法通过标准UVC协议关流的设备 */
+    OB_PROP_TIMER_RESET_ENABLE_BOOL           = 140, /**< \if English Enable timer reset function \else 时间戳清零功能使能 \endif */
+
+    /**
+     * @brief 设置设备端USB2.0重新识别的使能开关{true:识别成usb2.0时重试识别，最多重试3次，false:识别成usb2.0时不重试识别}
+     */
+    OB_PROP_DEVICE_USB2_REPEAT_IDENTIFY_BOOL = 141,
     OB_PROP_DEVICE_REBOOT_DELAY_INT = 142, /**< 控制设备重启，带延迟模式；类型：uint32_t，延迟时间单位：ms。delay为0：不延迟；delay大于0，延迟delay毫秒*/
+    OB_PROP_DEVICE_IQ_DEBUG_BOOL                     = 143, /** IQ 调试功能，用于影像调试ISP参数*/
     OB_PROP_USB_STATUS_CHECK_BOOL                    = 144, /**< USB状态检查，true：正常状态，false：异常状态 */
     OB_PROP_OBOX_STATUS_CHECK_BOOL                   = 145, /**< OBox空闲模式检查，true：空闲状态，false：非空闲状态 */
     OB_PROP_LASER_OVERCURRENT_PROTECTION_STATUS_BOOL = 148, /**< 获取激光电流过流保护后的状态 */
     OB_PROP_LASER_PULSE_WIDTH_PROTECTION_STATUS_BOOL = 149, /**< 获取激光脉宽保护的状态 */
     OB_PROP_UPDATE_BASE_TIME_BOOL                    = 150, /**< 更新高32位时间戳 */
+    OB_PROP_DEPTH_NOISE_REMOVAL_FILTER_BOOL          = 165, /**< 使能开关，深度去噪 */
+    OB_PROP_DEPTH_EDGE_NOISE_REMOVAL_FILTER_BOOL     = 166, /**< 使能开关，深度边缘去噪 */
+    OB_PROP_DEPTH_SPATIAL_FAST_FILTER_BOOL           = 167, /**< 使能开关，深度快速空间滤波 */
+    OB_PROP_DEPTH_SPATIAL_MODERATE_FILTER_BOOL       = 168, /**< 使能开关，深度适中空间滤波 */
+    OB_PROP_DEPTH_SPATIAL_ADVANCED_FILTER_BOOL       = 169, /**< 使能开关，深度增强空间滤波 */
+    OB_PROP_DEPTH_HOLE_FILLING_FILTER_BOOL           = 170, /**< 使能开关，深度填洞滤波 */
+    OB_PROP_DEPTH_TEMPORAL_FILTER_BOOL               = 171, /**< 使能开关，深度时域滤波 */
+    OB_PROP_LASER_ALWAYS_ON_BOOL                     = 174, /**< 激光常开开关，true：打开，false：关闭 */
+    OB_PROP_LASER_ON_OFF_PATTERN_INT                 = 175, /**< 激光随数据帧开关交错，0:关闭，1:打开，ON-OFF 2:打开：OFF-ON */
+    OB_PROP_DEPTH_UNIT_FLEXIBLE_ADJUSTMENT_FLOAT     = 176, /**< 深度单位灵活调整，可在范围内连续调节，单位：mm */
+    OB_PROP_LASER_CONTROL_INT                        = 182, /**< 激光控制，0: 关闭激光，1: 打开激光，2: 自动 */
+    OB_PROP_IR_BRIGHTNESS_INT                        = 184, /**< IR 亮度 */
+    OB_PROP_DEPTH_ALG_MODE_TYPE_INT                  = 185, /**< 深度工作模式类型 */
+    OB_PROP_SLAVE_DEVICE_SYNC_STATUS_BOOL            = 188, /**< 从设备同步状态 */
+    OB_PROP_COLOR_AE_MAX_EXPOSURE_INT                = 189, /**< COLOR AE最大曝光时间 */
+    OB_PROP_IR_AE_MAX_EXPOSURE_INT                   = 190, /**< IR AE最大曝光时间 */
+    OB_PROP_DISP_SEARCH_RANGE_MODE_INT               = 191, /**< 视差搜索范围模式，0:64,1:128,2:256 */
+    OB_PROP_DISP_SEARCH_OFFSET_INT                   = 196, /**< 视差搜索偏移 */
+    OB_PROP_CPU_TEMPERATURE_CALIBRATION_BOOL         = 199, /**< CPU温度校正 true：校正,false:不校正*/
 
-    /** Capture interval mode, 0:time interval, 1:number interval
-     *
-     * */
-    OB_PROP_CAPTURE_INTERVAL_MODE_INT         = 134,
-    OB_PROP_CAPTURE_IMAGE_TIME_INTERVAL_INT   = 135, /**< \if English Capture time interval \else 抓拍时间间隔 \endif */
-    OB_PROP_CAPTURE_IMAGE_NUMBER_INTERVAL_INT = 136, /**< \if English Capture number interval \else 抓拍数量间隔 \endif */
-    OB_PROP_TIMER_RESET_ENABLE_BOOL           = 140, /**< \if English Enable timer reset function \else 时间戳清零功能使能 \endif */
-    OB_PROP_DEVICE_IQ_DEBUG_BOOL              = 143, /** IQ 调试功能，用于影像调试ISP参数*/
     // 1000~1999为设备端结构体控制命令
     // Device:: get/setStructuredData
     OB_STRUCT_VERSION                           = 1000, /**< 版本信息 */
@@ -190,6 +214,47 @@ typedef enum {
     OB_STRUCT_IR_STREAM_PROFILE                 = 1050,
     OB_STRUCT_CUSTOMER_DATA                     = 1052, /**< 读写第三方客户自定义数据 */
     OB_STRUCT_DEVICE_STATIC_IP_CONFIG_RECORD    = 1053, /**< 设备网络静态IP配置记录获取，只读命令 */
+
+    /**
+     * @brief LDP测量扩展信息，供应商TOF器件输出的测量值。注意：Gemini2/Gemini2L/Gemini2VL/Gemini2XL旧版固件不支持该指令，
+     * 新版本固件才支持，请注意try-catch。SDK支持指令日期：2023年10月16日。
+     *
+     */
+    OB_STRUCT_LDP_MEASURE_EXTENSION_INFO = 1055,
+    OB_STRUCT_DEPTH_DDO_CONFIG           = 1057, /** 配置参数，DDOConfig数据结构 */
+    OB_STRUCT_DEPTH_DDO_CONFIG_DEFAULT   = 1058, /** 配置参数，DDOConfig数据结构，默认参数 */
+    /**
+     * @brief Using to configure the depth sensor's HDR mode
+     * @brief The Value type is @ref OBHdrConfig
+     *
+     * @attention After enable HDR mode, the depth sensor auto exposure will be disabled.
+     */
+    OB_STRUCT_DEPTH_HDR_CONFIG = 1059,
+
+    /**
+     * @brief Color Sensor AE ROI configuration
+     * @brief The Value type is @ref OBRegionOfInterest
+     */
+    OB_STRUCT_COLOR_AE_ROI = 1060,
+
+    /**
+     * @brief Depth Sensor AE ROI configuration
+     * @brief The Value type is @ref OBRegionOfInterest
+     * @brief Since the ir sensor is the same physical sensor as the depth sensor, this property will also effect the ir sensor.
+     */
+    OB_STRUCT_DEPTH_AE_ROI = 1061,
+
+    /**
+     * @brief  ASIC Serial Number
+     *
+     */
+    OB_STRUCT_ASIC_SERIAL_NUMBER = 1063,
+
+    /**
+     * @brief Disp offset config
+     */
+    OB_STRUCT_DISP_OFFSET_CONFIG = 1064,
+
     // 2000~2999为Sensor控制命令
     // device::get/setxxxProperty、 getxxxPropertyRange (xxx表示数据类型)
     OB_PROP_COLOR_AUTO_EXPOSURE_BOOL         = 2000, /**< 彩色相机自动曝光 */
@@ -221,15 +286,20 @@ typedef enum {
     OB_PROP_IR_EXPOSURE_INT                  = 2026, /**< 红外相机曝光调节（某些型号设备下会同步设置深度相机） */
     OB_PROP_IR_GAIN_INT                      = 2027, /**< 红外相机增益调节（某些型号设备下会同步设置深度相机） */
     OB_PROP_IR_CHANNEL_DATA_SOURCE_INT = 2028, /**< 读写IR通道的输出目标sensor,不支持时返回错误。0: 左侧IR  sensor,1: 右侧IR sensor; */
-    /** RM是Remark Filter的缩写, 深度mask对齐参数开关, true：打开，false：关闭, 与D2C功能互斥。软硬件D2C开启时，不能使用mask功能 */
-    OB_PROP_DEPTH_RM_FILTER_BOOL      = 2029,
+    OB_PROP_DEPTH_RM_FILTER_BOOL =
+        2029, /** RM是Remark Filter的缩写, 深度mask对齐参数开关, true：打开，false：关闭, 与D2C功能互斥。软硬件D2C开启时，不能使用mask功能 */
     OB_PROP_COLOR_MAXIMAL_GAIN_INT    = 2030, /**< 彩色相机最大增益 */
     OB_PROP_COLOR_MAXIMAL_SHUTTER_INT = 2031, /**< 彩色相机最大快门 */
     OB_PROP_IR_SHORT_EXPOSURE_BOOL =
         2032, /**< 红外相机一帧AE一帧短曝光模式的使能开关（DCL用），当开启时AE和短曝光数据交错输出，关闭时恢复原红外相机的曝光模式（AE或者固定曝光） */
     OB_PROP_IR_SHORT_EXPOSURE_INT = 2033, /**< 红外相机短曝光调节（DCL用），当开启短曝光模式后，用来设置红外相机短曝光时间 */
 
-    OB_PROP_COLOR_HDR_BOOL = 2034, /**< 彩色相机HDR开关调节 */
+    OB_PROP_COLOR_HDR_BOOL        = 2034, /**< 彩色相机HDR开关调节 */
+    OB_PROP_IR_LONG_EXPOSURE_BOOL = 2035, /**< 红外相机长曝光开关，DaBai Max Pro支持） */
+    OB_PROP_SKIP_FRAME_BOOL       = 2036, /**< 相机跳帧模式开关，DaBai DCW2支持） */
+    OB_PROP_HDR_MERGE_BOOL        = 2037, /**< 深度HDR merge处理使能开关，true打开，false关闭） */
+    OB_PROP_COLOR_FOCUS_INT       = 2038, /**< 彩色相机焦点调节，针对Astra+设备默认1，支持用户可设置0关闭宽动态功能） */
+
     /** 3000~3499为SDK int, bool及float类型控制命令 */
     /** Device:: get/setxxxProperty、 getxxxPropertyRange (xxx表示数据类型) */
     OB_PROP_SDK_DISPARITY_TO_DEPTH_BOOL       = 3004, /**< 视差转深度 */
@@ -242,7 +312,9 @@ typedef enum {
     OB_PROP_SDK_DEPTH_RECTIFY_MG_FILTER_BOOL  = 3013, /**< MG滤波开关 */
     OB_PROP_SDK_DEPTH_RECTIFY_MG_FILTER_X_INT = 3014, /**< MG滤波水平阈值 */
     OB_PROP_SDK_DEPTH_RECTIFY_MG_FILTER_Y_INT = 3015, /**< MG滤波纵向阈值 */
+
     OB_PROP_SDK_DEPTH_RECTIFY_MG_FILTER_MODE_BOOL = 3016, /**< MG滤波方向控制，true为纵和横向，false为仅横向 */
+    OB_PROP_SDK_UPDATE_BASE_TIME_BOOL             = 3017, /**< 更新时间戳高32位 */
 
     // 4000~4999为RawData控制命令
     // Device:: get/setRawData
@@ -298,12 +370,20 @@ typedef enum {
 
     // 5500~5999为调试用结构体控制命令
     // Device:: get/setStructuredData
-    OB_STRUCT_DEBUG_RECORD_RGB_DATA      = 5500, /**< 设备端 RGB 传图控制（调试功能） */
-    OB_STRUCT_DEBUG_RECORD_PHASE_DATA    = 5501, /**< 设备端 raw Phase 传图控制（调试功能） */
-    OB_STRUCT_DEBUG_RECORD_IR_DATA       = 5502, /**< 设备端 IR 传图控制（调试功能） */
-    OB_STRUCT_DEBUG_RECORD_DEPTH_DATA    = 5503, /**< 设备端 depth 传图控制（调试功能） */
-    OB_STRUCT_DEBUG_SENSOR_EXPOSURE_TIME = 5504, /**< 曝光时间读写 */
-    OB_PROP_DEBUG_DEVICELOG_SAVE_BOOL    = 5505, /**< 设备log保存 */
+    OB_STRUCT_DEBUG_RECORD_RGB_DATA                  = 5500, /**< 设备端 RGB 传图控制（调试功能） */
+    OB_STRUCT_DEBUG_RECORD_PHASE_DATA                = 5501, /**< 设备端 raw Phase 传图控制（调试功能） */
+    OB_STRUCT_DEBUG_RECORD_IR_DATA                   = 5502, /**< 设备端 IR 传图控制（调试功能） */
+    OB_STRUCT_DEBUG_RECORD_DEPTH_DATA                = 5503, /**< 设备端 depth 传图控制（调试功能） */
+    OB_STRUCT_DEBUG_SENSOR_EXPOSURE_TIME             = 5504, /**< 曝光时间读写 */
+    OB_PROP_DEBUG_DEVICELOG_SAVE_BOOL                = 5505, /**< 设备log保存 */
+    OB_STRUCT_DEPTH_NOISE_REMOVAL_FILTER_PARAMS      = 5516, /**< 配置参数，深度去噪 */
+    OB_STRUCT_DEPTH_EDGE_NOISE_REMOVAL_FILTER_PARAMS = 5517, /**< 配置参数，深度边缘去噪 */
+    OB_STRUCT_DEPTH_SPATIAL_FAST_FILTER_PARAMS       = 5518, /**< 配置参数，深度快速空间滤波 */
+    OB_STRUCT_DEPTH_SPATIAL_MODERATE_FILTER_PARAMS   = 5519, /**< 配置参数，深度适中空间滤波 */
+    OB_STRUCT_DEPTH_SPATIAL_ADVANCED_FILTER_PARAMS   = 5520, /**< 配置参数，深度增强空间滤波 */
+    OB_STRUCT_DEPTH_HOLE_FILLING_FILTER_PARAMS       = 5521, /**< 配置参数，深度填洞滤波 */
+    OB_STRUCT_DEPTH_TEMPORAL_FILTER_PARAMS           = 5522, /**< 配置参数，深度时域滤波 */
+    OB_PROP_DEPTH_FILTER_DUMP_DIFF_LUT_INT           = 5523, /**< 库参数调试，深度滤波库的调调试；*/
 
 } OBPropertyID,
     ob_property_id;

@@ -10,6 +10,8 @@ public class DeviceBean {
     public boolean isDepthRunning;
     public boolean isColorRunning;
     public boolean isIrRunning;
+    public boolean isIrLeftRunning;
+    public boolean isIrRightRunning;
 
     public DeviceBean(String name, String uid, String connectionType, Device device) {
         mDeviceName = name;

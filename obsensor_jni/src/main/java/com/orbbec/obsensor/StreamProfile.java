@@ -1,5 +1,7 @@
 package com.orbbec.obsensor;
 
+import com.orbbec.obsensor.datatype.D2CTransform;
+
 /**
  * \if English
  * Data stream configuration base class
@@ -79,6 +81,25 @@ public class StreamProfile extends LobClass {
     }
 
     /**
+     * \if English
+     * Get the extrinsic for source stream to target stream
+     *
+     * @return The extrinsic {@link D2CTransform}
+     * \else
+     * 获取源数据流到目标数据流的外参
+     *
+     * @return 外参 {@link D2CTransform}
+     * \endif
+     */
+    public D2CTransform getExtrinsicTo(StreamProfile targetStreamProfile) {
+        throwInitializeException();
+        D2CTransform extrinsic = new D2CTransform();
+        long targetHandle = targetStreamProfile.getHandle();
+        nGetExtrinsicTo(mHandle, targetHandle, extrinsic.getBytes());
+        return extrinsic;
+    }
+
+    /**
 	 * \if English
 	 * resources release
 	 * \else
@@ -97,4 +118,6 @@ public class StreamProfile extends LobClass {
     private static native int nGetFormat(long handle);
 
     private static native int nGetType(long handle);
+
+    private static native void nGetExtrinsicTo(long sourceHandle, long targetHandle, byte[] extrinsic_ptr);
 }

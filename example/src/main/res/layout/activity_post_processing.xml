@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.orbbec.orbbecsdkexamples.view.OBGLView
+        android:id="@+id/postprocessing_id"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+<!--    <TextView-->
+<!--        android:id="@+id/postprocessing_tv"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_margin="10dp"-->
+<!--        android:background="#80000000"-->
+<!--        android:text="@string/depth_distance"-->
+<!--        android:textColor="@android:color/white"-->
+<!--        android:textSize="20sp"-->
+<!--        app:layout_constraintStart_toStartOf="@id/postprocessing_id"-->
+<!--        app:layout_constraintTop_toTopOf="@id/postprocessing_id" />-->
+
+    <!--    <LinearLayout-->
+    <!--        android:id="@+id/ll_postprocessing"-->
+    <!--        android:layout_width="wrap_content"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:layout_marginTop="20dp"-->
+    <!--        android:orientation="horizontal"-->
+    <!--        app:layout_constraintBottom_toBottomOf="parent"-->
+    <!--        app:layout_constraintEnd_toEndOf="parent"-->
+    <!--        app:layout_constraintStart_toStartOf="parent">-->
+
+    <!--        <CheckBox-->
+    <!--            android:id="@+id/cb_holefilling"-->
+    <!--            android:layout_width="120dp"-->
+    <!--            android:layout_height="60dp"-->
+    <!--            android:background="@null"-->
+    <!--            android:button="@null"-->
+    <!--            android:checked="false"-->
+    <!--            android:drawableStart="@drawable/checkbox"-->
+    <!--            android:drawablePadding="6dp"-->
+    <!--            android:padding="6dp"-->
+    <!--            android:text="Holefilling"-->
+    <!--            android:textColor="#000000"-->
+    <!--            android:visibility="gone" />-->
+
+    <!--        <CheckBox-->
+    <!--            android:id="@+id/cb_temporal"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="60dp"-->
+    <!--            android:background="@null"-->
+    <!--            android:button="@null"-->
+    <!--            android:checked="false"-->
+    <!--            android:drawableStart="@drawable/checkbox"-->
+    <!--            android:drawablePadding="6dp"-->
+    <!--            android:padding="6dp"-->
+    <!--            android:text="Temporal"-->
+    <!--            android:textColor="#000000"-->
+    <!--            android:visibility="gone" />-->
+
+    <!--        <CheckBox-->
+    <!--            android:id="@+id/cb_spatial_advanced"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="60dp"-->
+    <!--            android:background="@null"-->
+    <!--            android:button="@null"-->
+    <!--            android:checked="false"-->
+    <!--            android:drawableLeft="@drawable/checkbox"-->
+    <!--            android:drawablePadding="6dp"-->
+    <!--            android:padding="6dp"-->
+    <!--            android:text="SpatialAdvanced"-->
+    <!--            android:textColor="#000000"-->
+    <!--            android:visibility="gone" />-->
+
+    <!--        <CheckBox-->
+    <!--            android:id="@+id/cb_noise_removal"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="60dp"-->
+    <!--            android:background="@null"-->
+    <!--            android:button="@null"-->
+    <!--            android:checked="false"-->
+    <!--            android:drawableLeft="@drawable/checkbox"-->
+    <!--            android:drawablePadding="6dp"-->
+    <!--            android:padding="6dp"-->
+    <!--            android:text="NoiseRemoval"-->
+    <!--            android:textColor="#000000"-->
+    <!--            android:visibility="gone" />-->
+
+    <!--        <CheckBox-->
+    <!--            android:id="@+id/cb_edge_noise_removal"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="60dp"-->
+    <!--            android:background="@null"-->
+    <!--            android:button="@null"-->
+    <!--            android:checked="false"-->
+    <!--            android:drawableLeft="@drawable/checkbox"-->
+    <!--            android:drawablePadding="6dp"-->
+    <!--            android:padding="6dp"-->
+    <!--            android:text="EdgeNoiseRemoval"-->
+    <!--            android:textColor="#000000"-->
+    <!--            android:visibility="gone" />-->
+
+    <!--        <CheckBox-->
+    <!--            android:id="@+id/cb_decimation"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="60dp"-->
+    <!--            android:background="@null"-->
+    <!--            android:button="@null"-->
+    <!--            android:checked="false"-->
+    <!--            android:drawableLeft="@drawable/checkbox"-->
+    <!--            android:drawablePadding="6dp"-->
+    <!--            android:padding="6dp"-->
+    <!--            android:text="Decimation"-->
+    <!--            android:textColor="#000000"-->
+    <!--            android:visibility="gone" />-->
+
+    <!--        <CheckBox-->
+    <!--            android:id="@+id/cb_threshold"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="60dp"-->
+    <!--            android:background="@null"-->
+    <!--            android:button="@null"-->
+    <!--            android:checked="false"-->
+    <!--            android:drawableLeft="@drawable/checkbox"-->
+    <!--            android:drawablePadding="6dp"-->
+    <!--            android:padding="6dp"-->
+    <!--            android:text="Threshold"-->
+    <!--            android:textColor="#000000"-->
+    <!--            android:visibility="gone" />-->
+
+    <!--        <CheckBox-->
+    <!--            android:id="@+id/cb_sequenceId"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="60dp"-->
+    <!--            android:background="@null"-->
+    <!--            android:button="@null"-->
+    <!--            android:checked="false"-->
+    <!--            android:drawableLeft="@drawable/checkbox"-->
+    <!--            android:drawablePadding="6dp"-->
+    <!--            android:padding="6dp"-->
+    <!--            android:text="SequenceId"-->
+    <!--            android:textColor="#000000"-->
+    <!--            android:visibility="gone" />-->
+
+    <!--        <CheckBox-->
+    <!--            android:id="@+id/cb_disparity_transform"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="60dp"-->
+    <!--            android:background="@null"-->
+    <!--            android:button="@null"-->
+    <!--            android:checked="false"-->
+    <!--            android:drawableLeft="@drawable/checkbox"-->
+    <!--            android:drawablePadding="6dp"-->
+    <!--            android:padding="6dp"-->
+    <!--            android:text="DisparityTransform"-->
+    <!--            android:textColor="#000000"-->
+    <!--            android:visibility="gone" />-->
+    <!--    </LinearLayout>-->
+</androidx.constraintlayout.widget.ConstraintLayout>

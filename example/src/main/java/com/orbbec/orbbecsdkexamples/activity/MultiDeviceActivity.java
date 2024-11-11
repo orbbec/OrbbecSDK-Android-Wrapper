@@ -1,17 +1,13 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
 import android.widget.ListView;
-
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceInfo;
 import com.orbbec.obsensor.DeviceList;
-import com.orbbec.obsensor.OBContext;
 import com.orbbec.orbbecsdkexamples.R;
 import com.orbbec.orbbecsdkexamples.adapter.DeviceControllerAdapter;
 import com.orbbec.orbbecsdkexamples.bean.DeviceBean;
@@ -32,6 +28,7 @@ public class MultiDeviceActivity extends BaseActivity {
     private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
         @Override
         public void onDeviceAttach(DeviceList deviceList) {
+            Log.d(TAG, "onDeviceAttach: " + deviceList.getDeviceCount());
             try {
                 int count = deviceList.getDeviceCount();
                 for (int i = 0; i < count; i++) {
@@ -62,6 +59,7 @@ public class MultiDeviceActivity extends BaseActivity {
 
         @Override
         public void onDeviceDetach(DeviceList deviceList) {
+            Log.d(TAG, "onDeviceDetach: " + deviceList.getDeviceCount());
             try {
                 for (DeviceBean deviceBean : mDeviceBeanList) {
                     // Determine disconnection devices by uid

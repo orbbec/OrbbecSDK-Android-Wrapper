@@ -9,6 +9,14 @@ package com.orbbec.obsensor;
  */
 public enum SampleRate {
     /**
+     * \if English
+     * Unknown sample rate
+     * \else
+     * 未知采样率
+     * \endif
+     */
+    UNKNOWN(0),
+    /**
      * 1.5625Hz
      */
     ODR_1_5625_HZ(1),

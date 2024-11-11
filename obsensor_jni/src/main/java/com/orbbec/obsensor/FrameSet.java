@@ -121,6 +121,27 @@ public class FrameSet extends Frame {
     }
 
     /**
+     * \if English
+     * Get a frame at a specific index from the FrameSet
+     *
+     * @param index The index of the frame.
+     *
+     * @return Return the frame at the specified index, or nullptr if it does not exist.
+     * \else
+     * 获取FrameSet中指定索引的数据帧
+     *
+     * @param index 指定索引
+     *
+     * @return 指定索引的数据帧，如果不存在则返回NULL
+     * \endif
+     */
+    public Frame getFrameByIndex(int index) {
+        throwInitializeException();
+        long handle = nGetFrameByIndex(mHandle, index);
+        return handle != 0 ? new Frame(handle) : null;
+    }
+
+    /**
 	 * \if English
 	 * release dataframe set resources
 	 * \else
@@ -145,6 +166,8 @@ public class FrameSet extends Frame {
     private static native long nGetFrame(long handle, int frameType);
 
     private static native long nGetPointFrame(long handle);
+
+    private static native long nGetFrameByIndex(long handle, int index);
 
     private static native void nDelete(long handle);
 }

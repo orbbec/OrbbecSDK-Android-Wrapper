@@ -10,6 +10,36 @@ package com.orbbec.obsensor;
 public class Filter extends LobClass implements Cloneable {
     private FilterCallback mFilterCallback;
 
+    Filter(long handle) {
+        this.mHandle = handle;
+    }
+
+    public <T extends Filter> T as(String filterName) {
+        switch (filterName) {
+            case "DecimationFilter":
+                return (T) new DecimationFilter(mHandle);
+            case "HDRMerge":
+                return (T) new HdrMergeFilter(mHandle);
+            case "SequenceIdFilter":
+                return (T) new SequenceIdFilter(mHandle);
+            case "NoiseRemovalFilter":
+                return (T) new NoiseRemovalFilter(mHandle);
+            case "EdgeNoiseRemovalFilter":
+                return (T) new EdgeNoiseRemovalFilter(mHandle);
+            case "SpatialFilter":
+                return (T) new SpatialAdvancedFilter(mHandle);
+            case "TemporalFilter":
+                return (T) new TemporalFilter(mHandle);
+            case "HoleFillingFilter":
+                return (T) new HoleFillingFilter(mHandle);
+            case "DisparityTransform":
+                return (T) new DisparityTransform(mHandle, false);
+            case "ThresholdFilter":
+                return (T) new ThresholdFilter(mHandle);
+        }
+        throw new OBException("this filter is not extendable to " + filterName);
+    }
+
     /**
 	 * \if English
 	 * Process the data frame to get the format converted data frame
@@ -82,6 +112,27 @@ public class Filter extends LobClass implements Cloneable {
     }
 
     /**
+     * \if English
+     * Enable the frame post processing
+     *
+     * @param isEnable enable status
+     * \else
+     * 启用帧后处理
+     *
+     * @param isEnable 启用状态
+     * \endif
+     */
+    public void enable(boolean isEnable) {
+        throwInitializeException();
+        nEnable(mHandle, isEnable);
+    }
+
+    public boolean isEnable() {
+        throwInitializeException();
+        return nIsEnable(mHandle);
+    }
+
+    /**
 	 * \if English
 	 * release data frame resources
 	 * \else
@@ -111,4 +162,8 @@ public class Filter extends LobClass implements Cloneable {
     private static native void nSetCallback(long handle, FilterCallbackImpl callback);
 
     private static native void nPushFrame(long handle, long frameHandle);
+
+    private static native void nEnable(long handle, boolean isEnable);
+
+    private static native boolean nIsEnable(long handle);
 }

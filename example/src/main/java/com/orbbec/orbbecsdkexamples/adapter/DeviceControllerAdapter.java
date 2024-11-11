@@ -17,10 +17,8 @@ import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.Format;
 import com.orbbec.obsensor.FrameType;
 import com.orbbec.obsensor.IRFrame;
-import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.SensorType;
-import com.orbbec.obsensor.StreamProfile;
 import com.orbbec.obsensor.StreamProfileList;
 import com.orbbec.obsensor.StreamType;
 import com.orbbec.obsensor.VideoStreamProfile;
@@ -82,6 +80,10 @@ public class DeviceControllerAdapter extends BaseAdapter {
                 vH.colorGlView.setVisibility(View.GONE);
                 vH.irGlView.clearWindow();
                 vH.irGlView.setVisibility(View.GONE);
+                vH.irLeftGlView.clearWindow();
+                vH.irLeftGlView.setVisibility(View.GONE);
+                vH.irRightGlView.clearWindow();
+                vH.irRightGlView.setVisibility(View.GONE);
             }
         }
     }
@@ -94,16 +96,7 @@ public class DeviceControllerAdapter extends BaseAdapter {
         if (null == convertView) {
             viewHolder = new ViewHolder();
             convertView = mInflater.inflate(R.layout.layout_device_item, parent, false);
-            viewHolder.deviceNameTv = convertView.findViewById(R.id.tv_device_name);
-            viewHolder.depthCtlLayout = convertView.findViewById(R.id.ll_depth_view);
-            viewHolder.depthCtlBtn = convertView.findViewById(R.id.btn_depth_control);
-            viewHolder.depthGlView = convertView.findViewById(R.id.glv_depth);
-            viewHolder.colorCtlLayout = convertView.findViewById(R.id.ll_color_view);
-            viewHolder.colorCtlBtn = convertView.findViewById(R.id.btn_color_control);
-            viewHolder.colorGlView = convertView.findViewById(R.id.glv_color);
-            viewHolder.irCtlLayout = convertView.findViewById(R.id.ll_ir_view);
-            viewHolder.irCtlBtn = convertView.findViewById(R.id.btn_ir_control);
-            viewHolder.irGlView = convertView.findViewById(R.id.glv_ir);
+            initViewHolder(viewHolder, convertView);
             mViewHolderMap.put(position, viewHolder);
             convertView.setTag(viewHolder);
         } else {
@@ -111,10 +104,9 @@ public class DeviceControllerAdapter extends BaseAdapter {
             viewHolder.depthGlView.clearWindow();
             viewHolder.colorGlView.clearWindow();
             viewHolder.irGlView.clearWindow();
+            viewHolder.irLeftGlView.clearWindow();
+            viewHolder.irRightGlView.clearWindow();
         }
-        viewHolder.depthGlView.setVisibility(View.VISIBLE);
-        viewHolder.colorGlView.setVisibility(View.VISIBLE);
-        viewHolder.irGlView.setVisibility(View.VISIBLE);
 
         DeviceBean deviceBean = getItem(position);
         // Get device
@@ -129,18 +121,22 @@ public class DeviceControllerAdapter extends BaseAdapter {
         viewHolder.deviceNameTv.setText(devName + "#" + uid + " " + connectionType);
         final Sensor depthSensor = device.getSensor(SensorType.DEPTH);
         final Sensor colorSensor = device.getSensor(SensorType.COLOR);
-        final Sensor irSensor;
-        if (null != device.getSensor(SensorType.IR)) {
-            viewHolder.irCtlBtn.setText("IR");
-            irSensor = device.getSensor(SensorType.IR);
-        } else {
-            viewHolder.irCtlBtn.setText("IR_LEFT");
-            irSensor = device.getSensor(SensorType.IR_LEFT);
-        }
+        final Sensor irSensor = device.getSensor(SensorType.IR);
+//        if (null != device.getSensor(SensorType.IR)) {
+//            viewHolder.irCtlBtn.setText("IR");
+//            irSensor = device.getSensor(SensorType.IR);
+//        } else {
+//            viewHolder.irCtlBtn.setText("IR_LEFT");
+//            irSensor = device.getSensor(SensorType.IR_LEFT);
+//        }
+        final Sensor irLeftSensor = device.getSensor(SensorType.IR_LEFT);
+        final Sensor irRightSensor = device.getSensor(SensorType.IR_RIGHT);
 
-        viewHolder.depthCtlLayout.setVisibility(null != depthSensor ? View.VISIBLE : View.INVISIBLE);
-        viewHolder.colorCtlLayout.setVisibility(null != colorSensor ? View.VISIBLE : View.INVISIBLE);
-        viewHolder.irCtlLayout.setVisibility(null != irSensor ? View.VISIBLE : View.INVISIBLE);
+        viewHolder.depthCtlLayout.setVisibility(null != depthSensor ? View.VISIBLE : View.GONE);
+        viewHolder.colorCtlLayout.setVisibility(null != colorSensor ? View.VISIBLE : View.GONE);
+        viewHolder.irCtlLayout.setVisibility(null != irSensor ? View.VISIBLE : View.GONE);
+        viewHolder.irLeftCtlLayout.setVisibility(null != irLeftSensor ? View.VISIBLE : View.GONE);
+        viewHolder.irRightCtlLayout.setVisibility(null != irRightSensor ? View.VISIBLE : View.GONE);
 
         if (deviceBean.isDepthRunning) {
             startStream(depthSensor, viewHolder.depthGlView);
@@ -202,7 +198,60 @@ public class DeviceControllerAdapter extends BaseAdapter {
             }
         });
 
+        if (deviceBean.isIrLeftRunning) {
+            startStream(irLeftSensor, viewHolder.irLeftGlView);
+        }
+        setColor(deviceBean.isIrLeftRunning, viewHolder.irLeftCtlBtn);
+        viewHolder.irLeftCtlBtn.setOnClickListener(v -> {
+            // Control Left IR sensor stream
+            if (deviceBean.isIrLeftRunning) {
+                stopStream(irLeftSensor);
+                deviceBean.isIrLeftRunning = false;
+            } else {
+                startStream(irLeftSensor, viewHolder.irLeftGlView);
+                deviceBean.isIrLeftRunning = true;
+            }
+
+            setColor(deviceBean.isIrLeftRunning, viewHolder.irLeftCtlBtn);
+        });
+
+        if (deviceBean.isIrRightRunning) {
+            startStream(irRightSensor, viewHolder.irRightGlView);
+        }
+        setColor(deviceBean.isIrRightRunning, viewHolder.irRightCtlBtn);
+        viewHolder.irRightCtlBtn.setOnClickListener(v -> {
+            // Control Right IR sensor stream
+            if (deviceBean.isIrRightRunning) {
+                stopStream(irRightSensor);
+                deviceBean.isIrRightRunning = false;
+            } else {
+                startStream(irRightSensor, viewHolder.irRightGlView);
+                deviceBean.isIrRightRunning = true;
+            }
+
+            setColor(deviceBean.isIrRightRunning, viewHolder.irRightCtlBtn);
+        });
+
         return convertView;
+    }
+
+    private void initViewHolder(ViewHolder viewHolder, View convertView) {
+        viewHolder.deviceNameTv = convertView.findViewById(R.id.tv_device_name);
+        viewHolder.depthCtlLayout = convertView.findViewById(R.id.ll_depth_view);
+        viewHolder.depthCtlBtn = convertView.findViewById(R.id.btn_depth_control);
+        viewHolder.depthGlView = convertView.findViewById(R.id.glv_depth);
+        viewHolder.colorCtlLayout = convertView.findViewById(R.id.ll_color_view);
+        viewHolder.colorCtlBtn = convertView.findViewById(R.id.btn_color_control);
+        viewHolder.colorGlView = convertView.findViewById(R.id.glv_color);
+        viewHolder.irCtlLayout = convertView.findViewById(R.id.ll_ir_view);
+        viewHolder.irCtlBtn = convertView.findViewById(R.id.btn_ir_control);
+        viewHolder.irGlView = convertView.findViewById(R.id.glv_ir);
+        viewHolder.irLeftCtlLayout = convertView.findViewById(R.id.ll_ir_left_view);
+        viewHolder.irLeftCtlBtn = convertView.findViewById(R.id.btn_ir_left_control);
+        viewHolder.irLeftGlView = convertView.findViewById(R.id.glv_ir_left);
+        viewHolder.irRightCtlLayout = convertView.findViewById(R.id.ll_ir_right_view);
+        viewHolder.irRightCtlBtn = convertView.findViewById(R.id.btn_ir_right_control);
+        viewHolder.irRightGlView = convertView.findViewById(R.id.glv_ir_right);
     }
 
     private void setColor(boolean isStart, Button btn) {
@@ -224,6 +273,7 @@ public class DeviceControllerAdapter extends BaseAdapter {
     /**
      * Get best VideoStreamProfile of sensor support by OrbbecSdkExamples.
      * Note: OrbbecSdkExamples just sample code to render and save frame, it support limit VideoStreamProfile Format.
+     *
      * @param sensor Target sensor
      * @return If success return a VideoStreamProfile, otherwise return null.
      */
@@ -232,7 +282,7 @@ public class DeviceControllerAdapter extends BaseAdapter {
         Format format;
         SensorType sensorType = sensor.getType();
         if (sensorType == SensorType.COLOR) {
-            format = Format.RGB888;
+            format = Format.RGB;
         } else if (sensorType == SensorType.IR
                 || sensorType == SensorType.IR_LEFT
                 || sensorType == SensorType.IR_RIGHT) {
@@ -253,7 +303,9 @@ public class DeviceControllerAdapter extends BaseAdapter {
                 VideoStreamProfile profile = profileList.getStreamProfile(i).as(StreamType.VIDEO);
                 // Match target with and format.
                 // Note: width >= 640 && width <= 1280 is consider best render for OrbbecSdkExamples
-                if ((profile.getWidth() >= 640 && profile.getWidth() <= 1280) && profile.getFormat() == format) {
+                if ((profile.getWidth() >= 640 && profile.getWidth() <= 1280)
+                        && profile.getHeight() >= 360
+                        && profile.getFormat() == format) {
                     profiles.add(profile);
                 } else {
                     profile.close();
@@ -265,6 +317,7 @@ public class DeviceControllerAdapter extends BaseAdapter {
                 for (int i = 0, N = profileList.getStreamProfileCount(); i < N; i++) {
                     VideoStreamProfile profile = profileList.getStreamProfile(i).as(StreamType.VIDEO);
                     if ((profile.getWidth() >= 640 && profile.getWidth() <= 1280)
+                            && profile.getHeight() >= 360
                             && (profile.getFormat() != Format.MJPG && profile.getFormat() != Format.RVL)) {
                         profiles.add(profile);
                     } else {
@@ -411,7 +464,7 @@ public class DeviceControllerAdapter extends BaseAdapter {
                     break;
                 }
                 case IR_LEFT: {
-                    OBGLView irGLView = glView;
+                    OBGLView irLeftGLView = glView;
                     // Obtain open stream configuration through StreamProfileList
                     VideoStreamProfile irProfile = getStreamProfile(sensor);
                     if (null != irProfile) {
@@ -423,7 +476,7 @@ public class DeviceControllerAdapter extends BaseAdapter {
                             byte[] bytes = new byte[irFrame.getDataSize()];
                             irFrame.getData(bytes);
                             // Render data
-                            irGLView.update(irFrame.getWidth(), irFrame.getHeight(),
+                            irLeftGLView.update(irFrame.getWidth(), irFrame.getHeight(),
                                     StreamType.IR, irFrame.getFormat(), bytes, 1.0f);
                             // Release frame
                             frame.close();
@@ -431,7 +484,32 @@ public class DeviceControllerAdapter extends BaseAdapter {
                         // Release IR profile
                         irProfile.close();
                     } else {
-                        Log.w(TAG, "start ir stream failed, irProfile is null!");
+                        Log.w(TAG, "start left ir stream failed, irProfile is null!");
+                    }
+                    break;
+                }
+                case IR_RIGHT: {
+                    OBGLView irRightGLView = glView;
+                    // Obtain open stream configuration through StreamProfileList
+                    VideoStreamProfile irProfile = getStreamProfile(sensor);
+                    if (null != irProfile) {
+                        printStreamProfile(irProfile.as(StreamType.VIDEO));
+                        // Start sensor through specified VideoStreamVideoProfile
+                        sensor.start(irProfile, frame -> {
+                            IRFrame irFrame = frame.as(FrameType.IR_RIGHT);
+                            // Get Frame data
+                            byte[] bytes = new byte[irFrame.getDataSize()];
+                            irFrame.getData(bytes);
+                            // Render data
+                            irRightGLView.update(irFrame.getWidth(), irFrame.getHeight(),
+                                    StreamType.IR, irFrame.getFormat(), bytes, 1.0f);
+                            // Release frame
+                            frame.close();
+                        });
+                        // Release IR profile
+                        irProfile.close();
+                    } else {
+                        Log.w(TAG, "start right ir stream failed, irProfile is null!");
                     }
                     break;
                 }
@@ -455,5 +533,11 @@ public class DeviceControllerAdapter extends BaseAdapter {
         LinearLayout irCtlLayout;
         Button irCtlBtn;
         OBGLView irGlView;
+        LinearLayout irLeftCtlLayout;
+        Button irLeftCtlBtn;
+        OBGLView irLeftGlView;
+        LinearLayout irRightCtlLayout;
+        Button irRightCtlBtn;
+        OBGLView irRightGlView;
     }
 }

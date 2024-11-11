@@ -10,6 +10,14 @@ package com.orbbec.obsensor;
 public enum GyroFullScaleRange {
     /**
 	 * \if English
+	 * Unknown
+	 * \else
+     * 未知
+     * \endif
+     */
+    FS_UNKNOWN(0),
+    /**
+	 * \if English
 	 * 16 degrees per second
 	 * \else
      * 16度每秒

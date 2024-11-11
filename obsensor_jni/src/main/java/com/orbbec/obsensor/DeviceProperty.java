@@ -595,6 +595,19 @@ public enum DeviceProperty {
      */
     OB_PROP_DEVICE_REBOOT_DELAY_INT(142),
 
+    /**
+     * \if English
+     * Depth unit flexible adjustment
+     * This property allows continuous adjustment of the depth unit, unlike @ref OB_PROP_DEPTH_PRECISION_LEVEL_INT must be set to some fixed value.
+     * \else
+     * 灵活调整深度单位
+     * 此属性允许对深度单位进行连续调整，与 @ref OB_PROP_DEPTH_PRECISION_LEVEL_INT 必须为固定值。
+     * \endif
+     */
+    OB_PROP_DEPTH_UNIT_FLEXIBLE_ADJUSTMENT_FLOAT(176),
+
+    OB_PROP_DISP_SEARCH_RANGE_MODE_INT(191),
+
     //1000~1999为设备端结构体控制命令
 
     /**
@@ -686,6 +699,15 @@ public enum DeviceProperty {
      * \endif
      */
     OB_STRUCT_DEPTH_PRECISION_SUPPORT_LIST(1045),
+
+    /**
+     * \if English
+     * Using to configure the depth sensor's HDR mode
+     * \else
+     * 深度HDR配置
+     * \endif
+     */
+    OB_STRUCT_DEPTH_HDR_CONFIG(1059),
 
     /**
 	 * \if English

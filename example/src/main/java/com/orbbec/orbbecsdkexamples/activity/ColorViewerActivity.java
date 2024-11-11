@@ -12,15 +12,11 @@ import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceInfo;
 import com.orbbec.obsensor.DeviceList;
 import com.orbbec.obsensor.FrameSet;
-import com.orbbec.obsensor.LogSeverity;
-import com.orbbec.obsensor.OBContext;
-import com.orbbec.obsensor.OBException;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.SensorType;
 import com.orbbec.obsensor.StreamType;
 import com.orbbec.obsensor.VideoStreamProfile;
-import com.orbbec.orbbecsdkexamples.BuildConfig;
 import com.orbbec.orbbecsdkexamples.R;
 import com.orbbec.orbbecsdkexamples.view.OBGLView;
 
@@ -82,6 +78,8 @@ public class ColorViewerActivity extends BaseActivity {
 
                     // 7.Start sensor stream
                     mPipeline.start(config);
+
+//                    Log.d(TAG, "onDeviceAttach: " + mPipeline.getCalibrationParam(config));
 
                     // 8.Release config
                     config.close();

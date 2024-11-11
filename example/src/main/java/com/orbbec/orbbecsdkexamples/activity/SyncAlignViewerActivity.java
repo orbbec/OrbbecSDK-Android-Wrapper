@@ -20,7 +20,6 @@ import com.orbbec.obsensor.DeviceInfo;
 import com.orbbec.obsensor.DeviceList;
 import com.orbbec.obsensor.Format;
 import com.orbbec.obsensor.FrameSet;
-import com.orbbec.obsensor.OBContext;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.SensorType;
 import com.orbbec.obsensor.StreamType;
@@ -33,11 +32,11 @@ import java.nio.ByteBuffer;
 
 /**
  * 同步对齐示例
- *
+ * <p>
  * 该示例可能会由于深度或者彩色sensor不支持镜像而出现深度图和彩色图镜像状态不一致的情况，
  * 从而导致深度图和彩色图显示的图像是相反的，如遇到该情况，则通过设置镜像接口保持两个镜像状态一致即可
  * 另外可能存在某些设备获取到的分辨率不支持D2C功能，因此D2C功能以实际支持的D2C分辨率为准
- *
+ * <p>
  * 例如：DaBai DCW支持的D2C的分辨率为640x360，而实际该示例获取到的分辨率可能为640x480，此时用户根据实际模组情况获取
  * 对应的640x360分辨率即可
  */
@@ -233,6 +232,7 @@ public class SyncAlignViewerActivity extends BaseActivity implements SeekBar.OnS
                 mStreamThread.join(300);
             } catch (InterruptedException e) {
             }
+            mStreamThread = null;
         }
     }
 
@@ -255,7 +255,7 @@ public class SyncAlignViewerActivity extends BaseActivity implements SeekBar.OnS
         mColorDstBuffer.clear();
 
         switch (colorFrame.getFormat()) {
-            case RGB888:
+            case RGB:
                 mColorDstBuffer.put(mColorSrcBuffer);
                 mColorDstBuffer.flip();
                 break;
@@ -310,7 +310,7 @@ public class SyncAlignViewerActivity extends BaseActivity implements SeekBar.OnS
             if (mDepthDstBuffer != null && mColorDstBuffer != null) {
                 byte[] depthColorData = ImageUtils.depthAlignToColor(mColorDstBuffer, mDepthDstBuffer,
                         colorW, colorH, depthW, depthH, mAlpha);
-                mColorView.update(colorW, colorH, StreamType.COLOR, Format.RGB888, depthColorData, 1.0f);
+                mColorView.update(colorW, colorH, StreamType.COLOR, Format.RGB, depthColorData, 1.0f);
             }
         }
     }

@@ -1,11 +1,8 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
 import android.widget.TextView;
-
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
@@ -14,7 +11,6 @@ import com.orbbec.obsensor.DeviceList;
 import com.orbbec.obsensor.Format;
 import com.orbbec.obsensor.FrameCallback;
 import com.orbbec.obsensor.FrameType;
-import com.orbbec.obsensor.OBContext;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.SensorType;
 import com.orbbec.obsensor.StreamProfile;

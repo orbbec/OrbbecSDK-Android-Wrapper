@@ -3,13 +3,11 @@ package com.orbbec.orbbecsdkexamples.activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.text.TextUtils;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.orbbec.obsensor.AccelFrame;
 import com.orbbec.obsensor.AccelStreamProfile;
@@ -21,7 +19,6 @@ import com.orbbec.obsensor.FrameCallback;
 import com.orbbec.obsensor.FrameType;
 import com.orbbec.obsensor.GyroFrame;
 import com.orbbec.obsensor.GyroStreamProfile;
-import com.orbbec.obsensor.OBContext;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.SensorType;
 import com.orbbec.obsensor.StreamProfileList;
@@ -41,7 +38,7 @@ public class ImuActivity extends BaseActivity {
     private Sensor mSensorGyro;
     private AccelStreamProfile mAccelStreamProfile;
     private GyroStreamProfile mGyroStreamProfile;
-    
+
     private TextView mAccelTimeStampView;
     private TextView mAccelTemperatureView;
     private TextView mAccelXView;

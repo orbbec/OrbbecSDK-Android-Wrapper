@@ -987,6 +987,115 @@ public class Device extends LobClass {
     }
 
     /**
+     * \if English
+     * Check if the device supports global timestamp.
+     *
+     * @return true supports, false does not support
+     * \else
+     * 检查设备是否支持全局时间戳
+     *
+     * @return true 支持, false 不支持
+     * \endif
+     */
+    public boolean isGlobalTimestampSupported() {
+        throwInitializeException();
+        return nIsGlobalTimestampSupported(mHandle);
+    }
+
+    /**
+     * \if English
+     * Load depth filter config from file.
+     * \else
+     * 重置默认的深度滤波配置
+     * \endif
+     */
+    public void resetDefaultDepthFilterConfig() {
+        throwInitializeException();
+        nResetDefaultDepthFilterConfig(mHandle);
+    }
+
+    /**
+     * \if English
+     * Get the current preset name.
+     *
+     * @return The current preset name, it should be one of the preset names returned by @ref ob_device_get_available_preset_list.
+     * \else
+     * 获取当前预置名称
+     *
+     * @return 当前预设名称，它应该是@ref ob_device_get_available_preset_list返回的预设名称之一。
+     * \endif
+     */
+    public String getCurrentPresetName() {
+        throwInitializeException();
+        return nGetCurrentPresetName(mHandle);
+    }
+
+    /**
+     * \if English
+     * @brief Get the available preset list.
+     *
+     * @param[in] Log error messages. The name should be one of the preset names returned by @ref ob_device_get_available_preset_list.
+     * \else
+     * @brief 获取可用预置列表
+     *
+     * @param[in] 记录错误消息。该名称应该是@ref ob_device_get_available_preset_list返回的预设名称之一。
+     * \endif
+     */
+    public void loadPreset(String presetName) {
+        throwInitializeException();
+        nLoadPreset(mHandle, presetName);
+    }
+
+    /**
+     * \if English
+     * @brief Load preset from json string.
+     *
+     * @param[in] The json file path.
+     * \else
+     * @brief 从json字符串加载预置
+     *
+     * @param[in] json字符串
+     * \endif
+     */
+    public void loadPresetFromJsonFile(String jsonFilePath) {
+        throwInitializeException();
+        nLoadPresetFromJsonFile(mHandle, jsonFilePath);
+    }
+
+    /**
+     * \if English
+     * @brief Export current settings as a preset json file.
+     *
+     * @param[in] The json file path.
+     * \else
+     * @brief 将当前设置导出为预置json文件
+     *
+     * @param[in] json字符串
+     * \endif
+     */
+    public void exportCurrentSettingsAsPresetJsonFile(String jsonFilePath) {
+        throwInitializeException();
+        nExportCurrentSettingsAsPresetJsonFile(mHandle, jsonFilePath);
+    }
+
+    /**
+     * \if English
+     * Get the available preset list.
+     *
+     * @return The available preset list.
+     * \else
+     * 获取可用预置列表
+     *
+     * @return 可用预置列表
+     * \endif
+     */
+    public PresetList getAvailablePresetList() {
+        throwInitializeException();
+        long handle = nGetAvailablePresetList(mHandle);
+        return handle != 0 ? new PresetList(handle) : null;
+    }
+
+    /**
 	 * \if English
 	 * The device restarts. After the device restarts, the original device resources need to be released, and can be re-acquired after the device is reconnected.
 	 * \else
@@ -1085,6 +1194,8 @@ public class Device extends LobClass {
 
     protected static native void nGetPropertyValueDataType(long handle, int property, byte[] dataType);
 
+//    protected static native byte[] nGetPropertyItem(long handle, int property);
+
     protected static native OBDataBundle nGetPropertyValueDataTypeExt(long handle, int property);
 
     protected static native void nGetPropertyRangeB(long handle, int property, PropertyRangeB outParams);
@@ -1130,6 +1241,20 @@ public class Device extends LobClass {
     protected static native void nSetNetworkConfig(long handle, OBNetworkConfig config);
 
     protected static native long nGetCalibrationCameraParamList(long handle);
+
+    protected static native boolean nIsGlobalTimestampSupported(long handle);
+
+    protected static native void nResetDefaultDepthFilterConfig(long handle);
+
+    protected static native String nGetCurrentPresetName(long handle);
+
+    protected static native void nLoadPreset(long handle, String presetName);
+
+    protected static native void nLoadPresetFromJsonFile(long handle, String jsonFilePath);
+
+    protected static native void nExportCurrentSettingsAsPresetJsonFile(long handle, String jsonFilePath);
+
+    protected static native long nGetAvailablePresetList(long handle);
 
     protected static native void nReboot(long handle);
 

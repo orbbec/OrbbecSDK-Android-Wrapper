@@ -57,15 +57,6 @@ ob_hp_status_code ob_device_send_data(ob_device *device, uint8_t *pBuffer, uint3
  */
 ob_hp_status_code ob_device_recv_data(ob_device *device, uint8_t *pBuffer, uint32_t *nReceived, ob_error **error);
 
-/**
- * @brief Get Imu data.
- *
- * @param[in] device Device object
- * @param[in] cb data callback
- * @param[out] error Log error messages
- */
-void ob_device_get_imu_data_ext(ob_device *device, ob_get_imu_data_callback cb, ob_error **error);
-
 #ifdef __cplusplus
 }
 #endif

@@ -126,5 +126,75 @@
                     android:layout_height="0dp" />
             </LinearLayout>
         </LinearLayout>
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="match_parent"
+            android:background="@color/black" />
+
+        <LinearLayout
+            android:id="@+id/ll_ir_left_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/btn_ir_left_control"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="LEFT_IR"
+                android:textAllCaps="false" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="360px"
+                android:layout_margin="5dp"
+                android:background="@android:color/black"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <com.orbbec.orbbecsdkexamples.view.OBGLView
+                    android:id="@+id/glv_ir_left"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="match_parent"
+            android:background="@color/black" />
+
+        <LinearLayout
+            android:id="@+id/ll_ir_right_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/btn_ir_right_control"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="RIGHT_IR"
+                android:textAllCaps="false" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="360px"
+                android:layout_margin="5dp"
+                android:background="@android:color/black"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <com.orbbec.orbbecsdkexamples.view.OBGLView
+                    android:id="@+id/glv_ir_right"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

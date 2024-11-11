@@ -28,6 +28,9 @@
     <string name="device_not_support_ir_right">本设备不支持IR_RIGHT</string>
     <string name="device_not_support_depth">本设备不支持Depth</string>
     <string name="device_not_support_imu">本设备不支持IMU</string>
+    <string name="device_not_support_hdr">本设备不支持HDR</string>
+    <string name="device_not_support_align_filter">本设备不支持AlignFilter</string>
+    <string name="device_not_support_post_process">本设备不支持后处理</string>
     <string name="init_stream_profile_failed">初始化播放配置失败</string>
     <string name="please_access_device">请插入设备</string>
     <string name="sensor_control_select_device">选择设备名：</string>
@@ -45,4 +48,11 @@
     <string name="cannot_set_brightness_when_ae_off">自动曝光未开启，不能设置亮度</string>
     <string name="cannot_set_white_balance_when_auto_white_balance_on">自动白平衡未关闭，不能设置白平衡</string>
     <string name="save_to_disk_save_path">保存路径：</string>
+    <string name="firmware_upgrade_success">固件升级成功!</string>
+    <string name="firmware_upgrade_failed">固件升级失败!</string>
+    <string name="firmware_is_latest_version">固件为最新版!</string>
+    <string name="not_find_firmware_file">没有找到固件文件!</string>
+    <string name="no_file_select">当前未选择文件!</string>
+    <string name="directory_error">所选目录异常!</string>
+    <string name="depth_distance">深度距离：<xliff:g>%.1f</xliff:g> mm</string>
 </resources>

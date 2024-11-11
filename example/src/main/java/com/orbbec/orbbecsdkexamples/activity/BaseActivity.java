@@ -31,7 +31,7 @@ import java.util.List;
 
 public abstract class BaseActivity extends AppCompatActivity {
     private static final String TAG = "BaseActivity";
-    private final String XML_CONFIG_FILE_NAME = "OrbbecSDKConfig_v1.0.xml";
+    private final String XML_CONFIG_FILE_NAME = "OrbbecSDKConfig.xml";
 
     /**
      * \if English
@@ -101,7 +101,8 @@ public abstract class BaseActivity extends AppCompatActivity {
     /**
      * Get best VideoStreamProfile of pipeline support by OrbbecSdkExamples.
      * Note: OrbbecSdkExamples just sample code to render and save frame, it support limit VideoStreamProfile Format.
-     * @param pipeline Pipeline
+     *
+     * @param pipeline   Pipeline
      * @param sensorType Target Sensor Type
      * @return If success return a VideoStreamProfile, otherwise return null.
      */
@@ -109,10 +110,10 @@ public abstract class BaseActivity extends AppCompatActivity {
         // Select prefer Format
         Format format;
         if (sensorType == SensorType.COLOR) {
-            format = Format.RGB888;
+            format = Format.RGB;
         } else if (sensorType == SensorType.IR
-             || sensorType == SensorType.IR_LEFT
-             || sensorType == SensorType.IR_RIGHT) {
+                || sensorType == SensorType.IR_LEFT
+                || sensorType == SensorType.IR_RIGHT) {
             format = Format.Y8;
         } else if (sensorType == SensorType.DEPTH) {
             format = Format.Y16;
@@ -130,7 +131,9 @@ public abstract class BaseActivity extends AppCompatActivity {
                 VideoStreamProfile profile = profileList.getStreamProfile(i).as(StreamType.VIDEO);
                 // Match target with and format.
                 // Note: width >= 640 && width <= 1280 is consider best render for OrbbecSdkExamples
-                if ((profile.getWidth() >= 640 && profile.getWidth() <= 1280) && profile.getFormat() == format) {
+                if ((profile.getWidth() >= 640 && profile.getWidth() <= 1280)
+                        && profile.getHeight() >= 360
+                        && profile.getFormat() == format) {
                     profiles.add(profile);
                 } else {
                     profile.close();
@@ -142,6 +145,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                 for (int i = 0, N = profileList.getStreamProfileCount(); i < N; i++) {
                     VideoStreamProfile profile = profileList.getStreamProfile(i).as(StreamType.VIDEO);
                     if ((profile.getWidth() >= 640 && profile.getWidth() <= 1280)
+                            && profile.getHeight() >= 360
                             && (profile.getFormat() != Format.MJPG && profile.getFormat() != Format.RVL)) {
                         profiles.add(profile);
                     } else {
@@ -170,7 +174,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                 }
             });
             for (VideoStreamProfile p : profiles) {
-                Log.d(TAG, "getStreamProfile " + p.getWidth() + "x" + p.getHeight() + "--" + p.getFps());
+                Log.d(TAG, sensorType + " getStreamProfile " + p.getWidth() + "x" + p.getHeight() + "--" + p.getFps());
             }
 
             if (profiles.isEmpty()) {
@@ -179,9 +183,12 @@ public abstract class BaseActivity extends AppCompatActivity {
 
             // Get first stream profile which is the best for OrbbecSdkExamples.
             VideoStreamProfile retProfile = profiles.get(0);
+
             // Release other stream profile
-            for (int i = 1; i < profiles.size(); i++) {
-                profiles.get(i).close();
+            for (int i = 0; i < profiles.size(); i++) {
+                if (profiles.get(i) != retProfile) {
+                    profiles.get(i).close();
+                }
             }
             return retProfile;
         } catch (Exception e) {
@@ -192,6 +199,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     /**
      * Get D2CStreamProfile which contain color and depth
+     *
      * @param pipeline
      * @param alignMode
      * @return Success: D2CStreamProfile which contain color and depth. Failure: null.
@@ -205,7 +213,7 @@ public abstract class BaseActivity extends AppCompatActivity {
             return null;
         }
         for (VideoStreamProfile profile : colorProfiles) {
-            if (profile.getWidth() >= 640 && profile.getWidth() <= 1280 && profile.getFormat() == Format.RGB888) {
+            if (profile.getWidth() >= 640 && profile.getWidth() <= 1280 && profile.getFormat() == Format.RGB) {
                 colorProfile = profile;
                 break;
             }
@@ -261,8 +269,9 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     /**
      * Get available color profiles with AlignMode. If alignMode is ALIGN_D2C_HW_ENABLE or ALIGN_D2C_SW_ENABLE
-     *     Not all color stream profile has match depth stream profile list, This function will filter the color stream profile
-     *     when it match any depth stream profile under target alignMode.
+     * Not all color stream profile has match depth stream profile list, This function will filter the color stream profile
+     * when it match any depth stream profile under target alignMode.
+     *
      * @param pipeline
      * @param alignMode
      * @return Color stream profile list that has supported depth stream profiles.
@@ -309,11 +318,12 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     /**
      * Get target depth stream profile list with target color stream profile and alignMode
-     * @param pipeline Pipeline
+     *
+     * @param pipeline     Pipeline
      * @param colorProfile Target color stream profile
-     * @param alignMode Target alignMode
+     * @param alignMode    Target alignMode
      * @return Depth stream profile list associate with target color stream profile.
-     *     Success: depth stream profile list has elements. Failure: depth stream profile list is empty.
+     * Success: depth stream profile list has elements. Failure: depth stream profile list is empty.
      */
     private List<VideoStreamProfile> getAvailableDepthProfiles(Pipeline pipeline, VideoStreamProfile colorProfile, AlignMode alignMode) {
         List<VideoStreamProfile> depthProfiles = new ArrayList<>();

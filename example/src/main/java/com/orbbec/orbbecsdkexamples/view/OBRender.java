@@ -219,7 +219,7 @@ public class OBRender implements GLSurfaceView.Renderer {
      */
     private void decodeColorFrame(int w, int h, Format format) {
         switch (format) {
-            case RGB888:
+            case RGB:
                 synchronized (mRenderLock) {
                     mRenderBuffer.put(mSrcDataBuffer);
                     mRenderBuffer.flip();

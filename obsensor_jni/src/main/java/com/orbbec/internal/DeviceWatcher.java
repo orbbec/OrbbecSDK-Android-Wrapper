@@ -144,7 +144,15 @@ public class DeviceWatcher extends LobClass {
                 synchronized (mUsbDeviceConnections) {
                     UsbDeviceConnection connection = mUsbDeviceConnections.get(uid);
                     if (null == connection) {
+                        if (!usbManager.hasPermission(usbDevice)) {
+                            Log.e(TAG, "openUsbDevice: the matched usb device has no permission!");
+                            return 0;
+                        }
                         connection = usbManager.openDevice(usbDevice);
+                        if (null == connection) {
+                            Log.e(TAG, "openUsbDevice failed:connection is null!");
+                            return 0;
+                        }
                         Log.i(TAG, "openUsbDevice: usbDevice: " + UsbUtilities.getUsbDeviceBriefText(usbDevice));
                         mUsbDeviceConnections.put(uid, connection);
                     }
