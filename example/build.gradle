@@ -20,7 +20,7 @@ android {
         def dataFormat = format.format(new Date())
         dataFormat+="01"//01是当天得第几版。默认是第一版
         versionCode  Integer.parseInt(project.hasProperty('JENKINS_BUILD_VERSION_CODE')?JENKINS_BUILD_VERSION_CODE:dataFormat)
-        versionName project.hasProperty('JENKINS_BUILD_VERSION_NAME') ? JENKINS_BUILD_VERSION_NAME : "1.8.1"
+        versionName project.hasProperty('JENKINS_BUILD_VERSION_NAME') ? JENKINS_BUILD_VERSION_NAME : "1.10.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
