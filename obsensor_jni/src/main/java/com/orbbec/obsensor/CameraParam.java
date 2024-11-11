@@ -68,7 +68,7 @@ public class CameraParam {
 	 * \if English
 	 * Get color camera dewarping parameters
      *
-     * @return Returns the color camera dewarping parameter {@link Camera Distortion}
+     * @return Returns the color camera dewarping parameter {@link CameraDistortion}
 	 * \else
      * 获取彩色相机去畸变参数
      *

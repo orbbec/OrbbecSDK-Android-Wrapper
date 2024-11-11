@@ -371,9 +371,9 @@ uint8_t *depthAlignToColor(uint8_t *colorData, uint8_t *depthData, int colorW, i
             rgbPixel++;
         }
     }
-    rgbPixel = colorData;
+//    rgbPixel = colorData;
 
-    return rgbPixel;
+    return colorData;
 }
 
 void uyvyToRgb(uint8_t *src, uint8_t *dst, int width, int height) {

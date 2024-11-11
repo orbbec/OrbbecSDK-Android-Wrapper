@@ -91,26 +91,30 @@ targetSdk 27
 **targetSdkVersion** 27 to fixed bug 'Android 10 Devices Do NOT Support USB Camera Connection' which fixed on android 11.
 
 # Support orbbec device
-OrbbecSDK：v1.8.1
-Publish: 2023-11-16
+OrbbecSDK：v1.10.3
+Publish: 2024-11-08
 Support device list (firmware version):
 | SDK version | Product | Firmware version |
 | --- | --- | --- |  
-| v1.8.1	  | Gemini 2 XL     | Obox: V1.2.5  VL:1.4.54 |
-|       	  | Astra 2         | 2.8.20                    |
-| 		      | Gemini 2 L      | 1.4.32                     |
-| 		      | Gemini 2        | 1.4.60 /1.4.76             |
-|             | Astra+         | 1.0.22/1.0.21/1.0.20/1.0.19 |
-|             | Femto          | 1.6.7                       |
-|             | Femto W       | 1.1.8                        |
-|             | DaBai          | 2436                        |
-|             | DaBai DCW      | 2460                        |
-|             | DaBai DW       | 2606                        |
-|             | Astra Mini Pro | 1007                        |
-|             | Gemini E       | 3460                        |
-|             | Gemini E Lite  | 3606                        |
-|             | Gemini         | 3.0.18                      |
-|             | Astra Mini S Pro | 1.0.05                    |
+| v1.10.3	  | Gemini 335       | 1.2.20                      |
+| 	          | Gemini 335L      | 1.2.20                      |
+|       	  | Gemini 336       | 1.2.20                      |
+|       	  | Gemini 336L      | 1.2.20                      |
+|       	  | Gemini 2 XL      | Obox: V1.2.5  VL:1.4.54     |
+|       	  | Astra 2          | 2.8.20                      |
+| 		      | Gemini 2 L       | 1.4.32                      |
+| 		      | Gemini 2         | 1.4.60 /1.4.76              |
+|             | Astra+           | 1.0.22/1.0.21/1.0.20/1.0.19 |
+|             | Femto            | 1.6.7                       |
+|             | Femto W          | 1.1.8                       |
+|             | DaBai            | 2436                        |
+|             | DaBai DCW        | 2460                        |
+|             | DaBai DW         | 2606                        |
+|             | Astra Mini Pro   | 1007                        |
+|             | Gemini E         | 3460                        |
+|             | Gemini E Lite    | 3606                        |
+|             | Gemini           | 3.0.18                      |
+|             | Astra Mini S Pro | 1.0.05                      |
 
 # Simple code of open depth stream
 Create OBContext global member to manager attach devices
@@ -127,52 +131,38 @@ Initialize OBContext with DeviceChangedCallback
 mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() {
    @Override
    public void onDeviceAttach(DeviceList deviceList) {
-         synchronized (mCurrentDeviceLock) {
-            if (null == mCurrentDevice) {
-               // DeviceList#getDevice(index) can only call once inside onDeviceAttach()
-               mCurrentDevice = deviceList.getDevice(0);
-               mCurrentDeviceInfo = mCurrentDevice.getInfo();
-               Log.d("Orbbec", "Device connection. name: " + mCurrentDeviceInfo.getName() + ", uid: " + mCurrentDeviceInfo.getUid());
-            }
-         }
-         try {
+        try {
+            mDevice = deviceList.getDevice(0);
             deviceList.close();
-         } catch (Exception e) {
+            // do something
+            mDevice.close();
+        } catch (Exception e) {
             e.printStackTrace();
-         }
+        }
    }
 
    @Override
    public void onDeviceDetach(DeviceList deviceList) {
          try {
-            int deviceCount = deviceList.getDeviceCount();
-            for (int i = 0; i < deviceCount; i++) {
-               String uid = deviceList.getUid();
-               if (null != mCurrentDevice) {
-                  synchronized (mCurrentDeviceLock) {
-                      if (null != mCurrentDeviceInfo && mCurrentDeviceInfo.getUid().equals(uid)) {
-                           // handle device disconnection
-                           // do something
+            if (null != mCurrentDevice){
+                int deviceCount=deviceList.getDeviceCount();
+                    for(int i=0;i<deviceCount; i++){
+                        String uid=deviceList.getUid();
+                        if(null!=mCurrentDeviceInfo&&mCurrentDeviceInfo.getUid().equals(uid)){
+                            // handle device disconnection
+                            // do something
 
-                           Log.d("Orbbec", "Device disconnection. name: " + mCurrentDeviceInfo.getName() + ", uid: " + mCurrentDeviceInfo.getUid());
-                           mCurrentDevice.close();
-                           mCurrentDevice = null;
-
-                           mCurrentDeviceInfo.close();
-                           mCurrentDeviceInfo null;
-                      }
-                  } // synchronized
-               }
-            } // for
+                            Log.d("Orbbec","Device disconnection. name: "+mCurrentDeviceInfo.getName()+", uid: "+mCurrentDeviceInfo.getUid());
+                            mCurrentDevice.close();
+                            mCurrentDevice=null;
+                        }
+                    }
+            }
          } catch (Exception e) {
             e.printStackTrace();
-         }
-
-         try {
+         } finally {
             deviceList.close();
-         } catch (Exception e) {
-            e.printStackTrace();
-         }
+        }
    }
 });
 ```

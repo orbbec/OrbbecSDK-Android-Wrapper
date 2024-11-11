@@ -26,7 +26,6 @@ import com.orbbec.obsensor.DeviceProperty;
 import com.orbbec.obsensor.FrameSet;
 import com.orbbec.obsensor.FrameType;
 import com.orbbec.obsensor.IRFrame;
-import com.orbbec.obsensor.OBContext;
 import com.orbbec.obsensor.OBException;
 import com.orbbec.obsensor.PermissionType;
 import com.orbbec.obsensor.Pipeline;
@@ -282,6 +281,7 @@ public class DepthModeActivity extends BaseActivity {
                     curModeIndex = i;
                 }
             }
+
             mDepthModeAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, depthModeNames);
             mDepthModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             mDepthModeSpinner.setAdapter(mDepthModeAdapter);

@@ -83,6 +83,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         Button hotPlugin = findViewById(R.id.btn_hot_plugin);
         hotPlugin.setOnClickListener(this);
+
+        Button hdrMerge = findViewById(R.id.btn_hdr_merge);
+        hdrMerge.setOnClickListener(this);
+
+        Button alignFilter = findViewById(R.id.btn_align_filter_view);
+        alignFilter.setOnClickListener(this);
+
+        Button postProcessing = findViewById(R.id.btn_post_processing);
+        postProcessing.setOnClickListener(this);
+
+        Button multiStream = findViewById(R.id.btn_multi_stream);
+        multiStream.setOnClickListener(this);
+
+        Button firmwareUpgrade = findViewById(R.id.btn_firmware_upgrade);
+        firmwareUpgrade.setOnClickListener(this);
     }
 
     @Override
@@ -116,6 +131,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             toActivity(SaveToDiskActivity.class);
         } else if (id == R.id.btn_hot_plugin) {
             toActivity(HotPluginActivity.class);
+        } else if (id == R.id.btn_hdr_merge) {
+            toActivity(HdrMergeActivity.class);
+        } else if (id == R.id.btn_align_filter_view) {
+            toActivity(AlignFilterViewerActivity.class);
+        } else if (id == R.id.btn_post_processing) {
+            toActivity(PostProcessingActivity.class);
+        } else if (id == R.id.btn_multi_stream) {
+            toActivity(MultiStreamActivity.class);
+        } else if (id == R.id.btn_firmware_upgrade) {
+            toActivity(FirmwareUpgradeActivity.class);
         }
     }
 

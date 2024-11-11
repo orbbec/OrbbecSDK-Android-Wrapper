@@ -4,8 +4,8 @@ plugins {
     id 'com.android.library'
 }
 
-def libVersionCode = 2023111601
-def libVersionName = "1.8.1"
+def libVersionCode = 2024111101
+def libVersionName = "1.10.3"
 println("libVersionCode: ${libVersionCode}, libVersionName: ${libVersionName}")
 
 android {

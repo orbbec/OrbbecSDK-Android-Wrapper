@@ -242,8 +242,8 @@ typedef struct {
  * @brief 序列号
  */
 typedef struct {
-    char numberStr[12];
-} DEVICE_SERIAL_NUMBER, OBDeviceSerialNumber, ob_device_serial_number;
+    char numberStr[16];
+} DEVICE_SERIAL_NUMBER, OBDeviceSerialNumber, ob_device_serial_number, OBSerialNumber, ob_serial_number;
 
 /**
  * @brief 温补参数（单目）
@@ -385,6 +385,24 @@ typedef struct MaskFilterConfig_S {
     bool  enable_undisto;
 } ob_mask_filter_config, OBMaskFilterConfig;
 
+/**
+ * @brief LDP测量扩展信息，供应商TOF器件输出的测量值
+ */
+typedef struct {
+    uint32_t xtalk;          // 串扰值
+    uint32_t reference_hit;  // 参考光子击中数
+    uint32_t distance_peak;  // 测距值
+    uint32_t reliability;    // 置信度
+    uint32_t obj_hits;       // 目标光子击中数
+} OBLdpMeasureExtensionInfo, OBLdpMeasureExtensionInfo_V0;
+
+enum DEPTH_ALG_MODE_TYPE {
+    NONE_MODE = 0,
+    CALIBRATION_MODE = 1,
+    INTERLEAVE_MODE  = 2,
+
+    ALL_MODE = CALIBRATION_MODE | INTERLEAVE_MODE,
+};
 #pragma pack(pop)
 
 #ifdef __cplusplus

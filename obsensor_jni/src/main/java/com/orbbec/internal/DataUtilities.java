@@ -1,9 +1,12 @@
 package com.orbbec.internal;
 
+import android.util.Log;
+
 import com.orbbec.obsensor.OBException;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -14,7 +17,29 @@ import java.nio.ShortBuffer;
 public final class DataUtilities {
 
     /**
+     * copy byte array
+     *
+     * @param src    source byte array
+     * @param dst    destination byte array
+     * @param offset start position of interception
+     * @param length intercepted length
+     */
+    public static void copyBytes(byte[] src, byte[] dst, int offset, int length) {
+        if (null == src || dst == src) {
+            throw new OBException("src or dst is invalid!");
+        }
+        if (offset < 0 || length < 1) {
+            throw new OBException("offset = " + offset + "; length = " + length);
+        }
+        if (dst.length < length) {
+            throw new OBException("Out of dst range!");
+        }
+        System.arraycopy(src, offset, dst, offset, length);
+    }
+
+    /**
      * Intercept byte array
+     *
      * @param bytes  array to be intercepted
      * @param offset start position of interception
      * @param length intercepted length
@@ -36,6 +61,7 @@ public final class DataUtilities {
 
     /**
      * byte array concatenation
+     *
      * @param src    array to be concatenated
      * @param dst    concatenated array
      * @param offset splicing start position
@@ -60,6 +86,7 @@ public final class DataUtilities {
 
     /**
      * Convert short data to byte array
+     *
      * @param s data to be converted
      * @return Converted byte array
      */
@@ -73,6 +100,7 @@ public final class DataUtilities {
 
     /**
      * Convert short array to byte array
+     *
      * @param ss array of shorts to convert
      * @return Converted byte array
      */
@@ -86,6 +114,7 @@ public final class DataUtilities {
 
     /**
      * Convert byte array to short data
+     *
      * @param bytes The byte array to be converted
      * @return converted short data
      */
@@ -98,6 +127,7 @@ public final class DataUtilities {
 
     /**
      * Convert byte array to short array
+     *
      * @param bytes The byte array to be converted
      * @param count the length of the short array
      * @return converted array of shorts
@@ -114,6 +144,7 @@ public final class DataUtilities {
 
     /**
      * Convert int type data to byte array
+     *
      * @param i int data to be converted
      * @return converted byte array
      */
@@ -127,6 +158,7 @@ public final class DataUtilities {
 
     /**
      * Convert int array to byte array
+     *
      * @param is the array of ints to convert
      * @return converted byte array
      */
@@ -140,6 +172,7 @@ public final class DataUtilities {
 
     /**
      * Convert byte array to int data
+     *
      * @param bytes The byte array to be converted
      * @return converted int type data
      */
@@ -152,6 +185,7 @@ public final class DataUtilities {
 
     /**
      * Convert byte array to int array
+     *
      * @param bytes The byte array to be converted
      * @param count the length of the converted int array
      * @return converted int array
@@ -168,6 +202,7 @@ public final class DataUtilities {
 
     /**
      * Convert float data type to byte array
+     *
      * @param f float data type to convert
      * @return converted byte array
      */
@@ -181,6 +216,7 @@ public final class DataUtilities {
 
     /**
      * Convert float array to byte array
+     *
      * @param fs array of floats to convert
      * @return converted byte array
      */
@@ -193,7 +229,36 @@ public final class DataUtilities {
     }
 
     /**
+     * Convert double data type to byte array
+     *
+     * @param d double data type to convert
+     * @return converted byte array
+     */
+    public static byte[] doubleToBytes(double d) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(Double.BYTES);
+        byteBuffer.order(ByteOrder.nativeOrder());
+        DoubleBuffer doubleBuffer = byteBuffer.asDoubleBuffer();
+        doubleBuffer.put(d);
+        return byteBuffer.array();
+    }
+
+    /**
+     * Convert double array to byte array
+     *
+     * @param ds array of doubles to convert
+     * @return converted byte array
+     */
+    public static byte[] doublesToBytes(double[] ds) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(Double.BYTES * ds.length);
+        byteBuffer.order(ByteOrder.nativeOrder());
+        DoubleBuffer doubleBuffer = byteBuffer.asDoubleBuffer();
+        doubleBuffer.put(ds);
+        return byteBuffer.array();
+    }
+
+    /**
      * Convert byte array to float array
+     *
      * @param bytes The byte array to be converted
      * @return the length of the converted float array
      */
@@ -206,6 +271,7 @@ public final class DataUtilities {
 
     /**
      * Convert byte array to float array
+     *
      * @param bytes The byte array to be converted
      * @param count the length of the converted float array
      * @return converted float array
@@ -221,7 +287,38 @@ public final class DataUtilities {
     }
 
     /**
+     * Convert byte array to double array
+     *
+     * @param bytes The byte array to be converted
+     * @return the length of the converted double array
+     */
+    public static double bytesToDouble(byte[] bytes) {
+        checkBytesValidity(bytes.length, Double.BYTES, 1);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.order(ByteOrder.nativeOrder());
+        return buffer.getDouble();
+    }
+
+    /**
+     * Convert byte array to double array
+     *
+     * @param bytes The byte array to be converted
+     * @param count the length of the converted double array
+     * @return converted double array
+     */
+    public static double[] bytesToDoubles(byte[] bytes, int count) {
+        checkBytesValidity(bytes.length, Double.BYTES, count);
+        double[] array = new double[bytes.length / Double.BYTES];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.order(ByteOrder.nativeOrder());
+        DoubleBuffer doubleBuffer = buffer.asDoubleBuffer();
+        doubleBuffer.get(array);
+        return array;
+    }
+
+    /**
      * Convert String to byte array
+     *
      * @param s String to convert
      * @return converted byte array
      */
@@ -231,6 +328,7 @@ public final class DataUtilities {
 
     /**
      * Convert byte array to String
+     *
      * @param bytes The byte array to be converted
      * @return converted string
      */
@@ -247,6 +345,7 @@ public final class DataUtilities {
 
     /**
      * Convert float array to string
+     *
      * @param floats array of floats to convert
      * @return converted string
      */
@@ -264,6 +363,7 @@ public final class DataUtilities {
 
     /**
      * int array converted to string
+     *
      * @param ints array of ints to convert
      * @return converted string
      */
@@ -277,5 +377,34 @@ public final class DataUtilities {
             }
         }
         return sb.toString();
+    }
+
+    public static short bytesToUint8(byte[] bytes) {
+        checkBytesValidity(bytes.length, Byte.BYTES, 1);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.order(ByteOrder.nativeOrder());
+        return (short) (buffer.get() & 0xFF);
+    }
+
+    public static byte[] uint8ToBytes(short value) {
+        return new byte[]{(byte) ((value >> 8) & 0xFF)};
+    }
+
+    public static int bytesToUnit16(byte[] bytes) {
+        checkBytesValidity(bytes.length, Short.BYTES, 1);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.order(ByteOrder.nativeOrder());
+        return buffer.getShort() & 0xFFFF;
+    }
+
+    public static byte[] uint16ToBytes(int value) {
+        if (value < 0 || value > 0xFFFF) {
+            throw new IllegalArgumentException("Value out of range for uint16: " + value);
+        }
+        ByteBuffer buffer = ByteBuffer.allocate(Short.BYTES);
+        buffer.order(ByteOrder.nativeOrder());
+        buffer.put((byte) ((value >> 8) & 0xFF));
+        buffer.put((byte) ((value & 0xFF)));
+        return buffer.array();
     }
 }

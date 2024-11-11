@@ -16,8 +16,7 @@ public class FormatConvertFilter extends Filter {
      * \endif
      */
     public FormatConvertFilter() {
-        super();
-        mHandle = nCreate();
+        super(nCreate());
     }
 
     /**

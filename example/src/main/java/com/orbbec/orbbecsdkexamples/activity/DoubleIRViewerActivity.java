@@ -10,15 +10,12 @@ import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceInfo;
 import com.orbbec.obsensor.DeviceList;
-import com.orbbec.obsensor.Format;
 import com.orbbec.obsensor.FrameSet;
 import com.orbbec.obsensor.FrameType;
 import com.orbbec.obsensor.IRFrame;
-import com.orbbec.obsensor.OBContext;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.SensorType;
-import com.orbbec.obsensor.StreamProfileList;
 import com.orbbec.obsensor.StreamType;
 import com.orbbec.obsensor.VideoStreamProfile;
 import com.orbbec.orbbecsdkexamples.R;
@@ -214,7 +211,7 @@ public class DoubleIRViewerActivity extends BaseActivity {
     }
 
     private Runnable mStreamRunnable = () -> {
-        FrameType frameTypes[] = {FrameType.IR_LEFT, FrameType.IR_RIGHT};
+//        FrameType frameTypes[] = {FrameType.IR_LEFT, FrameType.IR_RIGHT};
         while (mIsStreamRunning) {
             try {
                 // Obtain the data set in blocking mode. If it cannot be obtained after waiting for 100ms, it will time out.
@@ -224,22 +221,44 @@ public class DoubleIRViewerActivity extends BaseActivity {
                     continue;
                 }
 
-                // Get Infrared flow data
-                for (int i = 0; i < frameTypes.length; i++) {
-                    IRFrame frame = frameSet.getFrame(frameTypes[i]);
+                IRFrame leftFrame = frameSet.getFrame(FrameType.IR_LEFT);
+                IRFrame rightFrame = frameSet.getFrame(FrameType.IR_RIGHT);
 
-                    if (frame != null) {
-                        // Get infrared data and render it
-                        byte[] frameData = new byte[frame.getDataSize()];
-                        frame.getData(frameData);
+                if (leftFrame != null && rightFrame != null) {
+                    // Get infrared data and render it
+                    byte[] leftFrameData = new byte[leftFrame.getDataSize()];
+                    byte[] rightFrameData = new byte[rightFrame.getDataSize()];
 
-                        OBGLView glView = frameTypes[i] == FrameType.IR_LEFT ? mIrLeftView : mIrRightView;
-                        glView.update(frame.getWidth(), frame.getHeight(), StreamType.IR, frame.getFormat(), frameData, 1.0f);
+                    leftFrame.getData(leftFrameData);
+                    rightFrame.getData(rightFrameData);
 
-                        // Release infrared data frame
-                        frame.close();
-                    }
+                    mIrLeftView.update(leftFrame.getWidth(), leftFrame.getHeight(), StreamType.IR, leftFrame.getFormat(), leftFrameData, 1.0f);
+                    mIrRightView.update(rightFrame.getWidth(), rightFrame.getHeight(), StreamType.IR, rightFrame.getFormat(), rightFrameData, 1.0f);
+
                 }
+                // Release infrared data frame
+                if (leftFrame != null) {
+                    leftFrame.close();
+                }
+                if (rightFrame != null) {
+                    rightFrame.close();
+                }
+//                // Get Infrared flow data
+//                for (int i = 0; i < frameTypes.length; i++) {
+//                    IRFrame frame = frameSet.getFrame(frameTypes[i]);
+//
+//                    if (frame != null) {
+//                        // Get infrared data and render it
+//                        byte[] frameData = new byte[frame.getDataSize()];
+//                        frame.getData(frameData);
+//
+//                        OBGLView glView = frameTypes[i] == FrameType.IR_LEFT ? mIrLeftView : mIrRightView;
+//                        glView.update(frame.getWidth(), frame.getHeight(), StreamType.IR, frame.getFormat(), frameData, 1.0f);
+//
+//                        // Release infrared data frame
+//                        frame.close();
+//                    }
+//                }
 
                 // Release FrameSet
                 frameSet.close();

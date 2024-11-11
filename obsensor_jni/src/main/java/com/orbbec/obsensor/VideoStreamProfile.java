@@ -1,5 +1,8 @@
 package com.orbbec.obsensor;
 
+import com.orbbec.obsensor.datatype.CameraDistortion;
+import com.orbbec.obsensor.datatype.CameraIntrinsic;
+
 /**
  * \if English
  * Data stream configuration for Color, Depth, IR stream
@@ -63,6 +66,42 @@ public class VideoStreamProfile extends StreamProfile {
     }
 
     /**
+     * \if English
+     * Get the intrinsic of the video stream
+     *
+     * @return the intrinsic of the stream
+     * \else
+     * 获取视频流内参
+     *
+     * @return 流内参
+     * \endif
+     */
+    public CameraIntrinsic getIntrinsic() {
+        throwInitializeException();
+        CameraIntrinsic intrinsic = new CameraIntrinsic();
+        nGetIntrinsic(mHandle, intrinsic.getBytes());
+        return intrinsic;
+    }
+
+    /**
+     * \if English
+     * Get the distortion of the video stream
+     *
+     * @return the distortion of the stream
+     * \else
+     * 获取视频流畸变
+     *
+     * @return 流畸变
+     * \endif
+     */
+    public CameraDistortion getDistortion() {
+        throwInitializeException();
+        CameraDistortion distortion = new CameraDistortion();
+        nGetCameraDistortion(mHandle, distortion.getBytes());
+        return distortion;
+    }
+
+    /**
 	 * \if English
 	 * resource release
 	 * \else
@@ -79,4 +118,8 @@ public class VideoStreamProfile extends StreamProfile {
     private static native int nGetWidth(long handle);
 
     private static native int nGetHeight(long handle);
+
+    private static native void nGetIntrinsic(long handle, byte[] intrinsic);
+
+    private static native void nGetCameraDistortion(long handle, byte[] distortion);
 }

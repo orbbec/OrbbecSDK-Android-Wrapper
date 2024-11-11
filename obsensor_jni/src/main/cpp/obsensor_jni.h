@@ -24,6 +24,7 @@
 #include "libobsensor/h/Sensor.h"
 #include "libobsensor/h/StreamProfile.h"
 #include "libobsensor/h/Version.h"
+#include "libobsensor/h/Utils.h"
 
 #endif // ANDROID_OBSENSOR_JNI_H
 

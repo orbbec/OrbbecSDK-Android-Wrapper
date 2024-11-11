@@ -10,36 +10,36 @@ package com.orbbec.obsensor;
 public enum FormatConvertType {
     /**
 	 * \if English
-	 * YUYV to RGB888
+	 * YUYV to RGB
 	 * \else
-     * YUYV转RGB888
+     * YUYV转RGB
      * \endif
      */
-    FORMAT_YUYV_TO_RGB888(0),
+    FORMAT_YUYV_TO_RGB(0),
     /**
 	 * \if English
-	 * I420 to RGB888
+	 * I420 to RGB
 	 * \else
-     * I420转RGB888
+     * I420转RGB
      * \endif
      */
-    FORMAT_I420_TO_RGB888(1),
+    FORMAT_I420_TO_RGB(1),
     /**
 	 * \if English
-	 * NV21 to RGB888
+	 * NV21 to RGB
 	 * \else
-     * NV21转RGB888
+     * NV21转RGB
      * \endif
      */
-    FORMAT_NV21_TO_RGB888(2),
+    FORMAT_NV21_TO_RGB(2),
     /**
 	 * \if English
-	  * NV12 to RGB888
+	  * NV12 to RGB
 	 * \else
-     * NV12转RGB888
+     * NV12转RGB
      * \endif
      */
-    FORMAT_NV12_TO_RGB888(3),
+    FORMAT_NV12_TO_RGB(3),
     /**
 	 * \if English
 	 * MJPG to I420
@@ -50,12 +50,12 @@ public enum FormatConvertType {
     FORMAT_MJPEG_TO_I420(4),
     /**
 	 * \if English
-     * RGB888 to BGR
+     * RGB to BGR
 	 * \else
-     * RGB888转BGR
+     * RGB转BGR
      * \endif
      */
-    FORMAT_RGB888_TO_BGR(5),
+    FORMAT_RGB_TO_BGR(5),
     /**
 	 * \if English
 	 * MJPG to NV21
@@ -66,12 +66,93 @@ public enum FormatConvertType {
     FORMAT_MJPEG_TO_NV21(6),
     /**
 	 * \if English
-	 * MJPG to RG888
+	 * MJPG to RGB
 	 * \else
-     * MJPG转RGB888
+     * MJPG转RGB
      * \endif
      */
-    FORMAT_MJPEG_TO_RGB888(7);
+    FORMAT_MJPEG_TO_RGB(7),
+    /**
+	 * \if English
+	 * MJPG to BGR
+	 * \else
+     * MJPG转BGR
+     * \endif
+     */
+    FORMAT_MJPG_TO_BGR(8),
+    /**
+     * \if English
+     * MJPG to BGRA
+     * \else
+     * MJPG转BGRA
+     * \endif
+     */
+    FORMAT_MJPG_TO_BGRA(9),
+    /**
+     * \if English
+     * UYVY to RGB
+     * \else
+     * UYVY转RGB
+     * \endif
+     */
+    FORMAT_UYVY_TO_RGB(10),
+    /**
+     * \if English
+     * BGR to RGB
+     * \else
+     * BGR转RGB
+     * \endif
+     */
+    FORMAT_BGR_TO_RGB(11),
+    /**
+     * \if English
+     * MJPG to NV12
+     * \else
+     * MJPG转NV12
+     * \endif
+     */
+    FORMAT_MJPG_TO_NV12(12),
+    /**
+     * \if English
+     * MJPG to BGR
+     * \else
+     * MJPG转BGR
+     * \endif
+     */
+    FORMAT_YUYV_TO_BGR(13),
+    /**
+     * \if English
+     * YUYV to RGBA
+     * \else
+     * YUYV转RGBA
+     * \endif
+     */
+    FORMAT_YUYV_TO_RGBA(14),
+    /**
+     * \if English
+     * YUYV to BGRA
+     * \else
+     * YUYV转BGRA
+     * \endif
+     */
+    FORMAT_YUYV_TO_BGRA(15),
+    /**
+     * \if English
+     * YUYV to Y16
+     * \else
+     * YUYV转Y16
+     * \endif
+     */
+    FORMAT_YUYV_TO_Y16(16),
+    /**
+     * \if English
+     * YUYV to Y8
+     * \else
+     * YUYV转Y8
+     * \endif
+     */
+    FORMAT_YUYV_TO_Y8(17),
+    ;
 
     private final int mValue;
 

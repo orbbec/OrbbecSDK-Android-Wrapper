@@ -18,8 +18,7 @@ public class PointCloudFilter extends Filter {
      * \endif
      */
     public PointCloudFilter() {
-        super();
-        mHandle = nCreate();
+        super(nCreate());
     }
 
     /**

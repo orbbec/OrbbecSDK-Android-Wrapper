@@ -1,5 +1,7 @@
 package com.orbbec.obsensor;
 
+import com.orbbec.obsensor.datatype.GyroIntrinsic;
+
 /**
  * \if English
   * Gyro stream profile
@@ -46,8 +48,27 @@ public class GyroStreamProfile extends StreamProfile {
         return SampleRate.get(rateIndex);
     }
 
+    /**
+     * \if English
+     * Get the intrinsic of the gyroscope stream.
+     *
+     * @return Return the intrinsic of the accelerometer stream. {@link  GyroIntrinsic}
+     * \else
+     * 获取陀螺仪内参
+     *
+     * @return 返回陀螺仪内参 {@link  GyroIntrinsic}
+     * \endif
+     */
+    public GyroIntrinsic getIntrinsic() {
+        throwInitializeException();
+        GyroIntrinsic intrinsic = new GyroIntrinsic();
+        nGetIntrinsic(mHandle, intrinsic.getBytes());
+        return intrinsic;
+    }
+
     private static native int nGetGyroFullScaleRange(long mHandle);
 
     private static native int nGetGyroSampleRate(long mHandle);
 
+    private static native void nGetIntrinsic(long handle, byte[] intrinsic);
 }

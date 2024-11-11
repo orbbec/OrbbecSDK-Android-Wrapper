@@ -82,6 +82,14 @@ public enum SensorType {
      * \endif
      */
     RAW_PHASE(8),
+    /**
+     * \if English
+     * Sensor count
+     * \else
+     * 传感器数量
+     * \endif
+     */
+    COUNT(9)
     ;
 
     private final int mValue;

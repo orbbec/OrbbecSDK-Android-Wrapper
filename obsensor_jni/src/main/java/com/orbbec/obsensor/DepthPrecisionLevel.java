@@ -41,7 +41,19 @@ public enum DepthPrecisionLevel {
      * 0.2mm
      */
     OB_PRECISION_0MM2(4),
-    OB_PRECISION_COUNT(5);
+    /**
+     * 0.5mm
+     */
+    OB_PRECISION_0MM5(5),
+    /**
+     * 0.05mm
+     */
+    OB_PRECISION_0MM05(6),
+    /**
+     * unknown
+     */
+    OB_PRECISION_UNKNOWN(7),
+    OB_PRECISION_COUNT(8);
 
     private final int mValue;
 

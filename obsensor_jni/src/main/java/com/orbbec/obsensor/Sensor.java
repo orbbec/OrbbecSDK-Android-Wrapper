@@ -5,6 +5,8 @@ import android.util.Log;
 import static com.orbbec.obsensor.SensorType.ACCEL;
 import static com.orbbec.obsensor.SensorType.GYRO;
 
+import java.util.List;
+
 /**
  * \if English
  * Expose orbbec sensor function
@@ -54,6 +56,12 @@ public class Sensor extends LobClass {
         throwInitializeException();
         long handle = nGetStreamProfileList(mHandle);
         return handle != 0 ? new StreamProfileList(handle) : null;
+    }
+
+    public RecommendedFilterList getRecommendedFilterList() {
+        throwInitializeException();
+        long handle = nGetRecommendedFilterList(mHandle);
+        return handle != 0 ? new RecommendedFilterList(handle) : null;
     }
 
     /**
@@ -143,9 +151,12 @@ public class Sensor extends LobClass {
 
     private static native long nGetStreamProfileList(long handle);
 
+    private static native long nGetRecommendedFilterList(long handle);
+
     private static native void nSwitchProfile(long handle, long streamProfileHandle);
 
     private static native void nStart(long handle, long streamProfileHandle, FrameCallbackImpl callback);
 
     private static native void nStop(long handle);
+
 }

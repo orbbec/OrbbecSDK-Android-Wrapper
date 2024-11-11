@@ -14,8 +14,7 @@ public class DeCompressionFilter extends Filter {
      * \endif
      */
     public DeCompressionFilter() {
-        super();
-        mHandle = nCreate();
+        super(nCreate());
     }
 
     private static native long nCreate();

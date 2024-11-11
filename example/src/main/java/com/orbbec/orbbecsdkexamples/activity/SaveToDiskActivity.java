@@ -290,14 +290,14 @@ public class SaveToDiskActivity extends BaseActivity {
                     Frame rgbFrame = null;
                     switch (colorFrame.getFormat()) {
                         case MJPG:
-                            mFormatConvertFilter.setFormatType(FormatConvertType.FORMAT_MJPEG_TO_RGB888);
+                            mFormatConvertFilter.setFormatType(FormatConvertType.FORMAT_MJPEG_TO_RGB);
                             rgbFrame = mFormatConvertFilter.process(colorFrame);
                             break;
-                        case RGB888:
+                        case RGB:
                             rgbFrame = colorFrame;
                             break;
                         case YUYV:
-                            mFormatConvertFilter.setFormatType(FormatConvertType.FORMAT_YUYV_TO_RGB888);
+                            mFormatConvertFilter.setFormatType(FormatConvertType.FORMAT_YUYV_TO_RGB);
                             rgbFrame = mFormatConvertFilter.process(colorFrame);
                             break;
                         case UYVY:

@@ -178,12 +178,12 @@ public enum Format {
     RLE(21),
     /**
 	 * \if English
-	 * RGB888 format
+	 * RGB888 format (actual BRG888)
 	 * \else
-     * RGB888格式
+     * RGB888格式 (实际RGB888)
      * \endif
      */
-    RGB888(22),
+    RGB(22),
     /**
 	 * \if English
 	 * BGR format (actual BRG888)
@@ -226,6 +226,69 @@ public enum Format {
 	 *
 	 */
 	RVL(27),
+	/**
+	 * \if English
+	 * Z16 format
+	 * \else
+	 * Z16 格式
+	 * \endif
+	 *
+	 */
+	Z16(28),
+	/**
+	 * \if English
+	 * VY12 format
+	 * \else
+	 * VY12格式
+	 * \endif
+	 *
+	 */
+	VY12(29),
+	/**
+	 * \if English
+	 * BA81 format
+	 * \else
+	 * BA81格式
+	 * \endif
+	 *
+	 */
+	BA81(30),
+	/**
+	 * \if English
+	 * RGBA format
+	 * \else
+	 * RGBA格式
+	 * \endif
+	 *
+	 */
+	RGBA(31),
+	/**
+	 * \if English
+	 * BYR2 format
+	 * \else
+	 * BYR2格式
+	 * \endif
+	 *
+	 */
+	BYR2(32),
+	/**
+	 * \if English
+	 * RW16 format
+	 * \else
+	 * RW16格式
+	 * \endif
+	 *
+	 */
+	RW16(33),
+	/**d
+	 * \if English
+	 * DISP16 format
+	 * \else
+	 * DISP16格式
+	 * \endif
+	 *
+	 */
+	DISP16(34),
     /**
 	 * \if English
 	 * unknown format

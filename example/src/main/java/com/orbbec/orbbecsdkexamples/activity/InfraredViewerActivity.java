@@ -12,7 +12,6 @@ import com.orbbec.obsensor.DeviceInfo;
 import com.orbbec.obsensor.DeviceList;
 import com.orbbec.obsensor.FrameSet;
 import com.orbbec.obsensor.IRFrame;
-import com.orbbec.obsensor.OBContext;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.SensorType;

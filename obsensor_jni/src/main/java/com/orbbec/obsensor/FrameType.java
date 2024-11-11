@@ -97,7 +97,15 @@ public enum FrameType {
      * TODO lumiaozi
      * \endif
      */
-    RAW_PHASE(10)
+    RAW_PHASE(10),
+    /**
+     * \if English
+     * Frame type count
+     * \else
+     * 帧类型数量
+     * \endif
+     */
+    TYPE_COUNT(11)
     ;
 
     private final int mValue;

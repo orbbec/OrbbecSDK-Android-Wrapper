@@ -8,9 +8,6 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-feature android:name="android.hardware.usb.host" />
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
 
     <application
         android:name=".application.MyApplication"
@@ -34,6 +31,11 @@
         <activity android:name=".activity.ImuActivity" />
         <activity android:name=".activity.DepthModeActivity" />
         <activity android:name=".activity.MultiDeviceActivity" />
+        <activity android:name=".activity.AlignFilterViewerActivity" />
+        <activity android:name=".activity.HdrMergeActivity" />
+        <activity android:name=".activity.PostProcessingActivity" />
+        <activity android:name=".activity.MultiStreamActivity" />
+        <activity android:name=".activity.FirmwareUpgradeActivity" />
         <activity android:name=".activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
