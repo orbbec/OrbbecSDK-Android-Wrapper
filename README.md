@@ -94,7 +94,7 @@ targetSdk 27
 OrbbecSDK：v1.10.3
 Publish: 2024-11-08
 Support device list (firmware version):
-| SDK version | Product | Firmware version |
+| SDK version | Product | Minimal Firmware version |
 | --- | --- | --- |  
 | v1.10.3	  | Gemini 335       | 1.2.20                      |
 | 	          | Gemini 335L      | 1.2.20                      |
@@ -103,8 +103,8 @@ Support device list (firmware version):
 |       	  | Gemini 2 XL      | Obox: V1.2.5  VL:1.4.54     |
 |       	  | Astra 2          | 2.8.20                      |
 | 		      | Gemini 2 L       | 1.4.32                      |
-| 		      | Gemini 2         | 1.4.60 /1.4.76              |
-|             | Astra+           | 1.0.22/1.0.21/1.0.20/1.0.19 |
+| 		      | Gemini 2         | 1.4.60             |
+|             | Astra+           | 1.0.19 |
 |             | Femto            | 1.6.7                       |
 |             | Femto W          | 1.1.8                       |
 |             | DaBai            | 2436                        |
@@ -113,8 +113,8 @@ Support device list (firmware version):
 |             | Astra Mini Pro   | 1007                        |
 |             | Gemini E         | 3460                        |
 |             | Gemini E Lite    | 3606                        |
-|             | Gemini           | 3.0.18                      |
-|             | Astra Mini S Pro | 1.0.05                      |
+|             | Gemini           | 3018                      |
+|             | Astra Mini S Pro | 1005                      |
 
 # Simple code of open depth stream
 Create OBContext global member to manager attach devices
