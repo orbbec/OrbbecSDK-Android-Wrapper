@@ -92,7 +92,6 @@ targetSdk 27
 
 # Support orbbec device
 OrbbecSDK：v1.10.3
-Publish: 2024-11-08
 Support device list (firmware version):
 | SDK version | Product | Minimal Firmware version |
 | --- | --- | --- |  
