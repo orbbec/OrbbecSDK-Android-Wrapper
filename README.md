@@ -69,6 +69,8 @@ _Note_: To short include path in native code, module of 'obsensor_jni' import as
 Android wrapper implementation with jni which is forward or transfer data between java and native sensorsdk. 
 
 ## Support android version
+- Test on the Android 13
+- Note: If using Android 10, set targetSdk to 27
 ```groovy
 minSdk 24
 //noinspection ExpiredTargetSdkVersion
@@ -82,13 +84,6 @@ targetSdk 27
 ## example
 Example of sensorsdk android wrapper
 
-## Support android version
-```groovy
-minSdk 24
-//noinspection ExpiredTargetSdkVersion
-targetSdk 27
-```
-**targetSdkVersion** 27 to fixed bug 'Android 10 Devices Do NOT Support USB Camera Connection' which fixed on android 11.
 
 # Support orbbec device
 OrbbecSDK：v1.10.3
