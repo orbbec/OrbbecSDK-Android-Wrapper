@@ -49,7 +49,7 @@ Here is the device support list of main branch (v1.x) and v2-main branch (v2.x):
       <td>recommended for new designs</td>
     </tr>
     <tr>
-      <td rowspan="3" style="text-align: center; font-weight: bold;">Gemini 2</td>
+      <td rowspan="5" style="text-align: center; font-weight: bold;">Gemini 2</td>
       <td>Gemini 2</td>
       <td>full maintenance</td>
       <td>recommended for new designs</td>
@@ -60,20 +60,18 @@ Here is the device support list of main branch (v1.x) and v2-main branch (v2.x):
       <td>recommended for new designs</td>
     </tr>
     <tr>
+      <td>Gemini 210</td>
+      <td>not supported</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 215</td>
+      <td>not supported</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
       <td>Gemini 2 XL</td>
       <td>recommended for new designs</td>
-      <td>to be supported</td>
-    </tr>
-    <tr>
-      <td rowspan="3" style="text-align: center; font-weight: bold;">Femto</td>
-    <tr>
-      <td>Femto Mega</td>
-      <td>full maintenance</td>
-      <td>recommended for new designs</td>
-    </tr>
-    <tr>
-      <td>Femto Mega I</td>
-      <td>full maintenance</td>
       <td>to be supported</td>
     </tr>
     <tr>
@@ -122,7 +120,6 @@ Here is the device support list of main branch (v1.x) and v2-main branch (v2.x):
 | Gemini 335L       | 1.2.20                       |
 | Gemini 336        | 1.2.20                       |
 | Gemini 336L       | 1.2.20                       |
-| Femto Mega        | 1.3.0                  |
 | Astra 2           | 2.8.20                       |
 | Gemini 2 L        | 1.4.53                       |
 | Gemini 2          | 1.4.92               |
