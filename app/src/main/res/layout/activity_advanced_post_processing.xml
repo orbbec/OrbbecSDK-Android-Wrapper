@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activity.AdvancedPostProcessingActivity">
+
+    <LinearLayout
+        android:id="@+id/ll_post_processing_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="5dp"
+        android:baselineAligned="true"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/ll_post_processing_set_control"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1">
+
+            <com.orbbec.orbbecsdkexamples.view.OBGLView
+                android:id="@+id/post_processing_depth_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:background="#80000000"
+                android:gravity="start|top"
+                android:text="@string/depth_stream"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+        </FrameLayout>
+
+        <View
+            android:layout_width="2dp"
+            android:layout_height="match_parent"
+            android:layout_marginVertical="2dp"
+            android:background="@android:color/darker_gray" />
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1">
+
+            <com.orbbec.orbbecsdkexamples.view.OBGLView
+                android:id="@+id/post_processing_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:background="#80000000"
+                android:gravity="start|top"
+                android:text="@string/post_processing_depth_stream"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_post_processing_set_control"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@+id/ll_post_processing_switch_control"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ll_post_processing_view">
+
+        <Spinner
+            android:id="@+id/sp_filter_select"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:overlapAnchor="false" />
+
+        <Spinner
+            android:id="@+id/sp_filter_config_select"
+            android:layout_width="wrap_content"
+            android:layout_height="24dp"
+            android:overlapAnchor="false" />
+
+        <Button
+            android:id="@+id/btn_filter_config_set"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/set" />
+
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/et_filter_config_set"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:gravity="center_horizontal"
+            android:inputType="numberSigned|numberDecimal"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_filter_config_get"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:text="@string/get" />
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/tv_filter_config_get"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_post_processing_switch_control"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="5dp"
+        android:layout_marginBottom="10dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ll_post_processing_set_control" />
+</androidx.constraintlayout.widget.ConstraintLayout>

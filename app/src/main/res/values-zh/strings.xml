@@ -1,0 +1,71 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name">OrbbecSDKExamples</string>
+    <string name="title_activity_sensor_control_welcome">SensorControlWelcomeActivity</string>
+    <!--
+    This string is used for square devices and overridden by hello_world in
+    values-round/strings.xml for round devices.
+    -->
+    <string name="hello_world">Hello Square World!</string>
+
+    <string name="device_info"><xliff:g>%s</xliff:g>\n
+        Name:<xliff:g>%s</xliff:g>\n
+        SN:<xliff:g>%s</xliff:g>\n
+        PID:<xliff:g>%s</xliff:g>\n
+        VID:<xliff:g>%s</xliff:g></string>
+
+    <string name="notification">Run Information See Log.</string>
+    <string name="depth_mode">深度工作模式</string>
+    <string name="sensor">相机sensor类型</string>
+    <string name="start_play">开始播放</string>
+    <string name="stop_play">停止播放</string>
+    <string name="device_name">设备名称</string>
+
+    <string name="device_not_connected">设备未连接</string>
+    <string name="device_not_support_depth_mode">本设备不支持深度工作模式</string>
+    <string name="device_not_support_color">本设备不支持Color</string>
+    <string name="device_not_support_ir">本设备不支持IR</string>
+    <string name="device_not_support_ir_left">本设备不支持IR_LEFT</string>
+    <string name="device_not_support_ir_right">本设备不支持IR_RIGHT</string>
+    <string name="device_not_support_depth">本设备不支持Depth</string>
+    <string name="device_not_support_imu">本设备不支持IMU</string>
+    <string name="device_not_support_hdr">本设备不支持HDR</string>
+    <string name="device_not_support_align_filter">本设备不支持AlignFilter</string>
+    <string name="device_not_support_post_process">本设备不支持后处理</string>
+    <string name="init_stream_profile_failed">初始化播放配置失败</string>
+    <string name="please_access_device">请插入设备</string>
+    <string name="sensor_control_select_device">选择设备名：</string>
+    <string name="sensor_control_select_command">选择操作指令：</string>
+    <string name="sensor_control_operate_log">操作日志：</string>
+    <string name="sensor_control_firmware_version">固件版本号：</string>
+    <string name="sensor_control_hardware_version">硬件版本：</string>
+    <string name="sensor_control_sdk_version">Android SDK版本号：</string>
+    <string name="sensor_control_serial_number">SN号：</string>
+    <string name="sensor_control_read_write_permission"> 读写权限：</string>
+    <string name="device_list_is_empty">设备列表为空</string>
+    <string name="command_list_is_empty">操作指令列表为空</string>
+    <string name="please_input_right_value">请按照提示输入正确的值</string>
+    <string name="cannot_set_exposure_and_gain_when_ae_on">自动曝光未关闭，不能设置曝光或增益</string>
+    <string name="cannot_set_brightness_when_ae_off">自动曝光未开启，不能设置亮度</string>
+    <string name="cannot_set_white_balance_when_auto_white_balance_on">自动白平衡未关闭，不能设置白平衡</string>
+    <string name="save_to_disk_save_path">保存路径：</string>
+    <string name="firmware_upgrade_success">固件升级成功!</string>
+    <string name="firmware_upgrade_failed">固件升级失败!</string>
+    <string name="firmware_is_latest_version">固件为最新版!</string>
+    <string name="not_find_firmware_file">没有找到固件文件!</string>
+    <string name="no_file_select">当前未选择文件!</string>
+    <string name="directory_error">所选目录异常!</string>
+    <string name="depth_distance">深度距离：<xliff:g>%.1f</xliff:g> mm</string>
+    <string name="device_status">Device connection status</string>
+    <string name="device_reboot">Reboot Device(S)</string>
+    <string name="set">Set</string>
+    <string name="get">Get</string>
+    <string name="save_depth_points">保存深度点</string>
+    <string name="save_color_points">保存彩色点</string>
+
+    <string name="color_stream">彩色流</string>
+    <string name="depth_stream">深度流</string>
+    <string name="ir_stream">IR流</string>
+    <string name="ir_left_stream">左IR流</string>
+    <string name="ir_right_stream">右IR流</string>
+    <string name="post_processing_depth_stream">后处理深度流</string>
+</resources>

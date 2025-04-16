@@ -1,0 +1,113 @@
+import java.text.SimpleDateFormat
+
+plugins {
+    id 'com.android.application'
+}
+
+Properties obSignatureProp = new Properties()
+obSignatureProp.load(project.file('../keystore/signature.properties').newDataInputStream())
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion "30.0.3"
+
+    defaultConfig {
+        applicationId "com.orbbec.orbbecsdkexamples"
+        minSdkVersion 24
+        //noinspection ExpiredTargetSdkVersion
+        targetSdkVersion 27
+        def format = new SimpleDateFormat("yyyyMMdd")
+        def dataFormat = format.format(new Date())
+        dataFormat+="01"//01是当天得第几版。默认是第一版
+        versionCode  Integer.parseInt(project.hasProperty('JENKINS_BUILD_VERSION_CODE')?JENKINS_BUILD_VERSION_CODE:dataFormat)
+        versionName project.hasProperty('JENKINS_BUILD_VERSION_NAME') ? JENKINS_BUILD_VERSION_NAME : "2.0.4"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_shared",
+                        "-DANDROID_ARM_NEON=TRUE"
+                cppFlags "-std=c++11"
+                abiFilters "arm64-v8a", "armeabi-v7a"
+            }
+        }
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('../keystore/debug.jks')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+        release {
+            storeFile file('../keystore/orbbecsdkexample.jks')
+            storePassword obSignatureProp.getProperty('STORE_PASSWORD')
+            keyAlias obSignatureProp.getProperty('KEY_ALIAS')
+            keyPassword obSignatureProp.getProperty('KEY_PASSWORD')
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+            jniDebuggable true
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+            jniDebuggable false
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def outputFile = output.outputFile
+            def fileName
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                if (variant.buildType.name == 'release') {
+                    fileName = "OrbbecSdkExamples_v" + versionName + "_" + versionCode + "_release.apk"
+                } else if (variant.buildType.name == 'debug') {
+                    fileName = "OrbbecSdkExamples_v" + versionName + "_" + versionCode + "_beta.apk"
+                }
+                outputFileName = fileName
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.18.1'
+        }
+    }
+    ndkVersion '21.4.7075529'
+
+    packagingOptions {
+        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so'
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.2.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    if (!project.hasProperty('JENKINS_BUILD_VERSION_CODE') && null != findProject(':obsensor_jni')) {
+        implementation project(':obsensor_jni')
+        implementation fileTree(dir: "libs", include: ["*.aar"]).exclude("obsensor_*.aar")
+    } else {
+        implementation fileTree(dir: "libs", include: ["*.aar"])
+    }
+}

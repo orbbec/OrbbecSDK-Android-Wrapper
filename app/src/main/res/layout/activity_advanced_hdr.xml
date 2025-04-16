@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activity.AdvancedHdrActivity">
+
+    <com.orbbec.orbbecsdkexamples.view.OBGLView
+        android:id="@+id/hdrmerge_id"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true" />
+
+    <CheckBox
+        android:id="@+id/hdr_merge_required"
+        android:layout_width="wrap_content"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center_horizontal|bottom"
+        android:background="@drawable/selector_gb"
+        android:button="@null"
+        android:checked="false"
+        android:drawableStart="@drawable/checkbox"
+        android:drawablePadding="6dp"
+        android:padding="6dp"
+        android:text="Merge"
+        android:textColor="@color/design_default_color_secondary"
+        android:textSize="14sp" />
+</RelativeLayout>

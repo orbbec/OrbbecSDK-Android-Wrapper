@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".activity.MainActivity">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/btn_basic_enumerate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Basic-Enumerate"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_basic_quick_start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Basic-QuickStart"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_stream_color"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Stream-Color"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_stream_depth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Stream-Depth"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_stream_imu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Stream-IMU"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_stream_infrared"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Stream-Infrared"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_stream_multi_streams"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Stream-MultiStreams"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_device_control"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Device-Control"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_device_firmware_update"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Device-FirmwareUpdate"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_device_hot_plugin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Device-HotPlugin"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_device_optional_depth_presets_update"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Device-OptionalDepthPresetsUpdate"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_advanced_hdr"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Advanced-Hdr"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_advanced_hw_d2c_align"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Advanced-HwD2CAlign"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_advanced_multi_devices"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Advanced-MultiDevices"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_advanced_point_cloud"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Advanced-PointCloud"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_advanced_post_processing"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Advanced-PostProcessing"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_advanced_sync_align"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="Advanced-SyncAlign"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/btn_record_playback"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="RecordPlayback"
+                android:textAllCaps="false"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btn_savetodisk"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:text="SaveToDisk"
+                android:textAllCaps="false" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
