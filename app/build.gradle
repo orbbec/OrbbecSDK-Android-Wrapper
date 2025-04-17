@@ -8,14 +8,14 @@ Properties obSignatureProp = new Properties()
 obSignatureProp.load(project.file('../keystore/signature.properties').newDataInputStream())
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.3"
+    namespace 'com.orbbec.orbbecsdkexamples'
+    compileSdk 33
 
     defaultConfig {
         applicationId "com.orbbec.orbbecsdkexamples"
-        minSdkVersion 24
+        minSdk 24
         //noinspection ExpiredTargetSdkVersion
-        targetSdkVersion 27
+        targetSdk 27
         def format = new SimpleDateFormat("yyyyMMdd")
         def dataFormat = format.format(new Date())
         dataFormat+="01"//01是当天得第几版。默认是第一版
