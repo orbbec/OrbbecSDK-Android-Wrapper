@@ -136,21 +136,27 @@ Here is the device support list of main branch (v1.x) and v2-main branch (v2.x):
 ![](doc/readme-images/Open-module-Android-wrapper.png)
 
 ## run example
-
 ### build example
-![](doc/readme-images/run-example.png)
+Click run button
+![](doc/readme-images/Run-Example.png)
 
 ### Main UI
-![](doc/readme-images/Example-HelloOrbbec.png)
+![](doc/readme-images/Main-UI.png)
 
-Click 'DepthViewer' to show depth sensor stream.
+Click 'Basic-Quick Start' to display the color and depth sensor streams.
 
-### DepthViewer
-![](doc/readme-images/Example-DepthViewer.png)
+### QuickStart
+![](doc/readme-images/Example-QuickStart.png)
+
+### Depth
+![](doc/readme-images/Example-Depth.png)
+
+### MultiStreams
+![](doc/readme-images/Example-MultiStreams.png)
 
 # Build Tools
 ## Android studio
-Android studio **Giraffe | 2022.3.1 Patch 1**
+Android studio **Koala | 2024.1.1**
 download link [Android studio](https://developer.android.com/studio)
 
 ## NDK
@@ -219,12 +225,14 @@ mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() 
    @Override
    public void onDeviceAttach(DeviceList deviceList) {
         try {
-            mDevice = deviceList.getDevice(0);
+            mCurrentDevice = deviceList.getDevice(0);
+            mCurrentDeviceInfo = mCurrentDevice.getInfo();
             deviceList.close();
             // do something
-            mDevice.close();
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            deviceList.close();
         }
    }
 
@@ -232,10 +240,10 @@ mOBContext = new OBContext(getApplicationContext(), new DeviceChangedCallback() 
    public void onDeviceDetach(DeviceList deviceList) {
          try {
             if (null != mCurrentDevice){
-                int deviceCount=deviceList.getDeviceCount();
-                    for(int i=0;i<deviceCount; i++){
-                        String uid=deviceList.getUid();
-                        if(null!=mCurrentDeviceInfo&&mCurrentDeviceInfo.getUid().equals(uid)){
+                int deviceCount = deviceList.getDeviceCount();
+                    for(int i = 0; i < deviceCount; i++){
+                        String uid = deviceList.getUid();
+                        if(null != mCurrentDeviceInfo && mCurrentDeviceInfo.getUid().equals(uid)){
                             // handle device disconnection
                             // do something
 
@@ -265,8 +273,7 @@ try {
    mPipeline = new Pipeline(mCurrentDevice);
 
    StreamProfileList depthProfileList = mPipeline.getStreamProfileList(SensorType.DEPTH);
-   if (null != depthProfileList) {
-      depthProfileList.close();
+   if (null == depthProfileList) {
       return;
    }
    StreamProfile streamProfile = depthProfileList.getStreamProfile(0);
@@ -297,8 +304,21 @@ Stop stream
 ```java
 try {
    mPipeline.stop();
-   mPipeline.close();
-   mPipeline = null;
+} catch (OBException e) {
+   e.printStackTrace();
+}
+```
+
+Close device
+```java
+try {
+   if (null != mPipeline) {
+      mPipeline.close();
+   }
+
+   if (mDevice != null) {
+      mDevice.close();
+   }
 } catch (OBException e) {
    e.printStackTrace();
 }
