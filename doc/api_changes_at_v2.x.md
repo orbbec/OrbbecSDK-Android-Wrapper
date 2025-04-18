@@ -1,4 +1,4 @@
-# API Changes at v2.x.x
+# API Changes at v2.x
 This document outlines the key differences in APIs between Android Wrapper v2.x(v2-main branch) and the Android Wrapper v1.x(main branch).
 
 ## 1. Added New interfaces for Android Wrapper v2.x
