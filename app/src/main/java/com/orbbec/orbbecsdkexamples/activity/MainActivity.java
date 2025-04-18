@@ -101,9 +101,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Button syncAlign = findViewById(R.id.btn_advanced_sync_align);
         syncAlign.setOnClickListener(this);
 
-        Button recordPlayback = findViewById(R.id.btn_record_playback);
-        recordPlayback.setOnClickListener(this);
-
         Button saveToDisk = findViewById(R.id.btn_savetodisk);
         saveToDisk.setOnClickListener(this);
     }
@@ -145,8 +142,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             toActivity(AdvancedPostProcessingActivity.class);
         } else if (id == R.id.btn_advanced_sync_align) {
             toActivity(AdvancedSyncAlignActivity.class);
-        }  else if (id == R.id.btn_record_playback) {
-            toActivity(RecordPlaybackActivity.class);
         } else if (id == R.id.btn_savetodisk) {
             toActivity(SaveToDiskActivity.class);
         }

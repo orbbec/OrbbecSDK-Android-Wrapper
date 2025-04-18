@@ -17,7 +17,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.OrbbecSdkExamples">
-        <activity android:name=".activity.RecordPlaybackActivity" />
         <activity android:name=".activity.SaveToDiskActivity" />
         <activity android:name=".activity.BasicEnumerateActivity" />
         <activity android:name=".activity.BasicQuickStartActivity" />

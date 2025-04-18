@@ -154,15 +154,6 @@
                 android:textAllCaps="false" />
 
             <Button
-                android:id="@+id/btn_record_playback"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="2dp"
-                android:text="RecordPlayback"
-                android:textAllCaps="false"
-                android:visibility="gone" />
-
-            <Button
                 android:id="@+id/btn_savetodisk"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
