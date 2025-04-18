@@ -1,6 +1,8 @@
 # Introduction
 The v2-main branch provides an Android wrapper based on the [Orbbec SDK v2.x](https://github.com/orbbec/OrbbecSDK_v2). Orbbec SDK v2.x is an open-source, cross-platform SDK for interfacing with Orbbec RGB-D cameras. For a comparison between SDK v2.x and  [Orbbec SDK v1.x](https://github.com/orbbec/OrbbecSDK), see the [README](https://github.com/orbbec/OrbbecSDK_v2).
 
+Additionally, a comprehensive overview of the API changes from Android Wrapper v1.x to v2.x can be found here: [api_changes_at_v2.x](doc/api_changes_at_v2.x.md).
+
 > [!IMPORTANT]
 >
 > Welcome to the Android wrapper . Before you begin using this version of Android wrapper , it's crucial to check the following device support list to verify the compatibility.
