@@ -36,21 +36,6 @@ public class Pipeline extends LobClass {
 
     /**
      * \if English
-     * Use the playback file to create a pipeline object
-     *
-     * @param playbackFile The playback file path used to create the pipeline
-     *                     \else
-     *                     使用回放文件来创建pipeline对象
-     * @param playbackFile 用于创建pipeline的回放文件路径
-     *                     \endif
-     */
-    public Pipeline(String playbackFile) {
-        OBLocalUtils.checkFileAndThrow(playbackFile, "Create Pipeline failed");
-        mHandle = nCreateWithPlaybackFile(playbackFile);
-    }
-
-    /**
-     * \if English
      * Open the data stream of the specified configuration. If you need to use the configuration in the configuration file to open the stream, pass null to config
      * (if there is no configuration file in the case of config passing null, the first one in the open flow configuration list is used by default to open the stream. )
      * <p>
@@ -287,55 +272,6 @@ public class Pipeline extends LobClass {
 
     /**
      * \if English
-     * Start recording
-     *
-     * @param filePath Recorded file path
-     *                 \else
-     *                 开启录制
-     * @param filePath 录制的文件路径
-     *                 \endif
-     */
-    @Deprecated
-    public void startRecord(String filePath) {
-        throwInitializeException();
-        nStartRecord(mHandle, filePath);
-    }
-
-    /**
-     * \if English
-     * stop recording
-     * \else
-     * 关闭录制
-     * \endif
-     */
-    @Deprecated
-    public void stopRecord() {
-        throwInitializeException();
-        nStopRecord(mHandle);
-    }
-
-    /**
-     * \if English
-     * Get playback object from pipeline
-     *
-     * @return Returns the playback object {@link Playback}
-     * \else
-     * 从pipeline中获取回放对象
-     * @return 返回回放对象 {@link Playback}
-     * \endif
-     */
-    @Deprecated
-    public Playback getPlayback() {
-        throwInitializeException();
-        long handle = nGetPlayback(mHandle);
-        if (0 == handle) {
-            return null;
-        }
-        return new Playback(handle);
-    }
-
-    /**
-     * \if English
      *
      * @param config The pipeline configuration
      * @param config pipeline配置
@@ -375,8 +311,6 @@ public class Pipeline extends LobClass {
 
     private static native long nCreateWithDevice(long deviceHandle);
 
-    private static native long nCreateWithPlaybackFile(String playbackFile);
-
     private static native void nDelete(long handle);
 
     private static native void nStartWithConfig(long handle, long configHandle);
@@ -402,12 +336,6 @@ public class Pipeline extends LobClass {
     private static native void nGetCameraParam(long handle, byte[] cameraParamBytes);
 
     private static native void nGetCameraParamWithProfile(long handle, int colorWidth, int colorHeight, int depthWidth, int depthHeight, byte[] cameraParamBytes);
-
-    private static native void nStartRecord(long handle, String filePath);
-
-    private static native void nStopRecord(long handle);
-
-    private static native long nGetPlayback(long handle);
 
     private static native void nGetCalibrationParam(long handle, long configHandle, byte[] CalibrationParamBytes);
 }

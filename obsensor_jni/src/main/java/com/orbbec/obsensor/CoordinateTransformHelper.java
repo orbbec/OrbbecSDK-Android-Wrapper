@@ -31,7 +31,6 @@ public class CoordinateTransformHelper {
      * 将一个源坐标系下的三维点坐标转换到目标坐标系下的三维点坐标。
      * @return bool 转换结果
      */
-    @Deprecated
     public static boolean is3dTo3d(CalibrationParam calibrationParam,
                                    Point3f sourcePoint3f,
                                    SensorType sourceType, SensorType targetType,
@@ -62,7 +61,6 @@ public class CoordinateTransformHelper {
      * 将一个源相机的2d像素坐标和关联的深度值转换到目标坐标系下的三维点坐标。
      * @return bool 转换结果
      */
-    @Deprecated
     public static boolean is2dTo3d(CalibrationParam calibrationParam,
                                    Point2f sourcePoint2f,
                                    float sourceDepthPixel,
@@ -95,7 +93,6 @@ public class CoordinateTransformHelper {
      * 将一个源相机的2d像素坐标和关联的深度值转换到目标坐标系下的三维点坐标。
      * @return bool 转换结果
      */
-    @Deprecated
     public static boolean is2dTo3dUndistortion(CalibrationParam calibrationParam,
                                                Point2f sourcePoint2f,
                                                float sourceDepthPixel,
@@ -126,7 +123,6 @@ public class CoordinateTransformHelper {
      * 将一个源坐标系下的三维点坐标转换到目标相机的2d像素坐标。
      * @return bool 转换结果
      */
-    @Deprecated
     public static boolean is3dTo2d(CalibrationParam calibrationParam,
                                    Point3f sourcePoint3f,
                                    SensorType sourceType, SensorType targetType,
@@ -158,7 +154,6 @@ public class CoordinateTransformHelper {
      * 将一个源相机的2d像素坐标和关联的深度值转换到目标相机的2d像素坐标。
      * @return bool 转换结果
      */
-    @Deprecated
     public static boolean is2dTo2d(CalibrationParam calibrationParam,
                                    Point2f sourcePoint2f,
                                    float sourceDepthPixel,
@@ -188,7 +183,6 @@ public class CoordinateTransformHelper {
      * 将深度帧转换到颜色相机的几何空间。
      * @return 转换后的深度帧
      */
-    @Deprecated
     public static Frame depthFrameToColorCamera(Device device, DepthFrame depthFrame,
                                                 int width, int height) {
         if (device == null || depthFrame == null) {
@@ -220,7 +214,6 @@ public class CoordinateTransformHelper {
      * 初始化转换表
      * @return 转换结果
      */
-    @Deprecated
     public static boolean initXYTables(CalibrationParam calibrationParam,
                                        SensorType sensorType,
                                        float[] data, long size,
@@ -229,12 +222,10 @@ public class CoordinateTransformHelper {
                 data, size, xyTables.getHandle());
     }
 
-    @Deprecated
     public static void depthToPointcloud(XYTables xyTables, byte[] depthImageData, byte[] pointCloudData) {
         nDepthToPointcloud(xyTables.getHandle(), depthImageData, pointCloudData);
     }
 
-    @Deprecated
     public static void depthToRgbdPointcloud(XYTables xyTables, byte[] depthImageData, byte[] colorImageData, byte[] pointCloudData) {
         nDepthToRgbdPointcloud(xyTables.getHandle(), depthImageData, colorImageData, pointCloudData);
     }

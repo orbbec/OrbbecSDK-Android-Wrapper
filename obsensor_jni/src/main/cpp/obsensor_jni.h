@@ -28,7 +28,6 @@
 #include "libobsensor/h/Utils.h"
 #include "libobsensor/h/Version.h"
 
-#include "jdatatype/DataBundle.h"
 #include "jdatatype/DepthWorkMode.h"
 #include "jdatatype/DeviceInfo.h"
 #include "jdatatype/FilterConfigSchemaItem.h"

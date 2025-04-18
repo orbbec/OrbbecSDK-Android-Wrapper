@@ -1566,28 +1566,6 @@ Java_com_orbbec_obsensor_Device_nSetPropertyValueDataType(JNIEnv *env,
   ob_handle_error(env, error);
 }
 
-/*
- * Class:     com_orbbec_obsensor_Device
- * Method:    nGetPropertyValueDataTypeExt
- * Signature: (JILcom/orbbec/obsensor/datatype/OBDataBundle;)V
- */
-extern "C" JNIEXPORT void JNICALL
-Java_com_orbbec_obsensor_Device_nSetPropertyValueDataTypeExt__JILcom_orbbec_obsensor_datatype_OBDataBundle_2(
-    JNIEnv *env, jclass typeDevice, jlong handle, jint propertyId,
-    jobject dataBundle) {
-  // TODO lumiaozi
-  //    bool isSuccess = false;
-  //    ob_error *error = NULL;
-  //    auto device = reinterpret_cast<ob_device *>(handle);
-  //    ob_data_bundle *cdata_bundle = obandroid::convert_c_DataBundle(env,
-  //    dataBundle); ob_device_set_structured_data_ext(device,
-  //    (ob_property_id)propertyId, cdata_bundle,
-  //                                      &func_callback, &error);
-  //    if (!isSuccess) {
-  //
-  //    }
-}
-
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_orbbec_obsensor_Device_nGetPropertyValueB(JNIEnv *env,
                                                    jclass typeDevice,
@@ -3424,19 +3402,6 @@ Java_com_orbbec_obsensor_Pipeline_nCreateWithDevice(JNIEnv *env,
   return (jlong)pipeline;
 }
 
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_orbbec_obsensor_Pipeline_nCreateWithPlaybackFile(JNIEnv *env,
-                                                          jclass instance,
-                                                          jstring filePath) {
-//  ob_error *error = NULL;
-//  std::string strPlaybackFile(getStdString(
-//      env, filePath, "Pipeline#nCreateWithPlaybackFile", "filePath"));
-//  auto pipeline =
-//      ob_create_pipeline_with_playback_file(strPlaybackFile.c_str(), &error);
-//  ob_handle_error(env, error);
-//  return (jlong)pipeline;
-}
-
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Pipeline_nDelete(
     JNIEnv *env, jclass instance, jlong handle) {
   ob_error *error = NULL;
@@ -3573,53 +3538,6 @@ Java_com_orbbec_obsensor_Pipeline_nGetD2CDepthProfileList(
   return (jlong)profileList;
 }
 
-//extern "C" JNIEXPORT void JNICALL
-//Java_com_orbbec_obsensor_Pipeline_nGetCameraParam(
-//    JNIEnv *env, jclass instance, jlong handle, jbyteArray depthIntr,
-//    jbyteArray colorIntr, jbyteArray depthDisto, jbyteArray colorDisto,
-//    jbyteArray trans, jobject cameraParam) {
-//  ob_error *error = NULL;
-//  ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
-//  jclass cameraParamCls = env->GetObjectClass(cameraParam);
-//  jfieldID jfIsMirrored = env->GetFieldID(cameraParamCls, "mIsMirrored", "Z");
-//
-//  ob_camera_param params = ob_pipeline_get_camera_param(pipeline, &error);
-//  ob_handle_error(env, error);
-//
-//  env->SetBooleanField(cameraParam, jfIsMirrored, params.isMirrored);
-//
-//  jbyte *depth_intr = env->GetByteArrayElements(depthIntr, JNI_FALSE);
-//  jbyte *color_intr = env->GetByteArrayElements(colorIntr, JNI_FALSE);
-//  jbyte *depth_disto = env->GetByteArrayElements(depthDisto, JNI_FALSE);
-//  jbyte *color_disto = env->GetByteArrayElements(colorDisto, JNI_FALSE);
-//  jbyte *transform = env->GetByteArrayElements(trans, JNI_FALSE);
-//
-//  memmove(depth_intr, &params.depthIntrinsic, sizeof(params.depthIntrinsic));
-//  memmove(color_intr, &params.rgbIntrinsic, sizeof(params.rgbIntrinsic));
-//  memmove(depth_disto, &params.depthDistortion, sizeof(params.depthDistortion));
-//  memmove(color_disto, &params.rgbDistortion, sizeof(params.rgbDistortion));
-//  memmove(transform, &params.transform, sizeof(params.transform));
-//
-//  env->SetByteArrayRegion(depthIntr, 0, sizeof(params.depthIntrinsic),
-//                          depth_intr);
-//  env->ReleaseByteArrayElements(depthIntr, depth_intr, 0);
-//
-//  env->SetByteArrayRegion(colorIntr, 0, sizeof(params.rgbIntrinsic),
-//                          color_intr);
-//  env->ReleaseByteArrayElements(colorIntr, color_intr, 0);
-//
-//  env->SetByteArrayRegion(depthDisto, 0, sizeof(params.depthDistortion),
-//                          depth_disto);
-//  env->ReleaseByteArrayElements(depthDisto, depth_disto, 0);
-//
-//  env->SetByteArrayRegion(colorDisto, 0, sizeof(params.rgbDistortion),
-//                          color_disto);
-//  env->ReleaseByteArrayElements(colorDisto, color_disto, 0);
-//
-//  env->SetByteArrayRegion(trans, 0, sizeof(params.transform), transform);
-//  env->ReleaseByteArrayElements(trans, transform, 0);
-//}
-
 extern "C" JNIEXPORT void JNICALL
 Java_com_orbbec_obsensor_Pipeline_nGetCameraParam(
     JNIEnv *env, jclass instance, jlong handle, jbyteArray cameraParamBytes) {
@@ -3633,10 +3551,6 @@ Java_com_orbbec_obsensor_Pipeline_nGetCameraParam(
     env->SetByteArrayRegion(cameraParamBytes, 0, sizeof(ob_camera_param),
                             params_);
     env->ReleaseByteArrayElements(cameraParamBytes, params_, 0);
-
-    LOGD("测试 1 %f %f %f %f", params.depthDistortion.k1, params.depthDistortion.k2, params.depthDistortion.k3,
-         params.depthDistortion.k4);
-
 }
 
 /*
@@ -3663,35 +3577,6 @@ Java_com_orbbec_obsensor_Pipeline_nGetCameraParamWithProfile(
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_orbbec_obsensor_Pipeline_nStartRecord(JNIEnv *env, jclass instance,
-                                               jlong handle, jstring filePath) {
-//  ob_error *error = NULL;
-//  ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
-//  std::string strFilePath(
-//      getStdString(env, filePath, "Pipeline#nStartRecord", "filePath"));
-//  ob_pipeline_start_record(pipeline, strFilePath.c_str(), &error);
-//  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Pipeline_nStopRecord(
-    JNIEnv *env, jclass instance, jlong handle) {
-//  ob_error *error = NULL;
-//  ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
-//  ob_pipeline_stop_record(pipeline, &error);
-//  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_orbbec_obsensor_Pipeline_nGetPlayback(JNIEnv *env, jclass instance,
-                                               jlong handle) {
-//  ob_error *error = NULL;
-//  ob_pipeline *pipeline = reinterpret_cast<ob_pipeline *>(handle);
-//  auto playback = ob_pipeline_get_playback(pipeline, &error);
-//  ob_handle_error(env, error);
-//  return (jlong)playback;
-}
-
-extern "C" JNIEXPORT void JNICALL
 Java_com_orbbec_obsensor_Pipeline_nGetCalibrationParam(JNIEnv *env, jclass clazz, jlong handle,
                                                        jlong configHandle,
                                                        jbyteArray CalibrationParamBytes) {
@@ -3712,11 +3597,6 @@ Java_com_orbbec_obsensor_Pipeline_nGetCalibrationParam(JNIEnv *env, jclass clazz
     env->SetByteArrayRegion(CalibrationParamBytes, 0, sizeof(ob_calibration_param),
                             params_);
     env->ReleaseByteArrayElements(CalibrationParamBytes, params_, 0);
-
-    for (auto & intrinsic : cp_data.intrinsics) {
-        LOGD("测试 %f %f %f %f %d %d", intrinsic.fx, intrinsic.fy, intrinsic.cx,
-             intrinsic.cy, intrinsic.width, intrinsic.height);
-    }
 }
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
@@ -4710,7 +4590,6 @@ Java_com_orbbec_obsensor_ThresholdFilter_mGetMaxRange(JNIEnv *env, jobject thiz,
             break;
         }
     }
-//    LOGD("onStart: %d %d %d %d %d", range.cur, range.def, range.min, range.max, range.step);
 
     jbyte *maxRange_ = env->GetByteArrayElements(maxRange, JNI_FALSE);
     memmove(maxRange_, &range, sizeof(ob_int_property_range));
@@ -4865,198 +4744,6 @@ Java_com_orbbec_obsensor_Device_nGetSupportedProperty(JNIEnv *env,
 
     ob_handle_error(env, error);
     return result;
-}
-
-// Recorder
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_orbbec_obsensor_Recorder_nCreateRecorder(JNIEnv *env, jclass clazz) {
-//  ob_error *error = NULL;
-//  auto recorder = ob_create_recorder(&error);
-//  ob_handle_error(env, error);
-//  return (jlong)recorder;
-}
-
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_orbbec_obsensor_Recorder_nCreateRecorderWithDevice(
-    JNIEnv *env, jclass clazz, jlong deviceHandle) {
-//  ob_error *error = NULL;
-//  ob_device *device = reinterpret_cast<ob_device *>(deviceHandle);
-//  auto recorder = ob_create_recorder_with_device(device, &error);
-//  ob_handle_error(env, error);
-//  return (jlong)recorder;
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nStart(
-    JNIEnv *env, jclass clazz, jlong handle, jstring fileName, jboolean async) {
-//  ob_error *error = NULL;
-//  ob_recorder *recorder = reinterpret_cast<ob_recorder *>(handle);
-//  std::string strFileName(
-//      getStdString(env, fileName, "Recorder#nStart", "fileName"));
-//  ob_recorder_start(recorder, strFileName.c_str(), async, &error);
-//  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nStop(
-    JNIEnv *env, jclass clazz, jlong handle) {
-//  ob_error *error = NULL;
-//  ob_recorder *recorder = reinterpret_cast<ob_recorder *>(handle);
-//  ob_recorder_stop(recorder, &error);
-//  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nWriteFrame(
-    JNIEnv *env, jclass clazz, jlong handle, jlong frameHandle) {
-//  ob_error *error = NULL;
-//  ob_recorder *recorder = reinterpret_cast<ob_recorder *>(handle);
-//  ob_frame *frame = reinterpret_cast<ob_frame *>(frameHandle);
-//  ob_recorder_write_frame(recorder, frame, &error);
-//  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Recorder_nDelete(
-    JNIEnv *env, jclass clazz, jlong handle) {
-//  ob_error *error = NULL;
-//  ob_recorder *recorder = reinterpret_cast<ob_recorder *>(handle);
-//  ob_delete_recorder(recorder, &error);
-//  ob_handle_error(env, error);
-}
-
-// Playback
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_orbbec_obsensor_Playback_nCreatePlayback(JNIEnv *env, jclass clazz,
-                                                  jstring fileName) {
-//  ob_error *error = NULL;
-//  std::string strFileName(
-//      getStdString(env, fileName, "Playback#nCreatePlayback", "fileName"));
-//  auto playback = ob_create_playback(strFileName.c_str(), &error);
-//  ob_handle_error(env, error);
-//  return (jlong)playback;
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Playback_nStart(
-    JNIEnv *env, jclass clazz, jlong handle, jobject callback, jint mediaType) {
-//  ob_error *error = NULL;
-//  ob_playback *playback = reinterpret_cast<ob_playback *>(handle);
-//  void *cookie = NULL;
-//  std::lock_guard<std::mutex> lk(mutex_);
-//  if (callback) {
-//    jobject gCallback = env->NewGlobalRef(callback);
-//    cookie = gCallback;
-//    gListCallback_.push_back(std::pair<jlong, jobject>(handle, gCallback));
-//  }
-//  ob_playback_start(playback, onPlaybackCallback, cookie,
-//                    static_cast<ob_media_type>(mediaType), &error);
-//  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Playback_nStop(
-    JNIEnv *env, jclass clazz, jlong handle) {
-//  ob_error *error = NULL;
-//  ob_playback *playback = reinterpret_cast<ob_playback *>(handle);
-//  ob_playback_stop(playback, &error);
-//  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT jobject JNICALL
-Java_com_orbbec_obsensor_Playback_nGetDeviceInfo(JNIEnv *env, jclass clazz,
-                                                 jlong handle) {
-//  ob_error *error = NULL;
-//  ob_playback *playback = reinterpret_cast<ob_playback *>(handle);
-//  auto deviceInfo = ob_playback_get_device_info(playback, &error);
-//  ob_handle_error(env, error);
-//  if (error) {
-//    LOGE("Playback_nGetDeviceInfo failed!");
-//    return NULL;
-//  }
-//  jobject jobjDeviceInfo = obandroid::convert_j_DeviceInfo(env, deviceInfo);
-//  ob_delete_device_info(deviceInfo, &error);
-//  return jobjDeviceInfo;
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_orbbec_obsensor_Playback_nGetCameraParam(
-    JNIEnv *env, jclass clazz, jlong handle, jbyteArray depthIntr,
-    jbyteArray colorIntr, jbyteArray depthDisto, jbyteArray colorDisto,
-    jbyteArray trans, jobject cameraParam) {
-//  ob_error *error = NULL;
-//  ob_playback *playback = reinterpret_cast<ob_playback *>(handle);
-//
-//  jclass cameraParamCls = env->GetObjectClass(cameraParam);
-//  jfieldID jfIsMirrored = env->GetFieldID(cameraParamCls, "mIsMirrored", "Z");
-//
-//  ob_camera_param params = ob_playback_get_camera_param(playback, &error);
-//  ob_handle_error(env, error);
-//
-//  env->SetBooleanField(cameraParam, jfIsMirrored, params.isMirrored);
-//
-//  jbyte *depth_intr = env->GetByteArrayElements(depthIntr, JNI_FALSE);
-//  jbyte *color_intr = env->GetByteArrayElements(colorIntr, JNI_FALSE);
-//  jbyte *depth_disto = env->GetByteArrayElements(depthDisto, JNI_FALSE);
-//  jbyte *color_disto = env->GetByteArrayElements(colorDisto, JNI_FALSE);
-//  jbyte *transform = env->GetByteArrayElements(trans, JNI_FALSE);
-//
-//  memmove(depth_intr, &params.depthIntrinsic, sizeof(params.depthIntrinsic));
-//  memmove(color_intr, &params.rgbIntrinsic, sizeof(params.rgbIntrinsic));
-//  memmove(depth_disto, &params.depthDistortion, sizeof(params.depthDistortion));
-//  memmove(color_disto, &params.rgbDistortion, sizeof(params.rgbDistortion));
-//  memmove(transform, &params.transform, sizeof(params.transform));
-//
-//  env->SetByteArrayRegion(depthIntr, 0, sizeof(params.depthIntrinsic),
-//                          depth_intr);
-//  env->ReleaseByteArrayElements(depthIntr, depth_intr, 0);
-//
-//  env->SetByteArrayRegion(colorIntr, 0, sizeof(params.rgbIntrinsic),
-//                          color_intr);
-//  env->ReleaseByteArrayElements(colorIntr, color_intr, 0);
-//
-//  env->SetByteArrayRegion(depthDisto, 0, sizeof(params.depthDistortion),
-//                          depth_disto);
-//  env->ReleaseByteArrayElements(depthDisto, depth_disto, 0);
-//
-//  env->SetByteArrayRegion(colorDisto, 0, sizeof(params.rgbDistortion),
-//                          color_disto);
-//  env->ReleaseByteArrayElements(colorDisto, color_disto, 0);
-//
-//  env->SetByteArrayRegion(trans, 0, sizeof(params.transform), transform);
-//  env->ReleaseByteArrayElements(trans, transform, 0);
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_orbbec_obsensor_Playback_nSetMediaStateCallback(JNIEnv *env,
-                                                         jclass clazz,
-                                                         jlong handle,
-                                                         jobject callback) {
-//  ob_error *error = NULL;
-//  ob_playback *playback = reinterpret_cast<ob_playback *>(handle);
-//  void *cookie = nullptr;
-//  std::lock_guard<std::mutex> lk(mutex_);
-//  if (callback) {
-//    jobject gCallback = env->NewGlobalRef(callback);
-//    cookie = gCallback;
-//    gListCallback_.push_back(std::pair<jlong, jobject>(handle, gCallback));
-//  }
-//  ob_set_playback_state_callback(playback, onMediaStateCallback, cookie,
-//                                 &error);
-//  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Playback_nDelete(
-    JNIEnv *env, jclass clazz, jlong handle) {
-//  ob_error *error = NULL;
-//  ob_playback *playback = reinterpret_cast<ob_playback *>(handle);
-//  std::vector<std::pair<jlong, jobject>>::iterator callbackIt;
-//  std::lock_guard<std::mutex> lk(mutex_);
-//  for (callbackIt = gListCallback_.begin();
-//       callbackIt != gListCallback_.end();) {
-//    if (handle == callbackIt->first) {
-//      env->DeleteGlobalRef(callbackIt->second);
-//      callbackIt = gListCallback_.erase(callbackIt);
-//    } else {
-//      callbackIt++;
-//    }
-//  }
-//  ob_delete_playback(playback, &error);
-//  ob_handle_error(env, error);
 }
 
 /**
