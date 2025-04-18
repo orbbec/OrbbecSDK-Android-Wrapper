@@ -1,5 +1,113 @@
 
 # Quick start
+> [!IMPORTANT]
+>
+> Welcome to the Android wrapper . Before you begin using this version of Android wrapper , it's crucial to check the following device support list to verify the compatibility.
+
+Here is the device support list of main branch (v1.x) and v2-main branch (v2.x):
+
+<table border="1" style="border-collapse: collapse; text-align: left; width: 100%;">
+  <thead>
+    <tr style="background-color: #1f4e78; color: white; text-align: center;">
+      <th>Product Series</th>
+      <th>Product</th>
+      <th><a href="https://github.com/orbbec/OrbbecSDK-Android-Wrapper/tree/main" style="color: black; text-decoration: none;">Branch main</a></th>
+      <th><a href="https://github.com/orbbec/OrbbecSDK-Android-Wrapper/tree/v2-main" style="color: black; text-decoration: none;">Branch v2-main</a></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="6" style="text-align: center; font-weight: bold;">Gemini 330</td>
+      <td>Gemini 335</td>
+      <td>full maintenance</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 336</td>
+      <td>full maintenance</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 330</td>
+      <td>full maintenance</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 335L</td>
+      <td>full maintenance</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 336L</td>
+      <td>full maintenance</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 330L</td>
+      <td>full maintenance</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td rowspan="5" style="text-align: center; font-weight: bold;">Gemini 2</td>
+      <td>Gemini 2</td>
+      <td>full maintenance</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 2 L</td>
+      <td>full maintenance</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 210</td>
+      <td>not supported</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 215</td>
+      <td>not supported</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Gemini 2 XL</td>
+      <td>recommended for new designs</td>
+      <td>to be supported</td>
+    </tr>
+    <tr>
+      <td rowspan="3" style="text-align: center; font-weight: bold;">Astra</td>
+      <td>Astra 2</td>
+      <td>full maintenance</td>
+      <td>recommended for new designs</td>
+    </tr>
+    <tr>
+      <td>Astra+</td>
+      <td>limited maintenance</td>
+      <td>not supported</td>
+    </tr>
+    <tr>
+      <td>Astra Pro Plus</td>
+      <td>limited maintenance</td>
+      <td>not supported</td>
+    </tr>
+    <tr>
+      <td style="text-align: center; font-weight: bold;">Astra Mini</td>
+      <td>Astra Mini Pro</td>
+      <td>full maintenance</td>
+      <td>not supported</td>
+    </tr>
+  </tbody>
+</table>
+
+**Note**: If you do not find your device, please contact our FAE or sales representative for help.
+
+**Definition**:
+
+1. recommended for new designs: we will provide full supports with new features,  bug fix and performance optimization;
+2. full maintenance: we will provide bug fix support;
+3. limited maintenance: we will provide critical bug fix support;
+4. not supported: we will not support specific device in this version;
+5. to be supported: we will add support in the near future.
+
 ## download source
 ```
 git clone https://github.com/orbbec/OrbbecSDK-Android-Wrapper.git
