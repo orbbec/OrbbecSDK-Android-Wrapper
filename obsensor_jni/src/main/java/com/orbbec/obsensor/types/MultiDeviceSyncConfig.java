@@ -166,7 +166,8 @@ public class MultiDeviceSyncConfig implements ByteConversion {
 
     private byte[] mBytes;
 
-    public byte[] BYTES() {
+    @Override
+    public byte[] getBytes() {
         if (mBytes == null) {
             mBytes = new byte[25];
         }
@@ -179,8 +180,11 @@ public class MultiDeviceSyncConfig implements ByteConversion {
     }
 
     @Override
-    public boolean wrapBytes(byte[] bytes) {
-        return StructParser.wrapBytes(this, bytes);
+    public boolean wrapBytes() {
+        if (mBytes == null) {
+            mBytes = new byte[25];
+        }
+        return StructParser.wrapBytes(this, mBytes);
     }
 
     @Override

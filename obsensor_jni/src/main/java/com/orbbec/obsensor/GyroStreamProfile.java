@@ -64,7 +64,7 @@ public class GyroStreamProfile extends StreamProfile {
     public GyroIntrinsic getIntrinsic() {
         throwInitializeException();
         GyroIntrinsic intrinsic = new GyroIntrinsic();
-        nGetIntrinsic(mHandle, intrinsic.BYTES());
+        nGetIntrinsic(mHandle, intrinsic.getBytes());
         boolean result = intrinsic.parseBytes();
         if (!result) {
             throw new OBException("getIntrinsic parse bytes error!");

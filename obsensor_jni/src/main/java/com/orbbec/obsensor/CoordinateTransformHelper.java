@@ -35,9 +35,9 @@ public class CoordinateTransformHelper {
                                    Point3f sourcePoint3f,
                                    SensorType sourceType, SensorType targetType,
                                    Point3f targetPoint3f) {
-        return nIs3dTo3d(calibrationParam.BYTES(), sourcePoint3f.BYTES(),
+        return nIs3dTo3d(calibrationParam.getBytes(), sourcePoint3f.getBytes(),
                 sourceType.value(), targetType.value(),
-                targetPoint3f.BYTES());
+                targetPoint3f.getBytes());
     }
 
     /**
@@ -66,10 +66,10 @@ public class CoordinateTransformHelper {
                                    float sourceDepthPixel,
                                    SensorType sourceType, SensorType targetType,
                                    Point3f targetPoint3f) {
-        return nIs2dTo3d(calibrationParam.BYTES(), sourcePoint2f.BYTES(),
+        return nIs2dTo3d(calibrationParam.getBytes(), sourcePoint2f.getBytes(),
                 sourceDepthPixel,
                 sourceType.value(), targetType.value(),
-                targetPoint3f.BYTES());
+                targetPoint3f.getBytes());
     }
 
     /**
@@ -98,10 +98,10 @@ public class CoordinateTransformHelper {
                                                float sourceDepthPixel,
                                                SensorType sourceType, SensorType targetType,
                                                Point3f targetPoint3f) {
-        return nIs2dTo3dUndistortion(calibrationParam.BYTES(), sourcePoint2f.BYTES(),
+        return nIs2dTo3dUndistortion(calibrationParam.getBytes(), sourcePoint2f.getBytes(),
                 sourceDepthPixel,
                 sourceType.value(), targetType.value(),
-                targetPoint3f.BYTES());
+                targetPoint3f.getBytes());
     }
 
     /**
@@ -127,10 +127,10 @@ public class CoordinateTransformHelper {
                                    Point3f sourcePoint3f,
                                    SensorType sourceType, SensorType targetType,
                                    Point2f targetPoint2f) {
-        return nIs3dTo2d(calibrationParam.BYTES(),
-                sourcePoint3f.BYTES(),
+        return nIs3dTo2d(calibrationParam.getBytes(),
+                sourcePoint3f.getBytes(),
                 sourceType.value(), targetType.value(),
-                targetPoint2f.BYTES());
+                targetPoint2f.getBytes());
     }
 
     /**
@@ -159,11 +159,11 @@ public class CoordinateTransformHelper {
                                    float sourceDepthPixel,
                                    SensorType sourceType, SensorType targetType,
                                    Point2f targetPoint2f) {
-        return nIs2dTo2d(calibrationParam.BYTES(),
-                sourcePoint2f.BYTES(),
+        return nIs2dTo2d(calibrationParam.getBytes(),
+                sourcePoint2f.getBytes(),
                 sourceDepthPixel,
                 sourceType.value(), targetType.value(),
-                targetPoint2f.BYTES());
+                targetPoint2f.getBytes());
     }
 
     /**
@@ -218,7 +218,7 @@ public class CoordinateTransformHelper {
                                        SensorType sensorType,
                                        float[] data, long size,
                                        XYTables xyTables) {
-        return nInitXYTables(calibrationParam.BYTES(), sensorType.value(),
+        return nInitXYTables(calibrationParam.getBytes(), sensorType.value(),
                 data, size, xyTables.getHandle());
     }
 
@@ -250,12 +250,12 @@ public class CoordinateTransformHelper {
      * \endif
      */
     public static boolean transformation3dto3d(Point3f sourcePoint3f, Extrinsic extrinsic, Point3f targetPoint3f) {
-        if (!sourcePoint3f.wrapBytes(sourcePoint3f.BYTES())) {
+        if (!sourcePoint3f.wrapBytes()) {
             Log.w(TAG, "transformation3dto3d: sourcePoint3f wrap bytes error!");
             return false;
         }
 
-        if (!nTransformation3dto3d(sourcePoint3f.BYTES(), extrinsic.BYTES(), targetPoint3f.BYTES())) {
+        if (!nTransformation3dto3d(sourcePoint3f.getBytes(), extrinsic.getBytes(), targetPoint3f.getBytes())) {
             Log.w(TAG, "transformation3dto3d: Transformation failed!");
             return false;
         }
@@ -293,12 +293,12 @@ public class CoordinateTransformHelper {
      */
     public static boolean transformation2dto3d(Point2f sourcePoint2f, float sourceDepthPixel, CameraIntrinsic sourceIntrinsic,
                                                Extrinsic extrinsic, Point3f targetPoint3f) {
-        if (!sourcePoint2f.wrapBytes(sourcePoint2f.BYTES())) {
+        if (!sourcePoint2f.wrapBytes()) {
             Log.w(TAG, "transformation2dto3d: sourcePoint2f wrap bytes error!");
             return false;
         }
 
-        if (!nTransformation2dto3d(sourcePoint2f.BYTES(), sourceDepthPixel, sourceIntrinsic.BYTES(), extrinsic.BYTES(), targetPoint3f.BYTES())) {
+        if (!nTransformation2dto3d(sourcePoint2f.getBytes(), sourceDepthPixel, sourceIntrinsic.getBytes(), extrinsic.getBytes(), targetPoint3f.getBytes())) {
             Log.w(TAG, "transformation2dto3d: Transformation failed!");
             return false;
         }
@@ -336,12 +336,12 @@ public class CoordinateTransformHelper {
      */
     public static boolean transformation3dto2d(Point3f sourcePoint3f, CameraIntrinsic targetIntrinsic, CameraDistortion targetDistortion,
                                                Extrinsic extrinsic, Point2f targetPoint2f) {
-        if (!sourcePoint3f.wrapBytes(sourcePoint3f.BYTES())) {
+        if (!sourcePoint3f.wrapBytes()) {
             Log.w(TAG, "transformation3dto2d: sourcePoint3f wrap bytes error!");
             return false;
         }
 
-        if (!nTransformation3dto2d(sourcePoint3f.BYTES(), targetIntrinsic.BYTES(), targetDistortion.BYTES(), extrinsic.BYTES(), targetPoint2f.BYTES())) {
+        if (!nTransformation3dto2d(sourcePoint3f.getBytes(), targetIntrinsic.getBytes(), targetDistortion.getBytes(), extrinsic.getBytes(), targetPoint2f.getBytes())) {
             Log.w(TAG, "transformation3dto2d: Transformation failed!");
             return false;
         }
@@ -387,13 +387,13 @@ public class CoordinateTransformHelper {
                                                CameraIntrinsic sourceIntrinsic, CameraDistortion sourceDistortion,
                                                CameraIntrinsic targetIntrinsic, CameraDistortion targetDistortion,
                                                Extrinsic extrinsic, Point2f targetPoint2f) {
-        if (!sourcePoint2f.wrapBytes(sourcePoint2f.BYTES())) {
+        if (!sourcePoint2f.wrapBytes()) {
             Log.w(TAG, "transformation2dto2d: sourcePoint2f wrap bytes error!");
             return false;
         }
 
-        if (!nTransformation2dto2d(sourcePoint2f.BYTES(), sourceDepthPixel, sourceIntrinsic.BYTES(), sourceDistortion.BYTES(),
-                                   targetIntrinsic.BYTES(), targetDistortion.BYTES(), extrinsic.BYTES(), targetPoint2f.BYTES())) {
+        if (!nTransformation2dto2d(sourcePoint2f.getBytes(), sourceDepthPixel, sourceIntrinsic.getBytes(), sourceDistortion.getBytes(),
+                                   targetIntrinsic.getBytes(), targetDistortion.getBytes(), extrinsic.getBytes(), targetPoint2f.getBytes())) {
             Log.w(TAG, "transformation2dto2d: Transformation failed!");
             return false;
         }

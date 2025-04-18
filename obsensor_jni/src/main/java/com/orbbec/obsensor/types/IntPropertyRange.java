@@ -78,7 +78,8 @@ public class IntPropertyRange implements ByteConversion {
 
     private byte[] mBytes;
 
-    public byte[] BYTES() {
+    @Override
+    public byte[] getBytes() {
         if (mBytes == null) {
             mBytes = new byte[20];
         }

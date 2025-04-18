@@ -35,7 +35,7 @@ public class SpatialAdvancedFilter extends Filter {
     public FloatPropertyRange getAlphaRange() {
         throwInitializeException();
         FloatPropertyRange alphaRange = new FloatPropertyRange();
-        nGetAlphaRange(mHandle, alphaRange.BYTES());
+        nGetAlphaRange(mHandle, alphaRange.getBytes());
         boolean result = alphaRange.parseBytes();
         if (!result) {
             throw new OBException("getAlphaRange parse bytes error!");
@@ -57,7 +57,7 @@ public class SpatialAdvancedFilter extends Filter {
     public Uint16PropertyRange getDispDiffRange() {
         throwInitializeException();
         Uint16PropertyRange dispDiffRange = new Uint16PropertyRange();
-        nGetDispDiffRange(mHandle, dispDiffRange.BYTES());
+        nGetDispDiffRange(mHandle, dispDiffRange.getBytes());
         boolean result = dispDiffRange.parseBytes();
         if (!result) {
             throw new OBException("getDispDiffRange parse bytes error!");
@@ -79,7 +79,7 @@ public class SpatialAdvancedFilter extends Filter {
     public Uint16PropertyRange getRadiusRange() {
         throwInitializeException();
         Uint16PropertyRange radiusRange = new Uint16PropertyRange();
-        nGetRadiusRange(mHandle, radiusRange.BYTES());
+        nGetRadiusRange(mHandle, radiusRange.getBytes());
         boolean result = radiusRange.parseBytes();
         if (!result) {
             throw new OBException("getRadiusRange parse bytes error!");
@@ -101,7 +101,7 @@ public class SpatialAdvancedFilter extends Filter {
     public IntPropertyRange getMagnitudeRange() {
         throwInitializeException();
         IntPropertyRange magnitudeRange = new IntPropertyRange();
-        nGetMagnitudeRange(mHandle, magnitudeRange.BYTES());
+        nGetMagnitudeRange(mHandle, magnitudeRange.getBytes());
         boolean result = magnitudeRange.parseBytes();
         if (!result) {
             throw new OBException("getMagnitudeRange parse bytes error!");

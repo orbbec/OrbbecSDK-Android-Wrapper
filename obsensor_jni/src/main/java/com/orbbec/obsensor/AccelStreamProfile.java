@@ -64,7 +64,7 @@ public class AccelStreamProfile extends StreamProfile {
     public AccelIntrinsic getIntrinsic() {
         throwInitializeException();
         AccelIntrinsic intrinsic = new AccelIntrinsic();
-        nGetIntrinsic(mHandle, intrinsic.BYTES());
+        nGetIntrinsic(mHandle, intrinsic.getBytes());
         boolean result = intrinsic.parseBytes();
         if (!result) {
             throw new OBException("getIntrinsic parse bytes error!");

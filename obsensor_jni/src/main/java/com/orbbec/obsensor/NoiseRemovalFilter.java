@@ -71,7 +71,7 @@ public class NoiseRemovalFilter extends Filter {
     public Uint16PropertyRange getDispDiffRange() {
         throwInitializeException();
         Uint16PropertyRange dispDiffRange = new Uint16PropertyRange();
-        nGetDispDiffRange(mHandle, dispDiffRange.BYTES());
+        nGetDispDiffRange(mHandle, dispDiffRange.getBytes());
         boolean result = dispDiffRange.parseBytes();
         if (!result) {
             throw new OBException("getDispDiffRange parse bytes error!");
@@ -93,7 +93,7 @@ public class NoiseRemovalFilter extends Filter {
     public Uint16PropertyRange getMaxSizeRange() {
         throwInitializeException();
         Uint16PropertyRange maxSizeRange = new Uint16PropertyRange();
-        nGetMaxSizeRange(mHandle, maxSizeRange.BYTES());
+        nGetMaxSizeRange(mHandle, maxSizeRange.getBytes());
         boolean result = maxSizeRange.parseBytes();
         if (!result) {
             throw new OBException("getMaxSizeRange parse bytes error!");

@@ -39,7 +39,8 @@ public class Point2f implements ByteConversion {
         this.mY = y;
     }
 
-    public byte[] BYTES() {
+    @Override
+    public byte[] getBytes() {
         if (mBytes == null) {
             mBytes = new byte[8];
         }
@@ -52,8 +53,11 @@ public class Point2f implements ByteConversion {
     }
 
     @Override
-    public boolean wrapBytes(byte[] bytes) {
-        return StructParser.wrapBytes(this, bytes);
+    public boolean wrapBytes() {
+        if (mBytes == null) {
+            mBytes = new byte[8];
+        }
+        return StructParser.wrapBytes(this, mBytes);
     }
 
     @Override

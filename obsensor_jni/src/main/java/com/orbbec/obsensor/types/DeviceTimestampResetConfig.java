@@ -49,7 +49,8 @@ public class DeviceTimestampResetConfig implements ByteConversion {
 
     private byte[] mBytes;
 
-    public byte[] BYTES() {
+    @Override
+    public byte[] getBytes() {
         if (mBytes == null) {
             mBytes = new byte[6];
         }
@@ -62,8 +63,11 @@ public class DeviceTimestampResetConfig implements ByteConversion {
     }
 
     @Override
-    public boolean wrapBytes(byte[] bytes) {
-        return StructParser.wrapBytes(this, bytes);
+    public boolean wrapBytes() {
+        if (mBytes == null) {
+            mBytes = new byte[6];
+        }
+        return StructParser.wrapBytes(this, mBytes);
     }
 
     @Override

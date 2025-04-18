@@ -48,7 +48,7 @@ public class CameraParamList extends LobClass {
         throwInitializeException();
 
         CameraParam params = new CameraParam();
-        nGetCameraParam(mHandle, index, params.BYTES());
+        nGetCameraParam(mHandle, index, params.getBytes());
         if (params.parseBytes()) {
             return params;
         }

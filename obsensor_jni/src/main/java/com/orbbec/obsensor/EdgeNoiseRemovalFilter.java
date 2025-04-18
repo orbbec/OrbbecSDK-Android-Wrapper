@@ -28,7 +28,7 @@ public class EdgeNoiseRemovalFilter extends Filter {
      */
     public void setFilterParams(EdgeNoiseRemovalFilterParams params) {
         throwInitializeException();
-        nSetFilterParams(mHandle, params.BYTES());
+        nSetFilterParams(mHandle, params.getBytes());
     }
 
     /**
@@ -41,7 +41,7 @@ public class EdgeNoiseRemovalFilter extends Filter {
     public EdgeNoiseRemovalFilterParams getFilterParams() {
         throwInitializeException();
         EdgeNoiseRemovalFilterParams params = new EdgeNoiseRemovalFilterParams();
-        nGetFilterParams(mHandle, params.BYTES());
+        nGetFilterParams(mHandle, params.getBytes());
         boolean result = params.parseBytes();
         if (!result) {
             throw new OBException("getFilterParams parse bytes error!");
@@ -63,7 +63,7 @@ public class EdgeNoiseRemovalFilter extends Filter {
     public Uint16PropertyRange getMarginLeftThRange() {
         throwInitializeException();
         Uint16PropertyRange marginLeftThRange = new Uint16PropertyRange();
-        nGetMarginLeftThRange(mHandle, marginLeftThRange.BYTES());
+        nGetMarginLeftThRange(mHandle, marginLeftThRange.getBytes());
         boolean result = marginLeftThRange.parseBytes();
         if (!result) {
             throw new OBException("getMarginLeftThRange parse bytes error!");
@@ -85,7 +85,7 @@ public class EdgeNoiseRemovalFilter extends Filter {
     public Uint16PropertyRange getMarginRightThRange() {
         throwInitializeException();
         Uint16PropertyRange marginRightThRange = new Uint16PropertyRange();
-        nGetMarginRightThRange(mHandle, marginRightThRange.BYTES());
+        nGetMarginRightThRange(mHandle, marginRightThRange.getBytes());
         boolean result = marginRightThRange.parseBytes();
         if (!result) {
             throw new OBException("getMarginRightThRange parse bytes error!");
@@ -107,7 +107,7 @@ public class EdgeNoiseRemovalFilter extends Filter {
     public Uint16PropertyRange getMarginTopThRange() {
         throwInitializeException();
         Uint16PropertyRange marginTopThRange = new Uint16PropertyRange();
-        nGetMarginTopThRange(mHandle, marginTopThRange.BYTES());
+        nGetMarginTopThRange(mHandle, marginTopThRange.getBytes());
         boolean result = marginTopThRange.parseBytes();
         if (!result) {
             throw new OBException("getMarginTopThRange parse bytes error!");
@@ -129,7 +129,7 @@ public class EdgeNoiseRemovalFilter extends Filter {
     public Uint16PropertyRange getMarginBottomThRange() {
         throwInitializeException();
         Uint16PropertyRange marginBottomThRange = new Uint16PropertyRange();
-        nGetMarginBottomThRange(mHandle, marginBottomThRange.BYTES());
+        nGetMarginBottomThRange(mHandle, marginBottomThRange.getBytes());
         boolean result = marginBottomThRange.parseBytes();
         if (!result) {
             throw new OBException("getMarginBottomThRange parse bytes error!");

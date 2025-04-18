@@ -97,7 +97,7 @@ public class StreamProfile extends LobClass {
         throwInitializeException();
         Extrinsic extrinsic = new Extrinsic();
         long targetHandle = targetStreamProfile.getHandle();
-        nGetExtrinsicTo(mHandle, targetHandle, extrinsic.BYTES());
+        nGetExtrinsicTo(mHandle, targetHandle, extrinsic.getBytes());
         boolean result = extrinsic.parseBytes();
         if (!result) {
             throw new OBException("getExtrinsicTo parse bytes error!");

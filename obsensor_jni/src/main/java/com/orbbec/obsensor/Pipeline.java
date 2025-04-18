@@ -1,6 +1,5 @@
 package com.orbbec.obsensor;
 
-import com.orbbec.internal.OBLocalUtils;
 import com.orbbec.obsensor.types.AlignMode;
 import com.orbbec.obsensor.types.CalibrationParam;
 import com.orbbec.obsensor.types.CameraParam;
@@ -235,7 +234,7 @@ public class Pipeline extends LobClass {
         throwInitializeException();
 
         CameraParam params = new CameraParam();
-        nGetCameraParam(mHandle, params.BYTES());
+        nGetCameraParam(mHandle, params.getBytes());
         boolean result = params.parseBytes();
         if (!result) {
             throw new OBException("getCameraParam parse bytes error!");
@@ -262,7 +261,7 @@ public class Pipeline extends LobClass {
         throwInitializeException();
 
         CameraParam params = new CameraParam();
-        nGetCameraParamWithProfile(mHandle, colorWidth, colorHeight, depthWidth, depthHeight, params.BYTES());
+        nGetCameraParamWithProfile(mHandle, colorWidth, colorHeight, depthWidth, depthHeight, params.getBytes());
         boolean result = params.parseBytes();
         if (!result) {
             throw new OBException("getCameraParamWithProfile parse bytes error!");
@@ -287,7 +286,7 @@ public class Pipeline extends LobClass {
         throwInitializeException();
 
         CalibrationParam params = new CalibrationParam();
-        nGetCalibrationParam(mHandle, config.getHandle(), params.BYTES());
+        nGetCalibrationParam(mHandle, config.getHandle(), params.getBytes());
         boolean result = params.parseBytes();
         if (!result) {
             throw new OBException("getCalibrationParam parse bytes error!");

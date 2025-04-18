@@ -50,7 +50,7 @@ public class NetIpConfig implements ByteConversion {
 
     private byte[] mBytes;
 
-    public byte[] BYTES() {
+    public byte[] getBytes() {
         if (mBytes == null) {
             mBytes = new byte[14];
         }
@@ -63,8 +63,11 @@ public class NetIpConfig implements ByteConversion {
     }
 
     @Override
-    public boolean wrapBytes(byte[] bytes) {
-        return StructParser.wrapBytes(this, bytes);
+    public boolean wrapBytes() {
+        if (mBytes == null) {
+            mBytes = new byte[14];
+        }
+        return StructParser.wrapBytes(this, mBytes);
     }
 
     @Override

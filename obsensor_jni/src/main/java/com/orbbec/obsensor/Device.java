@@ -259,11 +259,11 @@ public class Device extends LobClass {
      * @throws OBException 当待设置的数据结构封装出错时
      * \endif
      */
-    public void setPropertyValueDataType(DeviceProperty property, ByteConversion dataType, byte[] data) {
+    public void setPropertyValueDataType(DeviceProperty property, ByteConversion dataType) {
         throwInitializeException();
-        boolean result = dataType.wrapBytes(data);
+        boolean result = dataType.wrapBytes();
         if (result) {
-            nSetPropertyValueDataType(mHandle, property.value(), data);
+            nSetPropertyValueDataType(mHandle, property.value(), dataType.getBytes());
         } else {
             throw new OBException(property + " wrap bytes error!");
         }
@@ -688,7 +688,7 @@ public class Device extends LobClass {
         throwInitializeException();
         DeviceTemperature temperature = new DeviceTemperature();
         if (isPropertySupported(DeviceProperty.OB_STRUCT_DEVICE_TEMPERATURE, PermissionType.OB_PERMISSION_READ)) {
-            getPropertyValueDataType(DeviceProperty.OB_STRUCT_DEVICE_TEMPERATURE, temperature, temperature.BYTES());
+            getPropertyValueDataType(DeviceProperty.OB_STRUCT_DEVICE_TEMPERATURE, temperature, temperature.getBytes());
         } else {
             throw new OBException("Getting device temperature is unsupported!");
         }
@@ -749,8 +749,8 @@ public class Device extends LobClass {
      */
     public void setTimestampResetConfig(DeviceTimestampResetConfig config) {
         throwInitializeException();
-        if (config.wrapBytes(config.BYTES())) {
-            nSetTimestampResetConfig(mHandle, config.BYTES());
+        if (config.wrapBytes()) {
+            nSetTimestampResetConfig(mHandle, config.getBytes());
         }
     }
 
@@ -767,7 +767,7 @@ public class Device extends LobClass {
     public DeviceTimestampResetConfig getTimestampResetConfig() {
         throwInitializeException();
         DeviceTimestampResetConfig config = new DeviceTimestampResetConfig();
-        nGetTimestampResetConfig(mHandle, config.BYTES());
+        nGetTimestampResetConfig(mHandle, config.getBytes());
         if (config.parseBytes()) {
             return config;
         }
@@ -921,7 +921,7 @@ public class Device extends LobClass {
     private NetIpConfig getNetworkConfig() {
         throwInitializeException();
         NetIpConfig config = new NetIpConfig();
-        nGetNetIpConfig(mHandle, config.BYTES());
+        nGetNetIpConfig(mHandle, config.getBytes());
         if (config.parseBytes()) {
             return config;
         }
@@ -939,8 +939,8 @@ public class Device extends LobClass {
      */
     private void setNetworkConfig(NetIpConfig config) {
         throwInitializeException();
-        if (config.wrapBytes(config.BYTES())) {
-            nSetNetworkConfig(mHandle, config.BYTES());
+        if (config.wrapBytes()) {
+            nSetNetworkConfig(mHandle, config.getBytes());
         }
     }
 
@@ -957,7 +957,7 @@ public class Device extends LobClass {
     public MultiDeviceSyncConfig getMultiDeviceSyncConfig() {
         throwInitializeException();
         MultiDeviceSyncConfig config = new MultiDeviceSyncConfig();
-        nGetMultiDeviceSyncConfig(mHandle, config.BYTES());
+        nGetMultiDeviceSyncConfig(mHandle, config.getBytes());
         if (config.parseBytes()) {
             return config;
         }
@@ -977,8 +977,8 @@ public class Device extends LobClass {
      */
     public void setMultiDeviceSyncConfig(MultiDeviceSyncConfig deviceSyncConfig) {
         throwInitializeException();
-        if (deviceSyncConfig.wrapBytes(deviceSyncConfig.BYTES())) {
-            nSetMultiDeviceSyncConfig(mHandle, deviceSyncConfig.BYTES());
+        if (deviceSyncConfig.wrapBytes()) {
+            nSetMultiDeviceSyncConfig(mHandle, deviceSyncConfig.getBytes());
         }
     }
 
@@ -1102,7 +1102,7 @@ public class Device extends LobClass {
     public void setHdrConfig(HdrConfig config) {
         throwInitializeException();
         if (isPropertySupported(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, PermissionType.OB_PERMISSION_WRITE)) {
-            setPropertyValueDataType(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, config, config.BYTES());
+            setPropertyValueDataType(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, config);
         } else {
             throw new OBException("Setting device hdr config is unsupported!");
         }
@@ -1123,7 +1123,7 @@ public class Device extends LobClass {
         throwInitializeException();
         HdrConfig hdrConfig = new HdrConfig();
         if (isPropertySupported(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, PermissionType.OB_PERMISSION_READ)) {
-            getPropertyValueDataType(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, hdrConfig, hdrConfig.BYTES());
+            getPropertyValueDataType(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, hdrConfig, hdrConfig.getBytes());
             return hdrConfig;
         } else {
             throw new OBException("Getting device hdr config is unsupported!");

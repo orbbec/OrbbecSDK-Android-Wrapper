@@ -40,7 +40,8 @@ public class Float3D implements ByteConversion {
 
     private byte[] mBytes;
 
-    public byte[] BYTES() {
+    @Override
+    public byte[] getBytes() {
         if (mBytes == null) {
             mBytes = new byte[12];
         }
@@ -53,8 +54,11 @@ public class Float3D implements ByteConversion {
     }
 
     @Override
-    public boolean wrapBytes(byte[] bytes) {
-        return StructParser.wrapBytes(this, bytes);
+    public boolean wrapBytes() {
+        if (mBytes == null) {
+            mBytes = new byte[12];
+        }
+        return StructParser.wrapBytes(this, mBytes);
     }
 
     @Override

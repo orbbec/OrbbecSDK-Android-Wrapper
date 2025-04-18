@@ -32,7 +32,7 @@ public class TemporalFilter extends Filter {
     public FloatPropertyRange getDiffscaleRange() {
         throwInitializeException();
         FloatPropertyRange diffscaleRange = new FloatPropertyRange();
-        nGetDiffscaleRange(mHandle, diffscaleRange.BYTES());
+        nGetDiffscaleRange(mHandle, diffscaleRange.getBytes());
         boolean result = diffscaleRange.parseBytes();
         if (!result) {
             throw new OBException("getDiffscaleRange parse bytes error!");
@@ -67,7 +67,7 @@ public class TemporalFilter extends Filter {
     public FloatPropertyRange getWeightRange() {
         throwInitializeException();
         FloatPropertyRange weightRange = new FloatPropertyRange();
-        nGetWeightRange(mHandle, weightRange.BYTES());
+        nGetWeightRange(mHandle, weightRange.getBytes());
         boolean result = weightRange.parseBytes();
         if (!result) {
             throw new OBException("getWeightRange parse bytes error!");

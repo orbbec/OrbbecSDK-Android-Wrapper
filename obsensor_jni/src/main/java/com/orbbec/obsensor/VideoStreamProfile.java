@@ -79,7 +79,7 @@ public class VideoStreamProfile extends StreamProfile {
     public CameraIntrinsic getIntrinsic() {
         throwInitializeException();
         CameraIntrinsic intrinsic = new CameraIntrinsic();
-        nGetIntrinsic(mHandle, intrinsic.BYTES());
+        nGetIntrinsic(mHandle, intrinsic.getBytes());
         boolean result = intrinsic.parseBytes();
         if (!result) {
             throw new OBException("getIntrinsic parse bytes error!");
@@ -101,7 +101,7 @@ public class VideoStreamProfile extends StreamProfile {
     public CameraDistortion getDistortion() {
         throwInitializeException();
         CameraDistortion distortion = new CameraDistortion();
-        nGetDistortion(mHandle, distortion.BYTES());
+        nGetDistortion(mHandle, distortion.getBytes());
         boolean result = distortion.parseBytes();
         if (!result) {
             throw new OBException("getDistortion parse bytes error!");

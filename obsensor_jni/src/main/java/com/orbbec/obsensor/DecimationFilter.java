@@ -62,7 +62,7 @@ public class DecimationFilter extends Filter {
     public Uint8PropertyRange getScaleRange() {
         throwInitializeException();
         Uint8PropertyRange scaleRange = new Uint8PropertyRange();
-        nGetScaleRange(mHandle, scaleRange.BYTES());
+        nGetScaleRange(mHandle, scaleRange.getBytes());
         boolean result = scaleRange.parseBytes();
         if (!result) {
             throw new OBException("getScaleRange parse bytes error!");

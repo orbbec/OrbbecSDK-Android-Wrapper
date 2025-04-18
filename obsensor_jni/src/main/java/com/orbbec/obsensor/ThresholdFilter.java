@@ -28,7 +28,7 @@ public class ThresholdFilter extends Filter {
     public IntPropertyRange getMinRange() {
         throwInitializeException();
         IntPropertyRange minRange = new IntPropertyRange();
-        mGetMinRange(mHandle, minRange.BYTES());
+        mGetMinRange(mHandle, minRange.getBytes());
         boolean result = minRange.parseBytes();
         if (!result) {
             throw new OBException("getMinRange parse bytes error!");
@@ -46,7 +46,7 @@ public class ThresholdFilter extends Filter {
     public IntPropertyRange getMaxRange() {
         throwInitializeException();
         IntPropertyRange maxRange = new IntPropertyRange();
-        mGetMaxRange(mHandle, maxRange.BYTES());
+        mGetMaxRange(mHandle, maxRange.getBytes());
         boolean result = maxRange.parseBytes();
         if (!result) {
             throw new OBException("getMaxRange parse bytes error!");

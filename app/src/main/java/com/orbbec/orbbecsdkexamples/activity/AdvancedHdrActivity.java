@@ -79,7 +79,7 @@ public class AdvancedHdrActivity extends BaseActivity {
                     mHdrConfig.setGain1(16);
                     mHdrConfig.setExposure2(1);
                     mHdrConfig.setGain2(16);
-                    mDevice.setPropertyValueDataType(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, mHdrConfig, mHdrConfig.BYTES());
+                    mDevice.setPropertyValueDataType(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, mHdrConfig);
 
                     // 6.Create HdrMerge post processor
                     mHdrFilter = new HdrMerge();
@@ -169,7 +169,7 @@ public class AdvancedHdrActivity extends BaseActivity {
 
             if (mDevice != null) {
                 mHdrConfig.setEnable((byte) 0);
-                mDevice.setPropertyValueDataType(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, mHdrConfig, mHdrConfig.BYTES());
+                mDevice.setPropertyValueDataType(DeviceProperty.OB_STRUCT_DEPTH_HDR_CONFIG, mHdrConfig);
                 mDevice.close();
             }
         } catch (Exception e) {
