@@ -178,7 +178,7 @@ public enum Format {
     RLE(21),
     /**
 	 * \if English
-	 * RGB888 format (actual BRG888)
+	 * RGB888 format (actual RGB888)
 	 * \else
      * RGB888格式 (实际RGB888)
      * \endif
@@ -296,7 +296,9 @@ public enum Format {
      * 未知格式
      * \endif
      */
-    UNKNOWN(0xff);
+    UNKNOWN(0xff),
+
+	ANY(0xff);
 
     private final int mValue;
 

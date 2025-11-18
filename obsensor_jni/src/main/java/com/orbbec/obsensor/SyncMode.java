@@ -19,7 +19,7 @@ public enum SyncMode {
      * @brief “彩色”和“深度”可以设置为不同的帧速率
      * \endif
      */
-    OB_MULTI_DEVICE_SYNC_MODE_FREE_RUN(1 << 0),
+    OB_MULTI_DEVICE_SYNC_MODE_FREE_RUN(1),
 
     /**
      * \if English

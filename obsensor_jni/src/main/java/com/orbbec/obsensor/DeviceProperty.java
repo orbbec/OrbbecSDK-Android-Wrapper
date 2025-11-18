@@ -588,6 +588,16 @@ public enum DeviceProperty {
 
     /**
      * \if English
+     * Enable or disable the device to retry USB2.0 re-identification when the device is connected to a USB2.0 port.
+     * This feature ensures that the device is not mistakenly identified as a USB 2.0 device when connected to a USB 3.0 port.
+     * \else
+     * 启用或禁用设备在连接USB2.0端口时尝试重新识别设备，以确保在连接USB3.0端口时设备不会被误识别为USB2.0设备。
+     * \endif
+     */
+    OB_PROP_DEVICE_USB2_REPEAT_IDENTIFY_BOOL(141),
+
+    /**
+     * \if English
      * Reboot device delay mode. Data type: uint32_t, Delay time unit: ms, range: [0, 8000).
      * \else
      * 控制设备重启，带延迟模式；类型：uint32_t，延迟时间单位：ms。delay为0：不延迟；delay大于0，延迟delay毫秒，范围: [0, 8000)

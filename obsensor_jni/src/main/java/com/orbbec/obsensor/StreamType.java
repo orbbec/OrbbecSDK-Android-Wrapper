@@ -10,6 +10,14 @@ package com.orbbec.obsensor;
 public enum StreamType {
     /**
 	 * \if English
+	 * Unknown stream type
+	 * \else
+     * 未知数据流类型
+     * \endif
+     */
+    UNKNOWN(-1),
+    /**
+	 * \if English
 	 * Video stream (infrared, color, depth streams are all video streams)
 	 * \else
      * 视频流(红外、彩色、深度流都属于视频流)
