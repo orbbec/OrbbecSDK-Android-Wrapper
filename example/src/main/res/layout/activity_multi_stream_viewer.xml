@@ -8,15 +8,17 @@
         android:id="@+id/ll_color_accel_gyro"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:gravity="center"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toTopOf="@+id/ll_depth_ir_left_right"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1">
 
             <com.orbbec.orbbecsdkexamples.view.OBGLView
                 android:id="@+id/multi_stream_color"
@@ -39,7 +41,6 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@android:color/darker_gray"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingStart="30dp"
@@ -48,36 +49,35 @@
             <TextView
                 android:id="@+id/multi_stream_accel_timestamp"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
                 android:textSize="@dimen/imu_text_size" />
 
             <TextView
                 android:id="@+id/multi_stream_accel_temperature"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:textSize="@dimen/imu_text_size" />
 
             <TextView
                 android:id="@+id/multi_stream_accel_x"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:textSize="@dimen/imu_text_size" />
 
             <TextView
                 android:id="@+id/multi_stream_accel_y"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:textSize="@dimen/imu_text_size" />
 
             <TextView
                 android:id="@+id/multi_stream_accel_z"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:textSize="@dimen/imu_text_size" />
         </LinearLayout>
 
@@ -86,7 +86,6 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@android:color/darker_gray"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingStart="30dp"
@@ -95,36 +94,35 @@
             <TextView
                 android:id="@+id/multi_stream_gyro_timestamp"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
                 android:textSize="@dimen/imu_text_size" />
 
             <TextView
                 android:id="@+id/multi_stream_gyro_temperature"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:textSize="@dimen/imu_text_size" />
 
             <TextView
                 android:id="@+id/multi_stream_gyro_x"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:textSize="@dimen/imu_text_size" />
 
             <TextView
                 android:id="@+id/multi_stream_gyro_y"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:textSize="@dimen/imu_text_size" />
 
             <TextView
                 android:id="@+id/multi_stream_gyro_z"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/imu_accel_textview_height"
-                android:textColor="@color/cardview_light_background"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:textSize="@dimen/imu_text_size" />
         </LinearLayout>
     </LinearLayout>
@@ -133,15 +131,17 @@
         android:id="@+id/ll_depth_ir_left_right"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:gravity="center"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ll_color_accel_gyro">
 
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1">
 
             <com.orbbec.orbbecsdkexamples.view.OBGLView
                 android:id="@+id/multi_stream_depth"
@@ -160,8 +160,12 @@
         </FrameLayout>
 
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:id="@+id/multi_stream_ir_left_fl"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:visibility="gone">
 
             <com.orbbec.orbbecsdkexamples.view.OBGLView
                 android:id="@+id/multi_stream_ir_left"
@@ -180,8 +184,12 @@
         </FrameLayout>
 
         <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:id="@+id/multi_stream_ir_right_fl"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:visibility="gone">
 
             <com.orbbec.orbbecsdkexamples.view.OBGLView
                 android:id="@+id/multi_stream_ir_right"
@@ -199,8 +207,30 @@
                 android:textSize="16sp" />
         </FrameLayout>
 
-    </LinearLayout>
+        <FrameLayout
+            android:id="@+id/multi_stream_ir_fl"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:visibility="gone">
 
+            <com.orbbec.orbbecsdkexamples.view.OBGLView
+                android:id="@+id/multi_stream_ir"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:background="#80000000"
+                android:gravity="start|top"
+                android:text="IR"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+        </FrameLayout>
+    </LinearLayout>
 
     <!--    <androidx.constraintlayout.widget.Guideline-->
     <!--        android:id="@+id/guideline"-->

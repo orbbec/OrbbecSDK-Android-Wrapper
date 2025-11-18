@@ -1,11 +1,15 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,24 +41,31 @@ import com.orbbec.obsensor.VideoStreamProfile;
 import com.orbbec.orbbecsdkexamples.R;
 import com.orbbec.orbbecsdkexamples.view.OBGLView;
 
+import java.util.List;
+
 public class MultiStreamActivity extends BaseActivity {
 
     private static final String TAG = "MultiActivity";
 
+    private Device mDevice;
     private Pipeline mPipeline;
     private Thread mStreamThread;
     private volatile boolean mIsStreamRunning;
     private OBGLView mColorView;
     private OBGLView mDepthView;
+    private OBGLView mIrView;
     private OBGLView mIrLeftView;
     private OBGLView mIrRightView;
-    private Device mDevice;
 
     private int MSG_UPDATE_IMU_INFO = 1;
     private Sensor mAccelSensor;
     private Sensor mGyroSensor;
     private AccelStreamProfile mAccelStreamProfile;
     private GyroStreamProfile mGyroStreamProfile;
+
+    private FrameLayout mIrFL;
+    private FrameLayout mIrLeftFL;
+    private FrameLayout mIrRightFL;
 
     private TextView mAccelTimeStampView;
     private TextView mAccelTemperatureView;
@@ -85,40 +96,20 @@ public class MultiStreamActivity extends BaseActivity {
                 if (mPipeline == null) {
                     // 2.Create Device and initialize Pipeline through Device
                     mDevice = deviceList.getDevice(0);
+                    mPipeline = new Pipeline(mDevice);
 
-                    Sensor colorSensor = mDevice.getSensor(SensorType.COLOR);
-                    if (colorSensor == null) {
-                        showToast(getString(R.string.device_not_support_color));
+                    // 3.Enumerate and config all sensors
+                    Config config = initStreamProfile();
+                    if (config == null) {
+                        showToast(getString(R.string.init_stream_profile_failed));
+                        mPipeline.close();
+                        mPipeline = null;
                         mDevice.close();
                         mDevice = null;
                         return;
                     }
 
-                    Sensor depthSensor = mDevice.getSensor(SensorType.DEPTH);
-                    if (depthSensor == null) {
-                        showToast(getString(R.string.device_not_support_depth));
-                        mDevice.close();
-                        mDevice = null;
-                        return;
-                    }
-
-                    Sensor irLeftSensor = mDevice.getSensor(SensorType.IR_LEFT);
-                    if (irLeftSensor == null) {
-                        showToast(getString(R.string.device_not_support_ir_left));
-                        mDevice.close();
-                        mDevice = null;
-                        return;
-                    }
-
-                    Sensor irRightSensor = mDevice.getSensor(SensorType.IR_RIGHT);
-                    if (irRightSensor == null) {
-                        showToast(getString(R.string.device_not_support_ir_right));
-                        mDevice.close();
-                        mDevice = null;
-                        return;
-                    }
-
-                    // 3.Get Acceleration and Gyroscope Sensor through Device
+                    // 4.Get Acceleration and Gyroscope Sensor through Device
                     mAccelSensor = mDevice.getSensor(SensorType.ACCEL);
                     mGyroSensor = mDevice.getSensor(SensorType.GYRO);
 
@@ -126,7 +117,7 @@ public class MultiStreamActivity extends BaseActivity {
                         showToast(getString(R.string.device_not_support_imu));
                         return;
                     } else {
-                        // 4.Get accelerometer and gyroscope StreamProfile List
+                        // 5.Get accelerometer and gyroscope StreamProfile List
                         StreamProfileList accelProfileList = mAccelSensor.getStreamProfileList();
                         if (null != accelProfileList) {
                             mAccelStreamProfile = accelProfileList.getStreamProfile(0).as(StreamType.ACCEL);
@@ -138,19 +129,6 @@ public class MultiStreamActivity extends BaseActivity {
                             mGyroStreamProfile = gyroProfileList.getStreamProfile(0).as(StreamType.GYRO);
                             gyroProfileList.close();
                         }
-                    }
-
-                    mPipeline = new Pipeline(mDevice);
-
-                    // 5.Initialize stream profile
-                    Config config = initStreamProfile(mPipeline);
-                    if (config == null) {
-                        showToast(getString(R.string.init_stream_profile_failed));
-                        mPipeline.close();
-                        mPipeline = null;
-                        mDevice.close();
-                        mDevice = null;
-                        return;
                     }
 
                     // 6.Start sensor stream
@@ -199,7 +177,7 @@ public class MultiStreamActivity extends BaseActivity {
         public void handleMessage(@NonNull Message msg) {
             if (msg.what == MSG_UPDATE_IMU_INFO) {
                 drawImuInfo();
-                sendEmptyMessageDelayed(MSG_UPDATE_IMU_INFO, 50);
+                sendEmptyMessageDelayed(MSG_UPDATE_IMU_INFO, 16);
             }
         }
     };
@@ -275,8 +253,13 @@ public class MultiStreamActivity extends BaseActivity {
     private void initView() {
         mColorView = findViewById(R.id.multi_stream_color);
         mDepthView = findViewById(R.id.multi_stream_depth);
+        mIrView = findViewById(R.id.multi_stream_ir);
         mIrLeftView = findViewById(R.id.multi_stream_ir_left);
         mIrRightView = findViewById(R.id.multi_stream_ir_right);
+
+        mIrFL = findViewById(R.id.multi_stream_ir_fl);
+        mIrLeftFL = findViewById(R.id.multi_stream_ir_left_fl);
+        mIrRightFL = findViewById(R.id.multi_stream_ir_right_fl);
 
         mAccelTimeStampView = findViewById(R.id.multi_stream_accel_timestamp);
         mAccelTemperatureView = findViewById(R.id.multi_stream_accel_temperature);
@@ -289,21 +272,51 @@ public class MultiStreamActivity extends BaseActivity {
         mGyroXView = findViewById(R.id.multi_stream_gyro_x);
         mGyroYView = findViewById(R.id.multi_stream_gyro_y);
         mGyroZView = findViewById(R.id.multi_stream_gyro_z);
+
+        DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
+        float density = displayMetrics.density;
+        int screenWidth = displayMetrics.widthPixels;
+
+        float textSize = screenWidth * 0.02f / density;
+        mAccelTimeStampView.setTextSize(textSize);
+        mAccelTemperatureView.setTextSize(textSize);
+        mAccelXView.setTextSize(textSize);
+        mAccelYView.setTextSize(textSize);
+        mAccelZView.setTextSize(textSize);
+        mGyroTimeStampView.setTextSize(textSize);
+        mGyroTemperatureView.setTextSize(textSize);
+        mGyroXView.setTextSize(textSize);
+        mGyroYView.setTextSize(textSize);
+        mGyroZView.setTextSize(textSize);
     }
 
-    private Config initStreamProfile(Pipeline pipeline) {
+    private Config initStreamProfile() {
         Config config = new Config();
 
-        SensorType types[] = {SensorType.DEPTH, SensorType.COLOR, SensorType.IR_LEFT, SensorType.IR_RIGHT};
-        for (SensorType type : types) {
-            VideoStreamProfile streamProfile = getStreamProfile(pipeline, type);
-            if (streamProfile != null) {
-                Log.d(TAG, "initStreamProfile: " + type);
-                printStreamProfile(streamProfile.as(StreamType.VIDEO));
-                config.enableStream(streamProfile);
-                streamProfile.close();
-            } else {
-                Log.w(TAG, "initStreamProfile: stream profile is null");
+        List<Sensor> sensorList = mDevice.querySensors();
+        for (Sensor sensor : sensorList) {
+            SensorType type = sensor.getType();
+            if (type == SensorType.ACCEL || type == SensorType.GYRO) {
+                continue;
+            }
+            try(VideoStreamProfile streamProfile = getStreamProfile(mPipeline, type)) {
+                if (streamProfile != null) {
+                    runOnUiThread(() -> {
+                        if (type == SensorType.IR) {
+                            mIrFL.setVisibility(View.VISIBLE);
+                        } else if (type == SensorType.IR_LEFT) {
+                            mIrLeftFL.setVisibility(View.VISIBLE);
+                        } else if (type == SensorType.IR_RIGHT) {
+                            mIrRightFL.setVisibility(View.VISIBLE);
+                        }
+                    });
+
+                    Log.d(TAG, "initStreamProfile: " + type);
+                    printStreamProfile(streamProfile.as(StreamType.VIDEO));
+                    config.enableStream(streamProfile);
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "initStreamProfile: stream profile is null：" + type);
                 config.close();
                 return null;
             }
@@ -394,13 +407,12 @@ public class MultiStreamActivity extends BaseActivity {
 
     private Runnable mStreamRunnable = () -> {
         while (mIsStreamRunning) {
-            try {
-                FrameSet frameSet = mPipeline.waitForFrameSet(100);
-
+            try (FrameSet frameSet = mPipeline.waitForFrameSet(1000)) {
                 if (frameSet == null) continue;
 
                 DepthFrame depthFrame = frameSet.getFrame(FrameType.DEPTH);
                 ColorFrame colorFrame = frameSet.getFrame(FrameType.COLOR);
+                IRFrame irFrame = frameSet.getFrame(FrameType.IR);
                 IRFrame irLeftFrame = frameSet.getFrame(FrameType.IR_LEFT);
                 IRFrame irRightFrame = frameSet.getFrame(FrameType.IR_RIGHT);
 
@@ -413,8 +425,14 @@ public class MultiStreamActivity extends BaseActivity {
                 if (depthFrame != null) {
                     byte[] depthFrameData = new byte[depthFrame.getDataSize()];
                     depthFrame.getData(depthFrameData);
-                    mDepthView.update(depthFrame.getWidth(), depthFrame.getHeight(), StreamType.DEPTH, depthFrame.getFormat(), depthFrameData, 1.0f);
+                    mDepthView.update(depthFrame.getWidth(), depthFrame.getHeight(), StreamType.DEPTH, depthFrame.getFormat(), depthFrameData, depthFrame.getValueScale());
                     depthFrame.close();
+                }
+                if (irFrame != null) {
+                    byte[] irFrameData = new byte[irFrame.getDataSize()];
+                    irFrame.getData(irFrameData);
+                    mIrView.update(irFrame.getWidth(), irFrame.getHeight(), StreamType.IR, irFrame.getFormat(), irFrameData, 1.0f);
+                    irFrame.close();
                 }
                 if (irLeftFrame != null) {
                     byte[] leftFrameData = new byte[irLeftFrame.getDataSize()];
@@ -428,8 +446,6 @@ public class MultiStreamActivity extends BaseActivity {
                     mIrRightView.update(irRightFrame.getWidth(), irRightFrame.getHeight(), StreamType.IR, irRightFrame.getFormat(), rightFrameData, 1.0f);
                     irRightFrame.close();
                 }
-
-                frameSet.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
