@@ -17,7 +17,6 @@ public class EdgeNoiseRemovalParams extends DataType {
     }
 
     public void setMarginLeftTh(int mMarginLeftTh) {
-        throwInitializeException();
         this.mMarginLeftTh = mMarginLeftTh;
     }
 
@@ -27,7 +26,6 @@ public class EdgeNoiseRemovalParams extends DataType {
     }
 
     public void setMarginRightTh(int mMarginRightTh) {
-        throwInitializeException();
         this.mMarginRightTh = mMarginRightTh;
     }
 
@@ -37,7 +35,6 @@ public class EdgeNoiseRemovalParams extends DataType {
     }
 
     public void setMarginTopTh(int mMarginTopTh) {
-        throwInitializeException();
         this.mMarginTopTh = mMarginTopTh;
     }
 
@@ -47,7 +44,6 @@ public class EdgeNoiseRemovalParams extends DataType {
     }
 
     public void setMarginBottomTh(int mMarginBottomTh) {
-        throwInitializeException();
         this.mMarginBottomTh = mMarginBottomTh;
     }
 

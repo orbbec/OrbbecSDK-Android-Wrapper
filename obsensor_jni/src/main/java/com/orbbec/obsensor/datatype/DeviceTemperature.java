@@ -35,6 +35,7 @@ public class DeviceTemperature extends DataType {
 	 * \endif
      */
     public float getCpuTemp() {
+        throwInitializeException();
         return cpuTemp;
     }
 
@@ -50,6 +51,7 @@ public class DeviceTemperature extends DataType {
 	 * \endif
      */
     public float getIrTemp() {
+        throwInitializeException();
         return irTemp;
     }
 
@@ -65,6 +67,7 @@ public class DeviceTemperature extends DataType {
 	 * \endif
      */
     public float getLdmTemp() {
+        throwInitializeException();
         return ldmTemp;
     }
 
@@ -80,6 +83,7 @@ public class DeviceTemperature extends DataType {
 	 * \endif
      */
     public float getMainBoardTemp() {
+        throwInitializeException();
         return mainBoardTemp;
     }
 
@@ -95,6 +99,7 @@ public class DeviceTemperature extends DataType {
 	 * \endif
      */
     public float getTecTemp() {
+        throwInitializeException();
         return tecTemp;
     }
 
@@ -110,6 +115,7 @@ public class DeviceTemperature extends DataType {
 	 * \endif
      */
     public float getImuTemp() {
+        throwInitializeException();
         return imuTemp;
     }
 
@@ -125,6 +131,7 @@ public class DeviceTemperature extends DataType {
 	 * \endif
      */
     public float getRgbTemp() {
+        throwInitializeException();
         return rgbTemp;
     }
 
@@ -138,6 +145,7 @@ public class DeviceTemperature extends DataType {
      * \endif
      */
     public float getIrLeftTemp() {
+        throwInitializeException();
         return irLeftTemp;
     }
 
@@ -151,6 +159,7 @@ public class DeviceTemperature extends DataType {
      * \endif
      */
     public float getIrRightTemp() {
+        throwInitializeException();
         return irRightTemp;
     }
 
@@ -163,6 +172,7 @@ public class DeviceTemperature extends DataType {
      * \endif
      */
     public float getChipTopTemp() {
+        throwInitializeException();
         return chipTopTemp;
     }
 
@@ -175,6 +185,7 @@ public class DeviceTemperature extends DataType {
      * \endif
      */
     public float getChipBottomTemp() {
+        throwInitializeException();
         return chipBottomTemp;
     }
 

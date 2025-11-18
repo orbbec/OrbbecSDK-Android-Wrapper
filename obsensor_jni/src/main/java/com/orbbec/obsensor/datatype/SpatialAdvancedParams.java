@@ -11,7 +11,6 @@ public class SpatialAdvancedParams extends DataType {
     private int mRadius;
 
     public void setMagnitude(short mMagnitude) {
-        throwInitializeException();
         this.mMagnitude = mMagnitude;
     }
 
@@ -21,7 +20,6 @@ public class SpatialAdvancedParams extends DataType {
     }
 
     public void setAlpha(float mAlpha) {
-        throwInitializeException();
         this.mAlpha = mAlpha;
     }
 
@@ -31,7 +29,6 @@ public class SpatialAdvancedParams extends DataType {
     }
 
     public void setDispDiff(int mDispDiff) {
-        throwInitializeException();
         this.mDispDiff = mDispDiff;
     }
 
@@ -41,7 +38,6 @@ public class SpatialAdvancedParams extends DataType {
     }
 
     public void setRadius(int mRadius) {
-        throwInitializeException();
         this.mRadius = mRadius;
     }
 

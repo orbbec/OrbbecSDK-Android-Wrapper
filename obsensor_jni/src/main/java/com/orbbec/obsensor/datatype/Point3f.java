@@ -9,22 +9,27 @@ public class Point3f extends DataType {
     private float mZ;
 
     public float getX() {
-        throwInitializeException();
         return mX;
-    }
-
-    public float getY() {
-        throwInitializeException();
-        return mY;
-    }
-
-    public float getZ() {
-        throwInitializeException();
-        return mZ;
     }
 
     public void setX(float mX) {
         this.mX = mX;
+    }
+
+    public float getY() {
+        return mY;
+    }
+
+    public void setY(float mY) {
+        this.mY = mY;
+    }
+
+    public float getZ() {
+        return mZ;
+    }
+
+    public void setZ(float mZ) {
+        this.mZ = mZ;
     }
 
     @Override

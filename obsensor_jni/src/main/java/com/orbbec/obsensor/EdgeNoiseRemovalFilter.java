@@ -28,6 +28,9 @@ public class EdgeNoiseRemovalFilter extends Filter{
      */
     public void setFilterParams(EdgeNoiseRemovalParams params) {
         throwInitializeException();
+        if (!params.wrapBytes()) {
+            throw new OBException("setFilterParams wrap bytes error!");
+        }
         nSetFilterParams(mHandle, params.getBytes());
     }
 

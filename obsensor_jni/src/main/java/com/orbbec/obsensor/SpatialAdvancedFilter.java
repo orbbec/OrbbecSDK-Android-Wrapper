@@ -140,6 +140,9 @@ public class SpatialAdvancedFilter extends Filter{
      */
     public void setFilterParams(SpatialAdvancedParams params) {
         throwInitializeException();
+        if (!params.wrapBytes()) {
+            throw new OBException("setFilterParams wrap bytes error!");
+        }
         nSetFilterParams(mHandle, params.getBytes());
     }
 

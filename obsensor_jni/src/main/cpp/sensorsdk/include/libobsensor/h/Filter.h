@@ -358,7 +358,7 @@ ob_uint16_property_range ob_noise_removal_filter_get_disp_diff_range(ob_filter *
  * @param[out] error Log error messages.
  * @return ob_int_property_range the _max_size value of property range.
  */
-ob_uint16_property_range ob_noise_removal_filter_get_max_size_range(ob_filter *filter, ob_error **error);
+ob_int_property_range ob_noise_removal_filter_get_max_size_range(ob_filter *filter, ob_error **error);
 
 /**
  * @brief Set the noise removal filter params.

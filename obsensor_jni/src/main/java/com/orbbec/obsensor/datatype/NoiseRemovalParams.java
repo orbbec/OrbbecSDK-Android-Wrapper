@@ -11,9 +11,13 @@ public class NoiseRemovalParams extends DataType {
 
     private DDONoiseRemovalType mType;
 
-    public void setDispDiff(int mDispDiff) {
+    public int getMaxSize() {
         throwInitializeException();
-        this.mDispDiff = mDispDiff;
+        return mMaxSize;
+    }
+
+    public void setMaxSize(int mMaxSize) {
+        this.mMaxSize = mMaxSize;
     }
 
     public int getDispDiff() {
@@ -21,19 +25,17 @@ public class NoiseRemovalParams extends DataType {
         return mDispDiff;
     }
 
-    public void setMaxSize(int mMaxSize) {
-        throwInitializeException();
-        this.mMaxSize = mMaxSize;
-    }
-
-    public int getMaxSize() {
-        throwInitializeException();
-        return mMaxSize;
+    public void setDispDiff(int mDispDiff) {
+        this.mDispDiff = mDispDiff;
     }
 
     public DDONoiseRemovalType getType() {
         throwInitializeException();
         return mType;
+    }
+
+    public void setType(DDONoiseRemovalType mType) {
+        this.mType = mType;
     }
 
     @Override
