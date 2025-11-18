@@ -54,6 +54,79 @@ public class Config extends LobClass {
     }
 
     /**
+     * \if English
+     * @brief Enable all streams to be used in the pipeline.
+     * \else
+     * @brief 开启所有流以用于pipeline。
+     * \endif
+     */
+    public void enableAllStream() {
+        throwInitializeException();
+        nEnableAllStream(mHandle);
+    }
+
+    /**
+     * \if English
+     * @brief Enable a video stream to be used in the configuration.
+     *
+     * @param streamType The video stream type.
+     * @param width      The video stream width.
+     * @param height     The video stream height.
+     * @param fps        The video stream frame rate.
+     * @param format     The video stream format.
+     * \else
+     * @brief 启用一个视频流以用于配置。
+     *
+     * @param streamType 视频流类型。
+     * @param width      视频流宽度.
+     * @param height     视频流高度.
+     * @param fps        视频流帧率.
+     * @param format     视频流格式.
+     * \endif
+     */
+    public void enableVideoStream(StreamType streamType, int width, int height,
+                                  int fps, Format format) {
+        throwInitializeException();
+        nEnableVideoStream(mHandle, streamType.value(), width, height, fps, format.value());
+    }
+
+    /**
+     * \if English
+     * @brief Enable an accelerometer stream to be used in the configuration.
+     *
+     * @param fullScaleRange The full-scale range of the accelerometer.
+     * @param sampleRate     The sample rate of the accelerometer.
+     * \else
+     * @brief 启用一个加速度计流以用于配置。
+     *
+     * @param fullScaleRange 加速度计的全标程范围。
+     * @param sampleRate     加速度计的采样率。
+     * \endif
+     */
+    public void enableAccelStream(AccelFullScaleRange fullScaleRange, SampleRate sampleRate) {
+        throwInitializeException();
+        nEnableAccelStream(mHandle, fullScaleRange.value(), sampleRate.value());
+    }
+
+    /**
+     * \if English
+     * @brief Enable a gyroscope stream to be used in the configuration.
+     *
+     * @param fullScaleRange The full-scale range of the gyroscope.
+     * @param sampleRate     The sample rate of the gyroscope.
+     * \else
+     * @brief 启用一个陀螺仪流以用于配置。
+     *
+     * @param fullScaleRange 陀螺仪的全标程范围。
+     * @param sampleRate     陀螺仪的采样率。
+     * \endif
+     */
+    public void enableGyroStream(GyroFullScaleRange fullScaleRange, SampleRate sampleRate) {
+        throwInitializeException();
+        nEnableGyroStream(mHandle, fullScaleRange.value(), sampleRate.value());
+    }
+
+    /**
 	 * \if English
 	 * Close the data stream of the specified configuration, through this interface, you can configure which data stream needs to be closed
      *
@@ -67,6 +140,19 @@ public class Config extends LobClass {
     public void disableStream(StreamType streamType) {
         throwInitializeException();
         nDisableStream(mHandle, streamType.value());
+    }
+
+    /**
+     * \if English
+     * @brief Get the enabled stream profile list in the pipeline configuration.
+     * \else
+     * @brief 获取pipeline配置中启用的流配置列表。
+     * \endif
+     */
+    public StreamProfileList getEnabledStreamProfileList() {
+        throwInitializeException();
+        long handle = nGetEnabledStreamProfileList(mHandle);
+        return handle != 0 ? new StreamProfileList(handle) : null;
     }
 
     /**
@@ -139,7 +225,18 @@ public class Config extends LobClass {
 
     private static native void nEnableStream(long handle, long streamProfileHandle);
 
+    private static native void nEnableAllStream(long handle);
+
+    private static native void nEnableVideoStream(long handle, int streamType, int width, int height,
+                                                   int fps, int format);
+
+    private static native void nEnableAccelStream(long handle, int fullScaleRange, int sampleRate);
+
+    private static native void nEnableGyroStream(long handle, int fullScaleRange, int sampleRate);
+
     private static native void nDisableStream(long handle, int streamType);
+
+    private static native long nGetEnabledStreamProfileList(long handle);
 
     private static native void nSetAlignMode(long handle, int mode);
 

@@ -2874,8 +2874,49 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_orbbec_obsensor_Config_nEnableAllStream(JNIEnv *env, jclass instance,
                                                  jlong handle) {
   ob_error *error = NULL;
-  ob_config *config = reinterpret_cast<ob_config *>(handle);
+  auto *config = reinterpret_cast<ob_config *>(handle);
   ob_config_enable_all_stream(config, &error);
+  ob_handle_error(env, error);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_orbbec_obsensor_Config_nEnableVideoStream(JNIEnv *env, jclass clazz,
+                                                   jlong configHandle,
+                                                   jint streamType,
+                                                   jint width, jint height,
+                                                   jint fps,
+                                                   jint format) {
+  ob_error *error = NULL;
+  auto *config = reinterpret_cast<ob_config *>(configHandle);
+  auto type = static_cast<ob_stream_type>(streamType);
+  auto f = static_cast<ob_format>(format);
+  ob_config_enable_video_stream(config, type, width, height, fps, f, &error);
+  ob_handle_error(env, error);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_orbbec_obsensor_Config_nEnableAccelStream(JNIEnv *env, jclass clazz,
+                                                     jlong configHandle,
+                                                     jint fullScaleRange,
+                                                     jint sampleRate) {
+  ob_error *error = NULL;
+  auto *config = reinterpret_cast<ob_config *>(configHandle);
+  auto range = static_cast<ob_accel_full_scale_range>(fullScaleRange);
+  auto rate = static_cast<ob_accel_sample_rate>(sampleRate);
+  ob_config_enable_accel_stream(config, range, rate, &error);
+  ob_handle_error(env, error);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_orbbec_obsensor_Config_nEnableGyroStream(JNIEnv *env, jclass clazz,
+                                                  jlong configHandle,
+                                                  jint fullScaleRange,
+                                                  jint sampleRate) {
+  ob_error *error = NULL;
+  auto *config = reinterpret_cast<ob_config *>(configHandle);
+  auto range = static_cast<ob_gyro_full_scale_range>(fullScaleRange);
+  auto rate = static_cast<ob_gyro_sample_rate>(sampleRate);
+  ob_config_enable_gyro_stream(config, range, rate, &error);
   ob_handle_error(env, error);
 }
 
@@ -2883,10 +2924,20 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_orbbec_obsensor_Config_nDisableStream(JNIEnv *env, jclass instance,
                                                jlong handle, jint streamType) {
   ob_error *error = NULL;
-  ob_config *config = reinterpret_cast<ob_config *>(handle);
+  auto *config = reinterpret_cast<ob_config *>(handle);
   ob_config_disable_stream(config, static_cast<ob_stream_type>(streamType),
                            &error);
   ob_handle_error(env, error);
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_orbbec_obsensor_Config_nGetEnabledStreamProfileList(JNIEnv *env, jclass clazz,
+                                                               jlong configHandle) {
+  ob_error *error = NULL;
+  auto *config = reinterpret_cast<ob_config *>(configHandle);
+  ob_stream_profile_list *list = ob_config_get_enabled_stream_profile_list(config, &error);
+  ob_handle_error(env, error);
+  return (jlong) list;
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_orbbec_obsensor_Config_nSetAlignMode(
@@ -3313,57 +3364,6 @@ Java_com_orbbec_obsensor_Pipeline_nGetCalibrationParam(JNIEnv *env, jclass clazz
     }
 
   ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_orbbec_obsensor_Pipeline_nEnableVideoStream(JNIEnv *env, jclass clazz,
-                                                     jlong configHandle,
-                                                     jint streamType,
-                                                     jint width, jint height,
-                                                     jint fps,
-                                                     jint format) {
-  ob_error *error = NULL;
-  ob_config *config = reinterpret_cast<ob_config *>(configHandle);
-  ob_stream_type type = static_cast<ob_stream_type>(streamType);
-  ob_format f = static_cast<ob_format>(format);
-  ob_config_enable_video_stream(config, type, width, height, fps, f, &error);
-  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_orbbec_obsensor_Pipeline_nEnableAccelStream(JNIEnv *env, jclass clazz,
-                                                     jlong configHandle,
-                                                     jint fullScaleRange,
-                                                     jint sampleRate) {
-  ob_error *error = NULL;
-  ob_config *config = reinterpret_cast<ob_config *>(configHandle);
-  ob_accel_full_scale_range range = static_cast<ob_accel_full_scale_range>(fullScaleRange);
-  ob_accel_sample_rate rate = static_cast<ob_accel_sample_rate>(sampleRate);
-  ob_config_enable_accel_stream(config, range, rate, &error);
-  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_orbbec_obsensor_Pipeline_nEnableGyroStream(JNIEnv *env, jclass clazz,
-                                                    jlong configHandle,
-                                                    jint fullScaleRange,
-                                                    jint sampleRate) {
-  ob_error *error = NULL;
-  ob_config *config = reinterpret_cast<ob_config *>(configHandle);
-  ob_gyro_full_scale_range range = static_cast<ob_gyro_full_scale_range>(fullScaleRange);
-  ob_gyro_sample_rate rate = static_cast<ob_gyro_sample_rate>(sampleRate);
-  ob_config_enable_gyro_stream(config, range, rate, &error);
-  ob_handle_error(env, error);
-}
-
-extern "C" JNIEXPORT jlong JNICALL
-Java_com_orbbec_obsensor_Pipeline_nGetEnabledStreamProfileList(JNIEnv *env, jclass clazz,
-                                                               jlong configHandle) {
-  ob_error *error = NULL;
-  ob_config *config = reinterpret_cast<ob_config *>(configHandle);
-  ob_stream_profile_list *list = ob_config_get_enabled_stream_profile_list(config, &error);
-  ob_handle_error(env, error);
-  return (jlong) list;
 }
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
