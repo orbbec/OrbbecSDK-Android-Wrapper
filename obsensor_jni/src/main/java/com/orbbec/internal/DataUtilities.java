@@ -387,7 +387,7 @@ public final class DataUtilities {
     }
 
     public static byte[] uint8ToBytes(short value) {
-        return new byte[]{(byte) ((value >> 8) & 0xFF)};
+        return new byte[]{(byte) (value & 0xFF)};
     }
 
     public static int bytesToUnit16(byte[] bytes) {
@@ -403,8 +403,7 @@ public final class DataUtilities {
         }
         ByteBuffer buffer = ByteBuffer.allocate(Short.BYTES);
         buffer.order(ByteOrder.nativeOrder());
-        buffer.put((byte) ((value >> 8) & 0xFF));
-        buffer.put((byte) ((value & 0xFF)));
+        buffer.putShort((short) value);
         return buffer.array();
     }
 }
