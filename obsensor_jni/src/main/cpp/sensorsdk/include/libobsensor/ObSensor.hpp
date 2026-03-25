@@ -3,7 +3,7 @@
 
 /**
  * \file ObSensor.hpp
- * \brief This is the main entry point for the OrbbecSDK C++ library.
+ * \brief This is the main entry point for the SDK C++ library.
  *        It includes all necessary header files for using the library.
  */
 #pragma once
@@ -14,9 +14,8 @@
 #include <libobsensor/hpp/Filter.hpp>
 #include <libobsensor/hpp/Frame.hpp>
 #include <libobsensor/hpp/Pipeline.hpp>
-// #include <libobsensor/hpp/RecordPlayback.hpp>
+#include <libobsensor/hpp/RecordPlayback.hpp>
 #include <libobsensor/hpp/Sensor.hpp>
 #include <libobsensor/hpp/StreamProfile.hpp>
 #include <libobsensor/hpp/Version.hpp>
 #include <libobsensor/hpp/TypeHelper.hpp>
-

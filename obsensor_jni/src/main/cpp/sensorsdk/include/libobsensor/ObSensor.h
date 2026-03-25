@@ -3,8 +3,8 @@
 
 /**
  * \file ObSensor.h
- * \brief This file serves as the C entrance for the OrbbecSDK library.
- *        It includes all necessary header files for OrbbecSDK usage.
+ * \brief This file serves as the C entrance for the SDK library.
+ *        It includes all necessary header files for SDK usage.
  */
 #pragma once
 
@@ -20,4 +20,4 @@
 #include <libobsensor/h/StreamProfile.h>
 #include <libobsensor/h/Version.h>
 #include <libobsensor/h/TypeHelper.h>
-
+#include <libobsensor/h/RecordPlayback.h>

@@ -236,6 +236,12 @@ public class SaveToDiskActivity extends BaseActivity {
         depthCount = 0;
         mIsStreamRunning = true;
         mIsPicSavingRunning = true;
+
+        runOnUiThread(() -> {
+            TextView msgView = findViewById(R.id.tv_msg);
+            msgView.setText(getString(R.string.save_image));
+        });
+
         if (null == mStreamThread) {
             mStreamThread = new Thread(mStreamRunnable);
             mStreamThread.start();

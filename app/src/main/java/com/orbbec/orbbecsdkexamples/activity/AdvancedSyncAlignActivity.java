@@ -1,15 +1,18 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.TypedValue;
 import android.widget.CheckBox;
 import android.widget.RadioButton;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-import com.libyuv.util.YuvUtil;
 import com.orbbec.obsensor.AlignFilter;
 import com.orbbec.obsensor.ColorFrame;
 import com.orbbec.obsensor.Config;
@@ -87,26 +90,12 @@ public class AdvancedSyncAlignActivity extends BaseActivity {
                     // 5.Create Device and initialize Pipeline through Device
                     mPipeline = new Pipeline(mDevice);
 
-                    // 6.Create Pipeline configuration
-                    Config config = new Config();
-                    // 7.Enable color stream
-                    config.enableVideoStream(StreamType.COLOR, 0, 0, 0, Format.RGB);
-                    // 8.Enable depth stream
-                    config.enableVideoStream(StreamType.DEPTH, 0, 0, 0, Format.Y16);
-                    config.setFrameAggregateOutputMode(FrameAggregateOutputMode.OB_FRAME_AGGREGATE_OUTPUT_ALL_TYPE_FRAME_REQUIRE);
-
-                    // 9.Config depth align to color or color align to depth.
+                    // 6.Config depth align to color or color align to depth.
                     mDepth2ColorAlign = new AlignFilter(StreamType.COLOR);
                     mColor2DepthAlign = new AlignFilter(StreamType.DEPTH);
 
-                    // 10.Start sensor stream
-                    mPipeline.start(config);
-
-                    // 11.Release config
-                    config.close();
-
-                    // 12.Create a thread to obtain Pipeline data
-                    start();
+                    // 7.Start sensor stream and create a thread to obtain Pipeline data
+                    startStream();
                 }
             } catch (Exception e) {
                 Log.e(TAG, "onDeviceAttach: " + e.getMessage());
@@ -128,7 +117,9 @@ public class AdvancedSyncAlignActivity extends BaseActivity {
                             mPipeline.close();
                             mPipeline = null;
                             mDepth2ColorAlign.close();
+                            mDepth2ColorAlign = null;
                             mColor2DepthAlign.close();
+                            mColor2DepthAlign = null;
                             mDevice.close();
                             mDevice = null;
                         }
@@ -168,6 +159,39 @@ public class AdvancedSyncAlignActivity extends BaseActivity {
         mC2DAlignCb.setOnClickListener(v -> {
             isD2C = false;
         });
+
+        updateTextColor();
+    }
+
+    private int getContrastColor(int backgroundColor) {
+        // Calculate relative luminance.
+        double darkness = 1 - (0.299 * Color.red(backgroundColor) + 0.587 * Color.green(backgroundColor) + 0.114 * Color.blue(backgroundColor)) / 255;
+        if (darkness < 0.5) {
+            return Color.BLACK; // Light background, use black text
+        } else {
+            return Color.WHITE; // Dark background, use white text
+        }
+    }
+
+    private void updateTextColor() {
+        // Get background color of activity to determine text color
+        int bgColor = Color.BLACK; // Default
+        TypedValue a = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.windowBackground, a, true);
+        if (a.type >= TypedValue.TYPE_FIRST_COLOR_INT && a.type <= TypedValue.TYPE_LAST_COLOR_INT) {
+            bgColor = a.data;
+        } else {
+            try {
+                Drawable background = getWindow().getDecorView().getBackground();
+                if (background instanceof ColorDrawable) {
+                    bgColor = ((ColorDrawable) background).getColor();
+                }
+            } catch (Exception ignore) {}
+        }
+        int contrastColor = getContrastColor(bgColor);
+        mAlignSyncCb.setTextColor(contrastColor);
+        mD2CAlignCb.setTextColor(contrastColor);
+        mC2DAlignCb.setTextColor(contrastColor);
     }
 
     @Override
@@ -177,25 +201,47 @@ public class AdvancedSyncAlignActivity extends BaseActivity {
     }
 
     @Override
-    protected void onStop() {
-        try {
-            stop();
+    protected void onResume() {
+        super.onResume();
+        // 从后台回到前台时，若 pipeline 已存在则恢复出流
+        if (mPipeline != null && !mIsStreamRunning) {
+            startStream();
+        }
+    }
 
+    @Override
+    protected void onPause() {
+        // 退到后台时停止出流，但保留 pipeline/device/filter 资源
+        stop();
+        if (mPipeline != null) {
+            try {
+                mPipeline.stop();
+            } catch (Exception e) {
+                Log.e(TAG, "onPause pipeline stop: " + e.getMessage());
+            }
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        // 释放全部资源必须在 releaseSDK 之前
+        try {
             if (mDepth2ColorAlign != null) {
                 mDepth2ColorAlign.close();
+                mDepth2ColorAlign = null;
             }
-
             if (mColor2DepthAlign != null) {
                 mColor2DepthAlign.close();
+                mColor2DepthAlign = null;
             }
-
             if (mPipeline != null) {
-                mPipeline.stop();
                 mPipeline.close();
+                mPipeline = null;
             }
-
             if (mDevice != null) {
                 mDevice.close();
+                mDevice = null;
             }
         } catch (Exception e) {
             Log.e(TAG, "onStop: " + e.getMessage());
@@ -205,12 +251,52 @@ public class AdvancedSyncAlignActivity extends BaseActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        // 安全兜底：正常情况 onStop 已释放
+        try {
+            if (mDepth2ColorAlign != null) {
+                mDepth2ColorAlign.close();
+                mDepth2ColorAlign = null;
+            }
+            if (mColor2DepthAlign != null) {
+                mColor2DepthAlign.close();
+                mColor2DepthAlign = null;
+            }
+            if (mPipeline != null) {
+                mPipeline.close();
+                mPipeline = null;
+            }
+            if (mDevice != null) {
+                mDevice.close();
+                mDevice = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "onDestroy: " + e.getMessage());
+        }
+        super.onDestroy();
+    }
+
+    @Override
     protected DeviceChangedCallback getDeviceChangedCallback() {
         return mDeviceChangedCallback;
     }
 
     private void showToast(String msg) {
         runOnUiThread(() -> Toast.makeText(AdvancedSyncAlignActivity.this, msg, Toast.LENGTH_SHORT).show());
+    }
+
+    private void startStream() {
+        try {
+            Config config = new Config();
+            config.enableVideoStream(StreamType.COLOR, 0, 0, 0, Format.RGB);
+            config.enableVideoStream(StreamType.DEPTH, 0, 0, 0, Format.Y16);
+            config.setFrameAggregateOutputMode(FrameAggregateOutputMode.OB_FRAME_AGGREGATE_OUTPUT_ALL_TYPE_FRAME_REQUIRE);
+            mPipeline.start(config);
+            config.close();
+            start();
+        } catch (Exception e) {
+            Log.e(TAG, "startStream: " + e.getMessage());
+        }
     }
 
     private void start() {
@@ -256,7 +342,7 @@ public class AdvancedSyncAlignActivity extends BaseActivity {
                 mColorDstBuffer.flip();
                 break;
             case YUYV:
-                YuvUtil.yuyv2Rgb888(mColorSrcBuffer, mColorDstBuffer, mColorDstBuffer.capacity());
+                ImageUtils.yuyvToRgb(mColorSrcBuffer, mColorDstBuffer, colorW, colorH);
                 break;
             case UYVY:
                 ImageUtils.uyvyToRgb(mColorSrcBuffer, mColorDstBuffer, colorW, colorH);

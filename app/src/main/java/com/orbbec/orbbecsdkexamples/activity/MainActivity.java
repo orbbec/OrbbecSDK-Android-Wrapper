@@ -14,17 +14,10 @@ import androidx.core.content.ContextCompat;
 
 import com.orbbec.orbbecsdkexamples.R;
 
-import org.opencv.android.OpenCVLoader;
-
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     static {
         System.loadLibrary("orbbecsdkexamples");
-        if (!OpenCVLoader.initLocal()) {
-            Log.e("MainActivity", "OpenCV initialization failure!");
-        } else {
-            Log.d("MainActivity", "OpenCV Initialization Successful!");
-        }
     }
 
     @Override

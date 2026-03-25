@@ -14,9 +14,12 @@ import android.widget.TextView;
 import com.orbbec.obsensor.ColorFrame;
 import com.orbbec.obsensor.DepthFrame;
 import com.orbbec.obsensor.Device;
+import com.orbbec.obsensor.FormatConvertFilter;
+import com.orbbec.obsensor.Frame;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.StreamProfileList;
 import com.orbbec.obsensor.VideoStreamProfile;
+import com.orbbec.obsensor.types.ConvertFormat;
 import com.orbbec.obsensor.types.Format;
 import com.orbbec.obsensor.types.FrameType;
 import com.orbbec.obsensor.types.SensorType;
@@ -192,7 +195,8 @@ public class DeviceControllerAdapter extends BaseAdapter {
         Format format;
         SensorType sensorType = sensor.getType();
         if (sensorType == SensorType.COLOR) {
-            format = Format.RGB;
+            //format = Format.RGB;
+            format = Format.MJPG;
         } else if (sensorType == SensorType.DEPTH) {
             format = Format.Y16;
         } else {
@@ -324,16 +328,25 @@ public class DeviceControllerAdapter extends BaseAdapter {
                     VideoStreamProfile colorProfile = getStreamProfile(sensor);
                     if (null != colorProfile) {
                         printStreamProfile(colorProfile.as(StreamType.VIDEO));
+                        FormatConvertFilter formatConvertFilter =new FormatConvertFilter();
+                        formatConvertFilter.setFormatType(ConvertFormat.FORMAT_MJPEG_TO_RGB);
                         // Start sensor through specified VideoStreamVideoProfile
                         sensor.start(colorProfile, frame -> {
                             ColorFrame colorFrame = frame.as(FrameType.COLOR);
+
+                            if(colorFrame.getFormat() == Format.MJPG){
+                                Frame newFrame = formatConvertFilter.process(colorFrame);
+                                colorFrame.close();
+                                colorFrame = newFrame.as(FrameType.COLOR);
+                            }
+
                             // Get frame data
                             byte[] bytes = new byte[colorFrame.getDataSize()];
                             colorFrame.getData(bytes);
                             // Render frame
                             glView.update(colorFrame.getWidth(), colorFrame.getHeight(), StreamType.COLOR, colorFrame.getFormat(), bytes, 1.0f);
                             // Release Frame
-                            frame.close();
+                            colorFrame.close();
                         });
                         // Release color profile
                         colorProfile.close();

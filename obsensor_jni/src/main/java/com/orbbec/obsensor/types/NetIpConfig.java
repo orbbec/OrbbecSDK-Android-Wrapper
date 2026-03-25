@@ -50,6 +50,7 @@ public class NetIpConfig implements ByteConversion {
 
     private byte[] mBytes;
 
+    @Override
     public byte[] getBytes() {
         if (mBytes == null) {
             mBytes = new byte[14];

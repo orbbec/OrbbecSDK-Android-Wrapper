@@ -24,6 +24,8 @@ import com.orbbec.obsensor.DepthFrame;
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceList;
+import com.orbbec.obsensor.FormatConvertFilter;
+import com.orbbec.obsensor.Frame;
 import com.orbbec.obsensor.FrameSet;
 import com.orbbec.obsensor.GyroFrame;
 import com.orbbec.obsensor.GyroStreamProfile;
@@ -31,7 +33,9 @@ import com.orbbec.obsensor.IRFrame;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.StreamProfileList;
+import com.orbbec.obsensor.types.ConvertFormat;
 import com.orbbec.obsensor.types.DeviceInfo;
+import com.orbbec.obsensor.types.Format;
 import com.orbbec.obsensor.types.FrameType;
 import com.orbbec.obsensor.types.SensorType;
 import com.orbbec.obsensor.types.StreamType;
@@ -88,62 +92,19 @@ public class StreamMultiStreamsActivity extends BaseActivity {
 
     private final Locale locale = Locale.getDefault();
 
+    private FormatConvertFilter formatConvertFilter;
     private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
 
         @Override
         public void onDeviceAttach(DeviceList deviceList) {
             try {
-                if (mPipeline == null) {
-                    // 2.Create Device and initialize Pipeline through Device
+                if (mDevice == null) {
                     mDevice = deviceList.getDevice(0);
-                    mPipeline = new Pipeline(mDevice);
-
-                    // 3.Enumerate and config all sensors
-                    Config config = initStreamProfile();
-                    if (config == null) {
-                        showToast(getString(R.string.init_stream_profile_failed));
-                        mPipeline.close();
-                        mPipeline = null;
-                        mDevice.close();
-                        mDevice = null;
-                        return;
-                    }
-
-                    // 4.Get Acceleration and Gyroscope Sensor through Device
-                    mAccelSensor = mDevice.getSensor(SensorType.ACCEL);
-                    mGyroSensor = mDevice.getSensor(SensorType.GYRO);
-
-                    if (mAccelSensor == null || mGyroSensor == null) {
-                        showToast(getString(R.string.device_not_support_imu));
-                        return;
-                    } else {
-                        // 5.Get accelerometer and gyroscope StreamProfile List
-                        StreamProfileList accelProfileList = mAccelSensor.getStreamProfileList();
-                        if (null != accelProfileList) {
-                            mAccelStreamProfile = accelProfileList.getProfile(0).as(StreamType.ACCEL);
-                            accelProfileList.close();
-                        }
-
-                        StreamProfileList gyroProfileList = mGyroSensor.getStreamProfileList();
-                        if (null != gyroProfileList) {
-                            mGyroStreamProfile = gyroProfileList.getProfile(0).as(StreamType.GYRO);
-                            gyroProfileList.close();
-                        }
-                    }
-
-                    // 6.Start sensor stream
-                    mPipeline.start(config);
-
-                    // 7.Release config
-                    config.close();
-
-                    // 8.Create a thread to obtain Pipeline data
-                    start();
+                    runOnUiThread(() -> openStream());
                 }
             } catch (Exception e) {
                 Log.e(TAG, "onDeviceAttach: " + e.getMessage());
             } finally {
-                // 9.Release device list resources
                 deviceList.close();
             }
         }
@@ -156,9 +117,7 @@ public class StreamMultiStreamsActivity extends BaseActivity {
                         String uid = deviceList.getUid(i);
                         DeviceInfo deviceInfo = mDevice.getInfo();
                         if (deviceInfo != null && TextUtils.equals(uid, deviceInfo.getUid())) {
-                            stop();
-                            mPipeline.close();
-                            mPipeline = null;
+                            closeStream();
                             mDevice.close();
                             mDevice = null;
                         }
@@ -193,60 +152,165 @@ public class StreamMultiStreamsActivity extends BaseActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        mHandler.sendEmptyMessage(MSG_UPDATE_IMU_INFO);
         initSDK();
+        if(formatConvertFilter == null){
+            formatConvertFilter = new FormatConvertFilter();
+            formatConvertFilter.setFormatType(ConvertFormat.FORMAT_MJPEG_TO_RGB);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 启动 IMU 刷新循环
+        mHandler.sendEmptyMessage(MSG_UPDATE_IMU_INFO);
+        // 从后台回到前台时，若设备已连接且未出流则恢复流
+        if (mDevice != null && !mIsStreamRunning) {
+            openStream();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        // 停止 IMU 刷新循环
+        mHandler.removeMessages(MSG_UPDATE_IMU_INFO);
+        // 退到后台时停止所有流（pipeline + accel/gyro sensor）
+        closeStream();
+        super.onPause();
     }
 
     @Override
     protected void onStop() {
-        mHandler.removeMessages(MSG_UPDATE_IMU_INFO);
-        try {
-            // Stop getting Pipeline data
-            stop();
+        // 释放设备资源必须在 releaseSDK 之前
+        if (mDevice != null) {
+            try {
+                mDevice.close();
+            } catch (Exception e) {
+                Log.e(TAG, "onStop close device: " + e.getMessage());
+            }
+            mDevice = null;
+        }
+        releaseSDK();
+        super.onStop();
+    }
 
-            // Release Frame
+    @Override
+    protected void onDestroy() {
+        // 安全兜底：正常情况 onStop 已释放
+        if(formatConvertFilter != null){
+            formatConvertFilter.close();
+        }
+        if (mDevice != null) {
+            try {
+                mDevice.close();
+            } catch (Exception e) {
+                Log.e(TAG, "onDestroy close device: " + e.getMessage());
+            }
+            mDevice = null;
+        }
+        super.onDestroy();
+    }
+
+    private synchronized void openStream() {
+        if (mIsStreamRunning || mDevice == null) {
+            return;
+        }
+
+        try {
+            if (mPipeline == null) {
+                mPipeline = new Pipeline(mDevice);
+            }
+
+            Config config = initStreamProfile();
+            if (config == null) {
+                showToast(getString(R.string.init_stream_profile_failed));
+                return;
+            }
+
+            mAccelSensor = mDevice.getSensor(SensorType.ACCEL);
+            mGyroSensor = mDevice.getSensor(SensorType.GYRO);
+
+            if (mAccelSensor == null || mGyroSensor == null) {
+                showToast(getString(R.string.device_not_support_imu));
+            } else {
+                StreamProfileList accelProfileList = mAccelSensor.getStreamProfileList();
+                if (null != accelProfileList) {
+                    mAccelStreamProfile = accelProfileList.getProfile(0).as(StreamType.ACCEL);
+                    accelProfileList.close();
+                }
+
+                StreamProfileList gyroProfileList = mGyroSensor.getStreamProfileList();
+                if (null != gyroProfileList) {
+                    mGyroStreamProfile = gyroProfileList.getProfile(0).as(StreamType.GYRO);
+                    gyroProfileList.close();
+                }
+            }
+
+            mPipeline.start(config);
+            config.close();
+
+            mIsStreamRunning = true;
+            if (mStreamThread == null) {
+                mStreamThread = new Thread(mStreamRunnable);
+                mStreamThread.start();
+            }
+
+            startAccelStream();
+            startGyroStream();
+            Log.i(TAG, "openStream success");
+        } catch (Exception e) {
+            Log.e(TAG, "openStream failed: " + e.getMessage());
+        }
+    }
+
+    private synchronized void closeStream() {
+        mIsStreamRunning = false;
+        try {
+            if (mStreamThread != null) {
+                mStreamThread.join(300);
+                mStreamThread = null;
+            }
+
+            if (mAccelSensor != null) {
+                mAccelSensor.stop();
+            }
+            mIsAccelStarted = false;
+
+            if (mGyroSensor != null) {
+                mGyroSensor.stop();
+            }
+            mIsGyroStarted = false;
+
             synchronized (mAccelLock) {
                 if (null != mAccelFrame) {
                     mAccelFrame.close();
                     mAccelFrame = null;
                 }
             }
-
-            // Release Frame
             synchronized (mGyroLock) {
                 if (null != mGyroFrame) {
                     mGyroFrame.close();
                     mGyroFrame = null;
                 }
             }
-
-            // Release accelerometer StreamProfile
             if (null != mAccelStreamProfile) {
                 mAccelStreamProfile.close();
                 mAccelStreamProfile = null;
             }
-
-            // Release gyroscope StreamProfile
             if (null != mGyroStreamProfile) {
                 mGyroStreamProfile.close();
                 mGyroStreamProfile = null;
             }
 
-            // Stop the Pipeline and release
             if (null != mPipeline) {
                 mPipeline.stop();
                 mPipeline.close();
+                mPipeline = null;
             }
-
-            // Release Device
-            if (mDevice != null) {
-                mDevice.close();
-            }
+            Log.i(TAG, "closeStream finished");
         } catch (Exception e) {
-            Log.e(TAG, "onStop: " + e.getMessage());
+            Log.e(TAG, "closeStream: " + e.getMessage());
         }
-        releaseSDK();
-        super.onStop();
     }
 
     private void initView() {
@@ -291,7 +355,6 @@ public class StreamMultiStreamsActivity extends BaseActivity {
 
     private Config initStreamProfile() {
         Config config = new Config();
-
         List<Sensor> sensorList = mDevice.querySensors();
         for (Sensor sensor : sensorList) {
             SensorType type = sensor.getType();
@@ -312,23 +375,11 @@ public class StreamMultiStreamsActivity extends BaseActivity {
         return config;
     }
 
-    private void start() {
-        mIsStreamRunning = true;
-        if (mStreamThread == null) {
-            mStreamThread = new Thread(mStreamRunnable);
-            mStreamThread.start();
-        }
-
-        startAccelStream();
-        startGyroStream();
-    }
-
     private void startAccelStream() {
         try {
             if (mAccelStreamProfile != null) {
                 mAccelSensor.start(mAccelStreamProfile, frame -> {
                     AccelFrame accelFrame = frame.as(FrameType.ACCEL);
-
                     synchronized (mAccelLock) {
                         if (null != mAccelFrame) {
                             mAccelFrame.close();
@@ -349,7 +400,6 @@ public class StreamMultiStreamsActivity extends BaseActivity {
             if (mGyroStreamProfile != null) {
                 mGyroSensor.start(mGyroStreamProfile, frame -> {
                     GyroFrame gyroFrame = frame.as(FrameType.GYRO);
-
                     synchronized (mGyroLock) {
                         if (null != mGyroFrame) {
                             mGyroFrame.close();
@@ -365,28 +415,6 @@ public class StreamMultiStreamsActivity extends BaseActivity {
         }
     }
 
-    private void stop() {
-        mIsStreamRunning = false;
-        try {
-            if (mStreamThread != null) {
-                mStreamThread.join(300);
-                mStreamThread = null;
-            }
-
-            if (mAccelSensor != null) {
-                mAccelSensor.stop();
-            }
-            mIsAccelStarted = false;
-
-            if (mGyroSensor != null) {
-                mGyroSensor.stop();
-            }
-            mIsGyroStarted = false;
-        } catch (Exception e) {
-            Log.e(TAG, "stop: " + e.getMessage());
-        }
-    }
-
     private Runnable mStreamRunnable = () -> {
         while (mIsStreamRunning) {
             try (FrameSet frameSet = mPipeline.waitForFrameSet(100)) {
@@ -399,6 +427,12 @@ public class StreamMultiStreamsActivity extends BaseActivity {
                 IRFrame irRightFrame = frameSet.getFrame(FrameType.IR_RIGHT);
 
                 if (colorFrame != null) {
+                    if(colorFrame.getFormat() == Format.MJPG){
+                        Frame newFrame = formatConvertFilter.process(colorFrame);
+                        colorFrame.close();
+                        colorFrame = newFrame.as(FrameType.COLOR);
+                    }
+
                     byte[] colorFrameData = new byte[colorFrame.getDataSize()];
                     colorFrame.getData(colorFrameData);
                     mColorView.update(colorFrame.getWidth(), colorFrame.getHeight(), StreamType.COLOR, colorFrame.getFormat(), colorFrameData, 1.0f);

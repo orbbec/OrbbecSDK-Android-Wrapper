@@ -21,7 +21,6 @@ import com.orbbec.obsensor.types.Format;
 import com.orbbec.obsensor.types.LogSeverity;
 import com.orbbec.obsensor.types.SensorType;
 import com.orbbec.obsensor.types.StreamType;
-import com.orbbec.orbbecsdkexamples.BuildConfig;
 import com.orbbec.orbbecsdkexamples.utils.FileUtils;
 
 import java.io.File;
@@ -50,15 +49,14 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     protected void initSDK() {
         try {
-            if (BuildConfig.DEBUG) {
-                // set debug level in code
-                OBContext.setLoggerSeverity(LogSeverity.DEBUG);
-            }
+            OBContext.setLoggerSeverity(LogSeverity.DEBUG);
+            OBContext.setLoggerToConsole(LogSeverity.DEBUG);
 
+            Log.i(TAG, "initSDK CoreVersionName：" + OBContext.getCoreVersionName());
             DeviceChangedCallback deviceChangedCallback = getDeviceChangedCallback();
 
             // 1.Initialize the SDK Context and listen device changes
-//            String configFilePath = getXmlConfigFile();
+            // String configFilePath = getXmlConfigFile();
             String configFilePath = initXmlConfigFile();
             if (!TextUtils.isEmpty(configFilePath)) {
                 mOBContext = new OBContext(getApplicationContext(), configFilePath, deviceChangedCallback);

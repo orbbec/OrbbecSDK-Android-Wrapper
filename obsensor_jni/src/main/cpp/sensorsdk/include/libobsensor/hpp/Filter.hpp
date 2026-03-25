@@ -171,7 +171,8 @@ public:
     /**
      * @brief Processes a frame synchronously.
      *
-     * @param frame The frame to be processed.
+     * @param[in] frame The frame to be processed.
+     *
      * @return std::shared_ptr< Frame > The processed frame.
      */
     virtual std::shared_ptr<Frame> process(std::shared_ptr<const Frame> frame) const {
@@ -187,7 +188,7 @@ public:
     /**
      * @brief Pushes the pending frame into the cache for asynchronous processing.
      *
-     * @param frame The pending frame. The processing result is returned by the callback function.
+     * @param[in] frame The pending frame. The processing result is returned by the callback function.
      */
     virtual void pushFrame(std::shared_ptr<Frame> frame) const {
         ob_error *error = nullptr;
@@ -198,7 +199,7 @@ public:
     /**
      * @brief Set the callback function for asynchronous processing.
      *
-     * @param callback The processing result callback.
+     * @param[in] callback The processing result callback.
      */
     virtual void setCallBack(FilterCallback callback) {
         callback_       = callback;
@@ -210,7 +211,8 @@ public:
     /**
      * @brief Get config schema of the filter
      * @brief The returned string is a csv format string representing the configuration schema of the filter. The format of the string is:
-     *  <parameter_name>, <parameter_type: "int", "float", "bool">, <minimum_value>, <maximum_value>, <value_step>, <default_value>, <parameter_description>
+     * `<parameter_name>`, `<parameter_type: "int", "float", "bool">`, `<minimum_value>`, `<maximum_value>`, `<value_step>`, `<default_value>`,
+     * `<parameter_description>`
      *
      * @return std::string The config schema of the filter.
      */
@@ -237,8 +239,8 @@ public:
      * @attention The pass into value type is double, witch will be cast to the actual type inside the filter. The actual type can be queried by the filter
      * config schema returned by @ref getConfigSchemaVec.
      *
-     * @param configName The name of the config.
-     * @param value The value of the config.
+     * @param[in] configName The name of the config.
+     * @param[in] value The value of the config.
      */
     virtual void setConfigValue(const std::string &configName, double value) const {
         ob_error *error = nullptr;
@@ -252,7 +254,8 @@ public:
      * @attention The returned value type has been casted to double inside the filter. The actual type can be queried by the filter config schema returned by
      * @ref getConfigSchemaVec.
      *
-     * @param configName  The name of the config.
+     * @param[in] configName The name of the config.
+     *
      * @return double The value of the config.
      */
     virtual double getConfigValue(const std::string &configName) const {
@@ -278,6 +281,7 @@ public:
      * @brief Check if the runtime type of the filter object is compatible with a given type.
      *
      * @tparam T The given type.
+     *
      * @return bool The result.
      */
     template <typename T> bool is();
@@ -310,8 +314,8 @@ public:
      * @brief Create a private filter by name and activation key.
      * @brief Some private filters require an activation key to be activated, its depends on the vendor of the filter.
      *
-     * @param name The name of the filter.
-     * @param activation_key The activation key of the filter.
+     * @param[in] name The name of the filter.
+     * @param[in] activationKey The activation key of the filter.
      */
     static std::shared_ptr<Filter> createPrivateFilter(const std::string &name, const std::string &activationKey) {
         ob_error *error = nullptr;
@@ -324,7 +328,8 @@ public:
      * @brief Get the vendor specific code of a filter by filter name.
      * @brief A private filter can define its own vendor specific code for specific purposes.
      *
-     * @param name The name of the filter.
+     * @param[in] name The name of the filter.
+     *
      * @return std::string The vendor specific code of the filter.
      */
     static std::string getFilterVendorSpecificCode(const std::string &name) {
@@ -347,12 +352,12 @@ public:
         init(impl);
     }
 
-    virtual ~PointCloudFilter() noexcept = default;
+    virtual ~PointCloudFilter() noexcept override = default;
 
     /**
      * @brief Set the output pointcloud frame format.
      *
-     * @param type The point cloud frame format: OB_FORMAT_POINT or OB_FORMAT_RGB_POINT
+     * @param[in] format The point cloud frame format: OB_FORMAT_POINT or OB_FORMAT_RGB_POINT
      */
     void setCreatePointFormat(OBFormat format) {
         setConfigValue("pointFormat", static_cast<double>(format));
@@ -364,7 +369,7 @@ public:
      * @brief Calling this function to set the scale will change the point coordinate scaling factor of the output point cloud frame, The point coordinate
      * scaling factor for the output point cloud frame can be obtained via @ref PointsFrame::getCoordinateValueScale function.
      *
-     * @param factor The scale factor.
+     * @param[in] factor The scale factor.
      */
     void setCoordinateDataScaled(float factor) {
         setConfigValue("coordinateDataScale", factor);
@@ -376,7 +381,7 @@ public:
      *
      * @attention This function only works for when create point format is set to OB_FORMAT_RGB_POINT.
      *
-     * @param state Whether normalization is required.
+     * @param[in] state Whether normalization is required.
      */
     void setColorDataNormalization(bool state) {
         setConfigValue("colorDataNormalization", state);
@@ -385,10 +390,32 @@ public:
     /**
      * @brief Set the point cloud coordinate system.
      *
-     * @param type The coordinate system type.
+     * @param[in] type The coordinate system type.
      */
     void setCoordinateSystem(OBCoordinateSystemType type) {
         setConfigValue("coordinateSystemType", static_cast<double>(type));
+    }
+
+    /**
+     * @brief Set the point cloud decimation factor.
+     *        Calling this function to decimation factor will output thedownsampled data of the the cloud frame
+     *
+     * @param value The decimation factor.
+     */
+    void setDecimationFactor(int value) {
+        setConfigValue("decimate", value);
+    }
+
+    /**
+     * @brief Get the property range of the decimation factor range.
+     */
+    OBIntPropertyRange getDecimationFactorRange() {
+        OBIntPropertyRange scaleRange{};
+        if(configSchemaVec_.size() != 0) {
+            const auto &item = configSchemaVec_[5];
+            scaleRange       = getPropertyRange<OBIntPropertyRange>(item, getConfigValue("decimate"));
+        }
+        return scaleRange;
     }
 
 public:
@@ -421,7 +448,7 @@ public:
         setConfigValue("AlignType", static_cast<double>(alignToStreamType));
     }
 
-    virtual ~Align() noexcept = default;
+    virtual ~Align() noexcept override = default;
 
     OBStreamType getAlignToStreamType() {
         return static_cast<OBStreamType>(static_cast<int>(getConfigValue("AlignType")));
@@ -434,7 +461,7 @@ public:
      *        the aspect ratio of the target resolution.
      *
      *
-     * @param state If true, output frame resolution will match the target resolution; otherwise, it will
+     * @param[in] state If true, output frame resolution will match the target resolution; otherwise, it will
      *              maintain the original resolution with the target's aspect ratio.
      */
     void setMatchTargetResolution(bool state) {
@@ -445,7 +472,7 @@ public:
      * @brief Set the Align To Stream Profile
      * @brief  It is useful when the align target stream dose not started (without any frame to get intrinsics and extrinsics).
      *
-     * @param profile The Align To Stream Profile.
+     * @param[in] profile The Align To Stream Profile.
      */
     void setAlignToStreamProfile(std::shared_ptr<const StreamProfile> profile) {
         ob_error *error = nullptr;
@@ -466,12 +493,12 @@ public:
         init(impl);
     }
 
-    virtual ~FormatConvertFilter() noexcept = default;
+    virtual ~FormatConvertFilter() noexcept override = default;
 
     /**
      * @brief Set the format conversion type.
      *
-     * @param type The format conversion type.
+     * @param[in] type The format conversion type.
      */
     void setFormatConvertType(OBConvertFormat type) {
         setConfigValue("convertType", static_cast<double>(type));
@@ -492,7 +519,7 @@ public:
         init(impl);
     }
 
-    virtual ~HdrMerge() noexcept = default;
+    virtual ~HdrMerge() noexcept override = default;
 };
 
 /**
@@ -524,7 +551,7 @@ public:
         initSequenceIdList();
     }
 
-    virtual ~SequenceIdFilter() noexcept {
+    virtual ~SequenceIdFilter() noexcept override {
         if(outputSequenceIdList_) {
             delete[] outputSequenceIdList_;
             outputSequenceIdList_ = nullptr;
@@ -534,7 +561,7 @@ public:
     /**
      * @brief Set the sequenceId filter params.
      *
-     * @param sequence id to pass the filter.
+     * @param[in] sequence_id id to pass the filter.
      */
     void selectSequenceId(int sequence_id) {
         setConfigValue("sequenceid", static_cast<double>(sequence_id));
@@ -575,12 +602,12 @@ public:
         init(impl);
     }
 
-    virtual ~DecimationFilter() noexcept = default;
+    virtual ~DecimationFilter() noexcept override = default;
 
     /**
      * @brief Set the decimation filter scale value.
      *
-     * @param type The decimation filter scale value.
+     * @param[in] value The decimation filter scale value.
      */
     void setScaleValue(uint8_t value) {
         setConfigValue("decimate", static_cast<double>(value));
@@ -619,7 +646,7 @@ public:
         init(impl);
     }
 
-    virtual ~ThresholdFilter() noexcept = default;
+    virtual ~ThresholdFilter() noexcept override = default;
 
     /**
      * @brief Get the threshold filter min range.
@@ -682,7 +709,7 @@ public:
         init(impl);
     }
 
-    virtual ~SpatialAdvancedFilter() noexcept = default;
+    virtual ~SpatialAdvancedFilter() noexcept override = default;
 
     /**
      * @brief Get the spatial advanced filter alpha range.
@@ -769,13 +796,157 @@ public:
     /**
      * @brief Set the spatial advanced filter params.
      *
-     * @param params OBSpatialAdvancedFilterParams.
+     * @param[in] params OBSpatialAdvancedFilterParams.
      */
     void setFilterParams(OBSpatialAdvancedFilterParams params) {
         setConfigValue("alpha", params.alpha);
         setConfigValue("disp_diff", params.disp_diff);
         setConfigValue("magnitude", params.magnitude);
         setConfigValue("radius", params.radius);
+    }
+};
+
+/**
+ * @brief The Spatial Fast Filter utilizes an enhanced median smoothing algorithm,
+ * designed to significantly reduce CPU usage and optimize processing efficiency.
+ */
+class SpatialFastFilter : public Filter {
+public:
+    SpatialFastFilter(const std::string &activationKey = "") {
+        ob_error *error = nullptr;
+        auto      impl  = ob_create_private_filter("SpatialFastFilter", activationKey.c_str(), &error);
+        Error::handle(&error);
+        init(impl);
+    }
+
+    virtual ~SpatialFastFilter() noexcept override = default;
+
+    /**
+     * @brief Get the spatial fast filter radius range.
+     *
+     * @return OBIntPropertyRange the radius value of property range.
+     */
+    OBIntPropertyRange getRadiusRange() {
+        OBIntPropertyRange range{};
+        const auto        &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "radius") == 0) {
+                range = getPropertyRange<OBIntPropertyRange>(item, getConfigValue("radius"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the spatial fast filter params.
+     *
+     * @return OBSpatialFastFilterParams
+     */
+    OBSpatialFastFilterParams getFilterParams() {
+        OBSpatialFastFilterParams params{};
+        params.radius = static_cast<uint8_t>(getConfigValue("radius"));
+        return params;
+    }
+
+    /**
+     * @brief Set the spatial fast filter params.
+     *
+     * @param[in] params OBSpatialFastFilterParams.
+     */
+    void setFilterParams(OBSpatialFastFilterParams params) {
+        setConfigValue("radius", params.radius);
+    }
+};
+
+/**
+ * @brief The Spatial Moderate Filter utilizes an optimized average smoothing algorithm,
+ * to achieve a balance between processing speed and the quality of smoothing achieved.
+ */
+class SpatialModerateFilter : public Filter {
+public:
+    SpatialModerateFilter(const std::string &activationKey = "") {
+        ob_error *error = nullptr;
+        auto      impl  = ob_create_private_filter("SpatialModerateFilter", activationKey.c_str(), &error);
+        Error::handle(&error);
+        init(impl);
+    }
+
+    virtual ~SpatialModerateFilter() noexcept override = default;
+
+    /**
+     * @brief Get the spatial moderate filter magnitude range.
+     *
+     * @return OBIntPropertyRange the magnitude value of property range.
+     */
+    OBIntPropertyRange getMagnitudeRange() {
+        OBIntPropertyRange range{};
+        const auto        &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "magnitude") == 0) {
+                range = getPropertyRange<OBIntPropertyRange>(item, getConfigValue("magnitude"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the spatial moderate filter radius range.
+     *
+     * @return OBIntPropertyRange the radius value of property range.
+     */
+    OBIntPropertyRange getRadiusRange() {
+        OBIntPropertyRange range{};
+        const auto        &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "radius") == 0) {
+                range = getPropertyRange<OBIntPropertyRange>(item, getConfigValue("radius"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the spatial moderate filter disp diff range.
+     *
+     * @return OBIntPropertyRange the disp diff value of property range.
+     */
+    OBIntPropertyRange getDispDiffRange() {
+        OBIntPropertyRange range{};
+        const auto        &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "disp_diff") == 0) {
+                range = getPropertyRange<OBIntPropertyRange>(item, getConfigValue("disp_diff"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the spatial moderate filter params.
+     *
+     * @return OBSpatialModerateFilterParams
+     */
+    OBSpatialModerateFilterParams getFilterParams() {
+        OBSpatialModerateFilterParams params{};
+        params.magnitude = static_cast<uint8_t>(getConfigValue("magnitude"));
+        params.radius    = static_cast<uint8_t>(getConfigValue("radius"));
+        params.disp_diff = static_cast<uint16_t>(getConfigValue("disp_diff"));
+        return params;
+    }
+
+    /**
+     * @brief Set the spatial moderate filter params.
+     *
+     * @param[in] params OBSpatialModerateFilterParams.
+     */
+    void setFilterParams(OBSpatialModerateFilterParams params) {
+        setConfigValue("magnitude", params.magnitude);
+        setConfigValue("radius", params.radius);
+        setConfigValue("disp_diff", params.disp_diff);
     }
 };
 
@@ -791,13 +962,12 @@ public:
         init(impl);
     }
 
-    ~HoleFillingFilter() noexcept = default;
+    ~HoleFillingFilter() noexcept override = default;
 
     /**
      * @brief Set the HoleFillingFilter mode.
      *
-     * @param[in] filter A holefilling_filter object.
-     * @param mode OBHoleFillingMode, OB_HOLE_FILL_TOP,OB_HOLE_FILL_NEAREST or OB_HOLE_FILL_FAREST.
+     * @param[in] mode OBHoleFillingMode, OB_HOLE_FILL_TOP,OB_HOLE_FILL_NEAREST or OB_HOLE_FILL_FAREST.
      */
     void setFilterMode(OBHoleFillingMode mode) {
         setConfigValue("hole_filling_mode", static_cast<double>(mode));
@@ -825,12 +995,12 @@ public:
         init(impl);
     }
 
-    ~NoiseRemovalFilter() noexcept = default;
+    ~NoiseRemovalFilter() noexcept override = default;
 
     /**
      * @brief Set the noise removal filter params.
      *
-     * @param[in] params ob_noise_removal_filter_params.
+     * @param[in] filterParams ob_noise_removal_filter_params.
      */
     void setFilterParams(OBNoiseRemovalFilterParams filterParams) {
         setConfigValue("max_size", static_cast<double>(filterParams.max_size));
@@ -896,7 +1066,7 @@ public:
         init(impl);
     }
 
-    ~TemporalFilter() noexcept = default;
+    ~TemporalFilter() noexcept override = default;
 
     /**
      * @brief Get the TemporalFilter diffscale range.
@@ -918,7 +1088,7 @@ public:
     /**
      * @brief Set the TemporalFilter diffscale value.
      *
-     * @param value diffscale value.
+     * @param[in] value diffscale value.
      */
     void setDiffScale(float value) {
         setConfigValue("diff_scale", static_cast<double>(value));
@@ -944,10 +1114,348 @@ public:
     /**
      * @brief Set the TemporalFilter weight value.
      *
-     * @param value weight value.
+     * @param[in] value weight value.
      */
     void setWeight(float value) {
         setConfigValue("weight", static_cast<double>(value));
+    }
+};
+
+/**
+ * @brief FalsePositive filter
+ */
+class FalsePositiveFilter : public Filter {
+public:
+    FalsePositiveFilter(const std::string &activationKey = "") {
+        ob_error *error = nullptr;
+        auto      impl  = ob_create_private_filter("FalsePositiveFilter", activationKey.c_str(), &error);
+        Error::handle(&error);
+        init(impl);
+    }
+
+    virtual ~FalsePositiveFilter() noexcept override = default;
+
+    /**
+     * @brief Get the FalsePositive filter fpEdgeBleedFilterEnable range.
+     *
+     * @return OBUint8PropertyRange the fpEdgeBleedFilterEnable value of property range.
+     */
+    OBUint8PropertyRange getfpEdgeBleedFilterEnableRange() {
+        OBUint8PropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fpEdgeBleedFilterEnable") == 0) {
+                range = getPropertyRange<OBUint8PropertyRange>(item, getConfigValue("fpEdgeBleedFilterEnable"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fpebfROIMinXRatio range.
+     *
+     * @return OBFloatPropertyRange the fpebfROIMinXRatio value of property range.
+     */
+    OBFloatPropertyRange getfpebfROIMinXRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fpebfROIMinXRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fpebfROIMinXRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fpebfROIMaxXRatio range.
+     *
+     * @return OBFloatPropertyRange the fpebfROIMaxXRatio value of property range.
+     */
+    OBFloatPropertyRange getfpebfROIMaxXRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fpebfROIMaxXRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fpebfROIMaxXRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fpebfROIMinYRatio range.
+     *
+     * @return OBFloatPropertyRange the fpebfROIMinYRatio value of property range.
+     */
+    OBFloatPropertyRange getfpebfROIMinYRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fpebfROIMinYRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fpebfROIMinYRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fpebfROIMaxYRatio range.
+     *
+     * @return OBFloatPropertyRange the fpebfROIMaxYRatio value of property range.
+     */
+    OBFloatPropertyRange getfpebfROIMaxYRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fpebfROIMaxYRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fpebfROIMaxYRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fpTextureSparsityFilterEnable range.
+     *
+     * @return OBUint8PropertyRange the fpTextureSparsityFilterEnable value of property range.
+     */
+    OBUint8PropertyRange getfpTextureSparsityFilterEnableRange() {
+        OBUint8PropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fpTextureSparsityFilterEnable") == 0) {
+                range = getPropertyRange<OBUint8PropertyRange>(item, getConfigValue("fpTextureSparsityFilterEnable"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fptsfROIMinXRatio range.
+     *
+     * @return OBFloatPropertyRange the fptsfROIMinXRatio value of property range.
+     */
+    OBFloatPropertyRange getfptsfROIMinXRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fptsfROIMinXRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fptsfROIMinXRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fptsfROIMaxXRatio range.
+     *
+     * @return OBFloatPropertyRange the fptsfROIMaxXRatio value of property range.
+     */
+    OBFloatPropertyRange getfptsfROIMaxXRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fptsfROIMaxXRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fptsfROIMaxXRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fptsfROIMinYRatio range.
+     *
+     * @return OBFloatPropertyRange the fptsfROIMinYRatio value of property range.
+     */
+    OBFloatPropertyRange getfptsfROIMinYRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fptsfROIMinYRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fptsfROIMinYRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fptsfROIMaxYRatio range.
+     *
+     * @return OBFloatPropertyRange the fptsfROIMaxYRatio value of property range.
+     */
+    OBFloatPropertyRange getfptsfROIMaxYRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fptsfROIMaxYRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fptsfROIMaxYRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fptsfMaxNoiseLevel range.
+     *
+     * @return OBUint16PropertyRange the fptsfMaxNoiseLevel value of property range.
+     */
+    OBUint16PropertyRange getfptsfMaxNoiseLevelRange() {
+        OBUint16PropertyRange range{};
+        const auto           &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fptsfMaxNoiseLevel") == 0) {
+                range = getPropertyRange<OBUint16PropertyRange>(item, getConfigValue("fptsfMaxNoiseLevel"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fptsfMaxSpeckleSize range.
+     *
+     * @return OBUint16PropertyRange the fptsfMaxSpeckleSize value of property range.
+     */
+    OBUint16PropertyRange getfptsfMaxSpeckleSizeRange() {
+        OBUint16PropertyRange range{};
+        const auto           &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fptsfMaxSpeckleSize") == 0) {
+                range = getPropertyRange<OBUint16PropertyRange>(item, getConfigValue("fptsfMaxSpeckleSize"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fpPatternAmbiguityFilterEnable range.
+     *
+     * @return OBUint8PropertyRange the fpPatternAmbiguityFilterEnable value of property range.
+     */
+    OBUint8PropertyRange getfpPatternAmbiguityFilterEnableRange() {
+        OBUint8PropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fpPatternAmbiguityFilterEnable") == 0) {
+                range = getPropertyRange<OBUint8PropertyRange>(item, getConfigValue("fpPatternAmbiguityFilterEnable"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fppafROIMinXRatio range.
+     *
+     * @return OBFloatPropertyRange the fppafROIMinXRatio value of property range.
+     */
+    OBFloatPropertyRange getfppafROIMinXRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fppafROIMinXRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fppafROIMinXRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fppafROIMaxXRatio range.
+     *
+     * @return OBFloatPropertyRange the fppafROIMaxXRatio value of property range.
+     */
+    OBFloatPropertyRange getfppafROIMaxXRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fppafROIMaxXRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fppafROIMaxXRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fppafROIMinYRatio range.
+     *
+     * @return OBFloatPropertyRange the fppafROIMinYRatio value of property range.
+     */
+    OBFloatPropertyRange getfppafROIMinYRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fppafROIMinYRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fppafROIMinYRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fppafROIMaxYRatio range.
+     *
+     * @return OBFloatPropertyRange the fppafROIMaxYRatio value of property range.
+     */
+    OBFloatPropertyRange getfppafROIMaxYRatioRange() {
+        OBFloatPropertyRange range{};
+        const auto          &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fppafROIMaxYRatio") == 0) {
+                range = getPropertyRange<OBFloatPropertyRange>(item, getConfigValue("fppafROIMaxYRatio"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fppafMaxNoiseLevel range.
+     *
+     * @return OBUint16PropertyRange the fppafMaxNoiseLevel value of property range.
+     */
+    OBUint16PropertyRange getfppafMaxNoiseLevelRange() {
+        OBUint16PropertyRange range{};
+        const auto           &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fppafMaxNoiseLevel") == 0) {
+                range = getPropertyRange<OBUint16PropertyRange>(item, getConfigValue("fppafMaxNoiseLevel"));
+                break;
+            }
+        }
+        return range;
+    }
+
+    /**
+     * @brief Get the FalsePositive filter fppafMaxSpeckleSize range.
+     *
+     * @return OBUint16PropertyRange the fppafMaxSpeckleSize value of property range.
+     */
+    OBUint16PropertyRange getfppafMaxSpeckleSizeRange() {
+        OBUint16PropertyRange range{};
+        const auto           &schemaVec = getConfigSchemaVec();
+        for(const auto &item: schemaVec) {
+            if(strcmp(item.name, "fppafMaxSpeckleSize") == 0) {
+                range = getPropertyRange<OBUint16PropertyRange>(item, getConfigValue("fppafMaxSpeckleSize"));
+                break;
+            }
+        }
+        return range;
     }
 };
 
@@ -963,7 +1471,7 @@ public:
         init(impl);
     }
 
-    ~DisparityTransform() noexcept = default;
+    ~DisparityTransform() noexcept override = default;
 };
 
 class OBFilterList {
@@ -994,7 +1502,8 @@ public:
     /**
      * @brief Get the Filter object at the specified index
      *
-     * @param index The filter index. The range is [0, count-1]. If the index exceeds the range, an exception will be thrown.
+     * @param[in] index The filter index. The range is [0, count-1]. If the index exceeds the range, an exception will be thrown.
+     *
      * @return std::shared_ptr<Filter> The filter object.
      */
     std::shared_ptr<Filter> getFilter(uint32_t index) {
@@ -1012,24 +1521,34 @@ public:
 };
 
 /**
- * @brief Define the Filter type map
+ * @brief Returns the mapping of filter type names to their corresponding type_index.
  */
-static const std::unordered_map<std::string, std::type_index> obFilterTypeMap = {
-    { "PointCloudFilter", typeid(PointCloudFilter) },   { "Align", typeid(Align) },
-    { "FormatConverter", typeid(FormatConvertFilter) }, { "HDRMerge", typeid(HdrMerge) },
-    { "SequenceIdFilter", typeid(SequenceIdFilter) },   { "DecimationFilter", typeid(DecimationFilter) },
-    { "ThresholdFilter", typeid(ThresholdFilter) },     { "SpatialAdvancedFilter", typeid(SpatialAdvancedFilter) },
-    { "HoleFillingFilter", typeid(HoleFillingFilter) }, { "NoiseRemovalFilter", typeid(NoiseRemovalFilter) },
-    { "TemporalFilter", typeid(TemporalFilter) },       { "DisparityTransform", typeid(DisparityTransform) }
-};
+inline const std::unordered_map<std::string, std::type_index> &getFilterTypeMap() {
+    static const std::unordered_map<std::string, std::type_index> filterTypeMap = {
+        { "PointCloudFilter", typeid(PointCloudFilter) },       { "Align", typeid(Align) },
+        { "FormatConverter", typeid(FormatConvertFilter) },     { "HDRMerge", typeid(HdrMerge) },
+        { "SequenceIdFilter", typeid(SequenceIdFilter) },       { "DecimationFilter", typeid(DecimationFilter) },
+        { "ThresholdFilter", typeid(ThresholdFilter) },         { "SpatialAdvancedFilter", typeid(SpatialAdvancedFilter) },
+        { "HoleFillingFilter", typeid(HoleFillingFilter) },     { "NoiseRemovalFilter", typeid(NoiseRemovalFilter) },
+        { "TemporalFilter", typeid(TemporalFilter) },           { "DisparityTransform", typeid(DisparityTransform) },
+        { "SpatialFastFilter", typeid(SpatialFastFilter) },     { "SpatialModerateFilter", typeid(SpatialModerateFilter) },
+        { "FalsePositiveFilter", typeid(FalsePositiveFilter) },
+    };
+    return filterTypeMap;
+}
 
 /**
  * @brief Define the is() template function for the Filter class
+ *
+ * @note When adding a new filter class, ensure the filter type map
+ *       (see getFilterTypeMap()) is updated accordingly to maintain correct type matching.
  */
 template <typename T> bool Filter::is() {
     std::string name = type();
-    auto        it   = obFilterTypeMap.find(name);
-    if(it != obFilterTypeMap.end()) {
+
+    const auto &filterTypeMap = getFilterTypeMap();
+    auto        it            = filterTypeMap.find(name);
+    if(it != filterTypeMap.end()) {
         return std::type_index(typeid(T)) == it->second;
     }
     return false;

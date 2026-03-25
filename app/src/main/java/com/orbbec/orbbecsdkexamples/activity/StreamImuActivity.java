@@ -7,7 +7,6 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.orbbec.obsensor.AccelFrame;
 import com.orbbec.obsensor.Config;
@@ -35,7 +34,7 @@ public class StreamImuActivity extends BaseActivity {
     private Device mDevice;
     private Pipeline mPipeline;
     private Thread mIMUThread;
-    private volatile boolean mIsIMURunning;
+    private volatile boolean mIsStreamRunning; // 统一变量名
 
     private TextView mImuPromptView;
     private TextView mAccelContentView;
@@ -47,26 +46,14 @@ public class StreamImuActivity extends BaseActivity {
         @Override
         public void onDeviceAttach(DeviceList deviceList) {
             try {
-                if (mPipeline == null) {
-                    // 2.Create Device and initialize Pipeline through Device
+                if (null == mDevice) {
                     mDevice = deviceList.getDevice(0);
-                    mPipeline = new Pipeline(mDevice);
-
-                    Config config = getConfig();
-
-                    // 6.Start sensor stream
-                    mPipeline.start(config);
-
-                    // 7.Release config
-                    config.close();
-
-                    // 8.Create a thread to obtain Pipeline data
-                    start();
+                    Log.i(TAG, "onDeviceAttach: device connected");
+                    runOnUiThread(() -> openStream());
                 }
             } catch (Exception e) {
                 Log.e(TAG, "onDeviceAttach: " + e.getMessage());
             } finally {
-                // 9.Release DeviceList
                 deviceList.close();
             }
         }
@@ -74,17 +61,19 @@ public class StreamImuActivity extends BaseActivity {
         @Override
         public void onDeviceDetach(DeviceList deviceList) {
             try {
-                showToast(getString(R.string.please_access_device));
                 if (mDevice != null) {
-                    for (int i = 0, N = deviceList.getDeviceCount(); i < N; i++) {
-                        String uid = deviceList.getUid(i);
-                        DeviceInfo deviceInfo = mDevice.getInfo();
-                        if (null != deviceInfo && TextUtils.equals(uid, deviceInfo.getUid())) {
-                            stop();
-                            mPipeline.close();
-                            mPipeline = null;
-                            mDevice.close();
-                            mDevice = null;
+                    DeviceInfo deviceInfo = mDevice.getInfo();
+                    if (deviceInfo != null) {
+                        String currentUid = deviceInfo.getUid();
+                        for (int i = 0, N = deviceList.getDeviceCount(); i < N; i++) {
+                            String uid = deviceList.getUid(i);
+                            if (TextUtils.equals(uid, currentUid)) {
+                                Log.i(TAG, "onDeviceDetach: device released");
+                                closeStream();
+                                mDevice.close();
+                                mDevice = null;
+                                break;
+                            }
                         }
                     }
                 }
@@ -102,40 +91,104 @@ public class StreamImuActivity extends BaseActivity {
         setTitle("Stream-Imu");
         setContentView(R.layout.activity_stream_imu);
         initView();
-    }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
+        // 核心优化：在创建时初始化 SDK，确保切后台时不注销上下文
         initSDK();
     }
 
     @Override
-    protected void onStop() {
-        try {
-            stop();
+    protected void onResume() {
+        super.onResume();
+        // 从后台回到前台时，若设备已连接且未出流则快速恢复流
+        if (mDevice != null && !mIsStreamRunning) {
+            openStream();
+        }
+    }
 
-            // Stop the Pipeline and release
-            if (null != mPipeline) {
-                mPipeline.stop();
-                mPipeline.close();
-            }
+    @Override
+    protected void onPause() {
+        // 核心优化：仅停止数据流，不销毁 Pipeline 句柄
+        stopStreamOnly();
+        super.onPause();
+    }
 
-            // Release Device
-            if (null != mDevice) {
+    @Override
+    protected void onDestroy() {
+        // 彻底退出页面时才释放硬件资源
+        closeStream();
+        if (mDevice != null) {
+            try {
                 mDevice.close();
-                mDevice = null;
+            } catch (Exception e) {
+                Log.e(TAG, "onDestroy close device: " + e.getMessage());
             }
-        } catch (Exception e) {
-            Log.e(TAG, "onStop: " + e.getMessage());
+            mDevice = null;
         }
         releaseSDK();
-        super.onStop();
+        super.onDestroy();
     }
 
     @Override
     protected DeviceChangedCallback getDeviceChangedCallback() {
         return mDeviceChangedCallback;
+    }
+
+    private synchronized void openStream() {
+        if (mIsStreamRunning || mDevice == null) {
+            return;
+        }
+        try {
+            // 复用已有 Pipeline
+            if (mPipeline == null) {
+                mPipeline = new Pipeline(mDevice);
+            }
+            Config config = getConfig();
+            mPipeline.start(config);
+            config.close();
+
+            mIsStreamRunning = true;
+            if (null == mIMUThread) {
+                mIMUThread = new Thread(mIMURunnable);
+                mIMUThread.start();
+            }
+            Log.i(TAG, "openStream: recovered success");
+        } catch (Exception e) {
+            Log.e(TAG, "openStream failed: " + e.getMessage());
+        }
+    }
+
+    private void stopStreamThread() {
+        mIsStreamRunning = false;
+        if (null != mIMUThread) {
+            try {
+                mIMUThread.join(300);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "stopStreamThread join error: " + e.getMessage());
+            }
+            mIMUThread = null;
+        }
+    }
+
+    private synchronized void stopStreamOnly() {
+        stopStreamThread();
+        if (null != mPipeline) {
+            try {
+                // 仅停止出流，保留对象
+                mPipeline.stop();
+            } catch (Exception e) {
+                Log.e(TAG, "stopStreamOnly pipeline stop: " + e.getMessage());
+            }
+        }
+    }
+
+    private synchronized void closeStream() {
+        stopStreamOnly();
+        if (null != mPipeline) {
+            try {
+                mPipeline.close();
+            } catch (Exception ignore) {}
+            mPipeline = null;
+        }
     }
 
     private void initView() {
@@ -159,42 +212,18 @@ public class StreamImuActivity extends BaseActivity {
     }
 
     private Config getConfig() {
-        // 3.Configure which streams to enable or disable for the Pipeline by creating a Config
         Config config = new Config();
-        // 4.1.Enable Accel stream
         config.enableAccelStream();
-        // 4.2.Enable Gyro stream
         config.enableGyroStream();
-        // 5.Only FrameSet that contains all types of data frames will be output
         config.setFrameAggregateOutputMode(FrameAggregateOutputMode.OB_FRAME_AGGREGATE_OUTPUT_ALL_TYPE_FRAME_REQUIRE);
         return config;
-    }
-
-    private void start() {
-        mIsIMURunning = true;
-        if (null == mIMUThread) {
-            mIMUThread = new Thread(mIMURunnable);
-            mIMUThread.start();
-        }
-    }
-
-    private void stop() {
-        mIsIMURunning = false;
-        if (null != mIMUThread) {
-            try {
-                mIMUThread.join(300);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "stop: " + e.getMessage());
-            }
-            mIMUThread = null;
-        }
     }
 
     private Runnable mIMURunnable = () -> {
         boolean isPromptHidden = false;
         boolean isAccelVisible = false;
         boolean isGyroVisible = false;
-        while (mIsIMURunning) {
+        while (mIsStreamRunning) {
             try (FrameSet frameSet = mPipeline.waitForFrameSet(100)) {
 
                 if (frameSet == null) {
@@ -215,44 +244,35 @@ public class StreamImuActivity extends BaseActivity {
                     isPromptHidden = true;
                 }
 
-                AccelFrame accelFrame = frameSet.getFrame(FrameType.ACCEL);
-                GyroFrame gyroFrame = frameSet.getFrame(FrameType.GYRO);
-
-                if (accelFrame != null) {
-                    long accelIndex = accelFrame.getIndex();
-                    BigInteger accelTimeStampUs = accelFrame.getTimeStampUs();
-                    float accelTemperature = accelFrame.getTemperature();
-                    FrameType accelType = accelFrame.getType();
-                    if (accelIndex % 20 == 0) {
-                        float[] accelValue = accelFrame.getAccelData();
-                        printImuValue(accelValue, accelIndex, accelTimeStampUs, accelTemperature, accelType, "m/s^2");
-
-                        if (!isAccelVisible) {
-                            runOnUiThread(() -> mAccelContentView.setVisibility(View.VISIBLE));
-                            isAccelVisible = true;
+                try (AccelFrame accelFrame = frameSet.getFrame(FrameType.ACCEL)) {
+                    if (accelFrame != null) {
+                        long accelIndex = accelFrame.getIndex();
+                        if (accelIndex % 20 == 0) {
+                            float[] accelValue = accelFrame.getAccelData();
+                            printImuValue(accelValue, accelIndex, accelFrame.getTimeStampUs(), accelFrame.getTemperature(), FrameType.ACCEL, "m/s^2");
+                            if (!isAccelVisible) {
+                                runOnUiThread(() -> mAccelContentView.setVisibility(View.VISIBLE));
+                                isAccelVisible = true;
+                            }
                         }
                     }
-                    accelFrame.close();
                 }
 
-                if (gyroFrame != null) {
-                    long gyroIndex = gyroFrame.getIndex();
-                    BigInteger gyroTimeStampUs = gyroFrame.getTimeStampUs();
-                    float gyroTemperature = gyroFrame.getTemperature();
-                    FrameType gyroType = gyroFrame.getType();
-                    if (gyroIndex % 20 == 0) {
-                        float[] gyroValue = gyroFrame.getGyroData();
-                        printImuValue(gyroValue, gyroIndex, gyroTimeStampUs, gyroTemperature, gyroType, "rad/s");
-
-                        if (!isGyroVisible) {
-                            runOnUiThread(() -> mGyroContentView.setVisibility(View.VISIBLE));
-                            isGyroVisible = true;
+                try (GyroFrame gyroFrame = frameSet.getFrame(FrameType.GYRO)) {
+                    if (gyroFrame != null) {
+                        long gyroIndex = gyroFrame.getIndex();
+                        if (gyroIndex % 20 == 0) {
+                            float[] gyroValue = gyroFrame.getGyroData();
+                            printImuValue(gyroValue, gyroIndex, gyroFrame.getTimeStampUs(), gyroFrame.getTemperature(), FrameType.GYRO, "rad/s");
+                            if (!isGyroVisible) {
+                                runOnUiThread(() -> mGyroContentView.setVisibility(View.VISIBLE));
+                                isGyroVisible = true;
+                            }
                         }
                     }
-                    gyroFrame.close();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "run: " + e.getMessage());
+                Log.e(TAG, "run thread error: " + e.getMessage());
             }
         }
     };
@@ -281,7 +301,4 @@ public class StreamImuActivity extends BaseActivity {
         });
     }
 
-    private void showToast(String msg) {
-        runOnUiThread(() -> Toast.makeText(StreamImuActivity.this, msg, Toast.LENGTH_SHORT).show());
-    }
 }

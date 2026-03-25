@@ -32,6 +32,7 @@ public class DeviceFirmwareUpdateActivity extends BaseActivity {
     private Button mSelectFileBtn;
     private Button mUpdateBtn;
     private TextView mDeviceInfoTv;
+    private TextView mUpdateStateTv;
     private LinearLayout mProgressBarLL;
 
     private String firmwarePath = "";
@@ -45,7 +46,18 @@ public class DeviceFirmwareUpdateActivity extends BaseActivity {
             try {
                 if (mDevice == null) {
                     mDevice = deviceList.getDevice(0);
-
+                    drawDeviceInfo(mDevice);
+                }
+                else {
+                    for (int i = 0, N = deviceList.getDeviceCount(); i < N; i++) {
+                        String uid = deviceList.getUid(i);
+                        DeviceInfo deviceInfo = mDevice.getInfo();
+                        if (deviceInfo != null && TextUtils.equals(uid, deviceInfo.getUid())) {
+                            mDevice.close();
+                            mDevice = null;
+                        }
+                    }
+                    mDevice = deviceList.getDevice(0);
                     drawDeviceInfo(mDevice);
                 }
             } catch (Exception e) {
@@ -169,6 +181,7 @@ public class DeviceFirmwareUpdateActivity extends BaseActivity {
             }).start();
         });
         mDeviceInfoTv = findViewById(R.id.tv_device_info);
+        mUpdateStateTv = findViewById(R.id.tv_update_state);
         mProgressBarLL = findViewById(R.id.ll_progress_bar);
     }
 
@@ -183,6 +196,7 @@ public class DeviceFirmwareUpdateActivity extends BaseActivity {
             runOnUiThread(() -> {
                 mDeviceInfoTv.setText(sb.toString());
             });
+            updateUpgradeState(mUpdateStateTv, "");
         }
     }
 
@@ -199,10 +213,11 @@ public class DeviceFirmwareUpdateActivity extends BaseActivity {
 
         try {
             mDevice.upgrade(firmwarePath, (state, percent, msg) -> {
-//                Log.d(TAG, "onCallback: state=" + state + ", percent=" + percent + ", msg=" + msg);
+                //Log.d(TAG, "onCallback: state=" + state + ", percent=" + percent + ", msg=" + msg);
                 firmwareUpdateCallback(UpgradeState.get(state), msg, percent);
                 if (state == UpgradeCallback.STAT_DONE) {
                     isUpdateSuccess = true;
+                    updateUpgradeState(mUpdateStateTv, getString(R.string.firmware_upgrade_success));
                     mDevice.reboot();
                 }
             });
@@ -220,6 +235,7 @@ public class DeviceFirmwareUpdateActivity extends BaseActivity {
                 break;
             case STAT_FILE_TRANSFER:
                 Log.i(TAG, "Progress: " + percent + "%; Status: File transfer in progress");
+                updateUpgradeState(mUpdateStateTv, "Upgrade Progress: "+Short.toString(percent) + "%");
                 break;
             case STAT_DONE:
                 Log.i(TAG, "Progress: " + percent + "%; Status: Update completed");
@@ -235,11 +251,21 @@ public class DeviceFirmwareUpdateActivity extends BaseActivity {
                 break;
             default:
                 Log.i(TAG, "Progress: " + percent + "%; Status: Unknown status or error");
+                updateUpgradeState(mUpdateStateTv, "Upgrade error:"+Integer.toString(state.value()));
                 break;
         }
         if (state == UpgradeState.STAT_DONE) {
             Log.i(TAG, "Message : " + message);
         }
+    }
+
+    private void updateUpgradeState(TextView textView, String mesg){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                textView.setText(mesg);
+            }
+        });
     }
 
     private void updateUI() {

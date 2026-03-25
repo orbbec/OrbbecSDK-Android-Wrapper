@@ -26,10 +26,8 @@ public class StreamDepthActivity extends BaseActivity {
     private static final String TAG = "StreamDepthActivity";
 
     private Pipeline mPipeline;
-
     private Thread mStreamThread;
     private volatile boolean mIsStreamRunning;
-
     private OBGLView mDepthView;
     private Device mDevice;
 
@@ -37,10 +35,8 @@ public class StreamDepthActivity extends BaseActivity {
         @Override
         public void onDeviceAttach(DeviceList deviceList) {
             try {
-                if (null == mPipeline) {
-                    // 2.Create Device and initialize Pipeline through Device
+                if (null == mDevice) {
                     mDevice = deviceList.getDevice(0);
-
                     Sensor depthSensor = mDevice.getSensor(SensorType.DEPTH);
                     if (null == depthSensor) {
                         showToast(getString(R.string.device_not_support_depth));
@@ -48,27 +44,12 @@ public class StreamDepthActivity extends BaseActivity {
                         mDevice = null;
                         return;
                     }
-
-                    mPipeline = new Pipeline(mDevice);
-
-                    // 3.Create Pipeline configuration
-                    Config config = new Config();
-                    // 4.Enable depth stream
-                    config.enableStream(StreamType.DEPTH);
-
-                    // 5.Start sensor stream
-                    mPipeline.start(config);
-
-                    // 6.release config
-                    config.close();
-
-                    // 7.Create a thread to obtain Pipeline data
-                    start();
+                    Log.i(TAG, "onDeviceAttach: device attached");
+                    runOnUiThread(() -> openStream());
                 }
             } catch (Exception e) {
                 Log.e(TAG, "onDeviceAttach: " + e.getMessage());
             } finally {
-                // 8.Release device list resources
                 deviceList.close();
             }
         }
@@ -81,11 +62,11 @@ public class StreamDepthActivity extends BaseActivity {
                         String uid = deviceList.getUid(i);
                         DeviceInfo deviceInfo = mDevice.getInfo();
                         if (null != deviceInfo && TextUtils.equals(uid, deviceInfo.getUid())) {
-                            stop();
-                            mPipeline.close();
-                            mPipeline = null;
+                            Log.i(TAG, "onDeviceDetach: device released");
+                            closeStream();
                             mDevice.close();
                             mDevice = null;
+                            break; // 找到对应设备后跳出循环，防止后续逻辑空指针
                         }
                     }
                 }
@@ -103,34 +84,114 @@ public class StreamDepthActivity extends BaseActivity {
         setTitle("Stream-Depth");
         setContentView(R.layout.activity_stream_depth);
         mDepthView = findViewById(R.id.depthview_id);
+
+        // 核心优化：在创建时初始化 SDK，确保切后台时不注销上下文
+        initSDK();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        initSDK();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 从后台回到前台时，若设备已连接且未出流则快速恢复流
+        if (mDevice != null && !mIsStreamRunning) {
+            openStream();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        // 核心优化：仅停止数据流，不销毁 Pipeline 句柄
+        stopStreamOnly();
+        super.onPause();
     }
 
     @Override
     protected void onStop() {
-        try {
-            //Stop getting Pipeline data
-            stop();
+        super.onStop();
+    }
 
-            // Stop the Pipeline and release
-            if (null != mPipeline) {
-                mPipeline.close();
-            }
-
-            // Release Device
-            if (mDevice != null) {
+    @Override
+    protected void onDestroy() {
+        // 彻底退出页面时才释放硬件资源
+        closeStream();
+        if (mDevice != null) {
+            try {
                 mDevice.close();
+            } catch (Exception e) {
+                Log.e(TAG, "onDestroy close device: " + e.getMessage());
             }
-        } catch (Exception e) {
-            Log.e(TAG, "onStop: " + e.getMessage());
+            mDevice = null;
         }
         releaseSDK();
-        super.onStop();
+        super.onDestroy();
+    }
+
+    private synchronized void openStream() {
+        if (mIsStreamRunning || mDevice == null) {
+            return;
+        }
+        try {
+            // 复用已有 Pipeline，跳过最耗时的重建过程
+            if (mPipeline == null) {
+                mPipeline = new Pipeline(mDevice);
+            }
+            Config config = new Config();
+            config.enableStream(SensorType.DEPTH);
+            mPipeline.start(config);
+            config.close();
+
+            mIsStreamRunning = true;
+            if (null == mStreamThread) {
+                mStreamThread = new Thread(mStreamRunnable);
+                mStreamThread.start();
+            }
+            Log.i(TAG, "openStream success - recovered quickly");
+        } catch (Exception e) {
+            Log.e(TAG, "openStream failed: " + e.getMessage());
+        }
+    }
+
+    private void stopStreamThread() {
+        mIsStreamRunning = false;
+        if (null != mStreamThread) {
+            try {
+                mStreamThread.join(300);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "stopStreamThread join error: " + e.getMessage());
+            }
+            mStreamThread = null;
+        }
+    }
+
+    private synchronized void stopStreamOnly() {
+        stopStreamThread();
+        if (mPipeline != null) {
+            try {
+                // 仅停止传感器出流，保留对象以便 onResume 快速 start
+                mPipeline.stop();
+            } catch (Exception e) {
+                Log.e(TAG, "stopStreamOnly pipeline stop: " + e.getMessage());
+            }
+        }
+    }
+
+    private synchronized void closeStream() {
+        stopStreamOnly();
+        if (null != mPipeline) {
+            try {
+                mPipeline.stop();
+                mPipeline.close();
+            } catch (Exception e) {
+                Log.e(TAG, "closeStream pipeline: " + e.getMessage());
+            }
+            mPipeline = null;
+        }
+        Log.i(TAG, "closeStream - resources released");
     }
 
     @Override
@@ -142,47 +203,20 @@ public class StreamDepthActivity extends BaseActivity {
         runOnUiThread(() -> Toast.makeText(StreamDepthActivity.this, msg, Toast.LENGTH_SHORT).show());
     }
 
-    private void start() {
-        mIsStreamRunning = true;
-        if (null == mStreamThread) {
-            mStreamThread = new Thread(mStreamRunnable);
-            mStreamThread.start();
-        }
-    }
-
-    private void stop() {
-        mIsStreamRunning = false;
-        if (null != mStreamThread) {
-            try {
-                mStreamThread.join(300);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "stop: " + e.getMessage());
-            }
-            mStreamThread = null;
-        }
-    }
-
     private Runnable mStreamRunnable = () -> {
         while (mIsStreamRunning) {
-            // Obtain the data set in blocking mode. If it cannot be obtained after waiting for 100ms, it will time out.
             try (FrameSet frameSet = mPipeline.waitForFrameSet(100)) {
-                if (null == frameSet) {
-                    continue;
-                }
+                if (null == frameSet) continue;
 
-                // Get depth flow data
-                DepthFrame frame = frameSet.getDepthFrame();
-                if (frame != null) {
-                    // Get data and render
-                    byte[] frameData = new byte[frame.getDataSize()];
-                    frame.getData(frameData);
-                    mDepthView.update(frame.getWidth(), frame.getHeight(), StreamType.DEPTH, frame.getFormat(), frameData, frame.getValueScale());
-
-                    // Release depth data frame
-                    frame.close();
+                DepthFrame depthFrame = frameSet.getDepthFrame();
+                if (null != depthFrame) {
+                    byte[] data = new byte[depthFrame.getDataSize()];
+                    depthFrame.getData(data);
+                    mDepthView.update(depthFrame.getWidth(), depthFrame.getHeight(), StreamType.DEPTH, depthFrame.getFormat(), data, depthFrame.getValueScale());
+                    depthFrame.close();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "run: " + e.getMessage());
+                Log.e(TAG, "run thread error: " + e.getMessage());
             }
         }
     };

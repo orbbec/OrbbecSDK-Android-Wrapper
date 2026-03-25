@@ -11,7 +11,7 @@ import java.util.List;
  * 所有filter的基类
  * \endif
  */
-public class Filter extends LobClass {
+public class Filter extends LobClass implements Cloneable {
     private FilterCallback mFilterCallback;
     protected String name_;
     protected List<FilterConfigSchemaItem> configSchemaList_;

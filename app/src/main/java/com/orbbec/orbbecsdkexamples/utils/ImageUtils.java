@@ -3,11 +3,6 @@ package com.orbbec.orbbecsdkexamples.utils;
 import android.graphics.Bitmap;
 import android.util.Log;
 
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
-
 import java.nio.ByteBuffer;
 
 public class ImageUtils {
@@ -124,49 +119,6 @@ public class ImageUtils {
         nY8ToRgb(srcBuffer, dstBuffer, width, height);
     }
 
-    /**
-     * mjpg format to rgb
-     *
-     * @param srcBuffer mjpg frame data
-     * @param dstBuffer RGB data
-     * @param width     frame width
-     * @param height    frame height
-     */
-    public static void mjpgToRgb(ByteBuffer srcBuffer, ByteBuffer dstBuffer, int width, int height) {
-        try {
-            byte[] mjpgData = new byte[srcBuffer.remaining()];
-            srcBuffer.get(mjpgData);
-
-            Mat rawData = new Mat(1, mjpgData.length, CvType.CV_8UC1);
-            rawData.put(0, 0, mjpgData);
-
-            Mat bgrMat = Imgcodecs.imdecode(rawData, Imgcodecs.IMREAD_COLOR);
-            if (bgrMat.empty()) {
-                Log.w(TAG, "Decoded image size does not match expected: expected " + width + "x" + height +
-                        ", but got " + bgrMat.cols() + "x" + bgrMat.rows() +
-                        ". Subsequent processing will use the decoded size.");
-                // Imgproc.resize(bgrMat, bgrMat, new org.opencv.core.Size(width, height));
-            }
-
-            Mat rgbMat = new Mat();
-            Imgproc.cvtColor(bgrMat, rgbMat, Imgproc.COLOR_BGR2RGB);
-
-            int rgbDataSize = rgbMat.cols() * rgbMat.rows() * rgbMat.channels();
-            byte[] rgbData = new byte[rgbDataSize];
-            rgbMat.get(0, 0, rgbData);
-
-            dstBuffer.clear();
-            dstBuffer.put(rgbData);
-            dstBuffer.flip();
-
-            rawData.release();
-            bgrMat.release();
-            rgbMat.release();
-        } catch (Exception e) {
-            Log.e(TAG, "Error in mjpgToRGB: ", e);
-        }
-    }
-
     private static native void nDepthToRgb(ByteBuffer srcBuffer, ByteBuffer dstBuffer);
 
     private static native byte[] nDepthAlignToColor(ByteBuffer colorData, ByteBuffer depthData, int colorW, int colorH,
@@ -178,6 +130,9 @@ public class ImageUtils {
 
     private static native void nY8ToRgb(ByteBuffer srcBuffer, ByteBuffer dstBuffer, int width, int height);
 
-    public static native void nScalePrecisionToDepthPixel(ByteBuffer depthBuffer,
-                                                          int w, int h, int size, float scale);
+    public native static int ir2RGB888(ByteBuffer src, ByteBuffer dst, int w, int h);
+
+    public static native void nScalePrecisionToDepthPixel(ByteBuffer depthBuffer, int w, int h, int size, float scale);
+
+
 }

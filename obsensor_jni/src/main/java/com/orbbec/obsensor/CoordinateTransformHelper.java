@@ -3,12 +3,12 @@ package com.orbbec.obsensor;
 import android.util.Log;
 
 import com.orbbec.obsensor.types.CalibrationParam;
+import com.orbbec.obsensor.types.CameraDistortion;
+import com.orbbec.obsensor.types.CameraIntrinsic;
+import com.orbbec.obsensor.types.Extrinsic;
 import com.orbbec.obsensor.types.Point2f;
 import com.orbbec.obsensor.types.Point3f;
 import com.orbbec.obsensor.types.SensorType;
-import com.orbbec.obsensor.types.Extrinsic;
-import com.orbbec.obsensor.types.CameraIntrinsic;
-import com.orbbec.obsensor.types.CameraDistortion;
 
 public class CoordinateTransformHelper {
     private static final String TAG = "CoordinateTransformHelper";
@@ -298,7 +298,8 @@ public class CoordinateTransformHelper {
             return false;
         }
 
-        if (!nTransformation2dto3d(sourcePoint2f.getBytes(), sourceDepthPixel, sourceIntrinsic.getBytes(), extrinsic.getBytes(), targetPoint3f.getBytes())) {
+        if (!nTransformation2dto3d(sourcePoint2f.getBytes(), sourceDepthPixel, sourceIntrinsic.getBytes(),
+                extrinsic.getBytes(), targetPoint3f.getBytes())) {
             Log.w(TAG, "transformation2dto3d: Transformation failed!");
             return false;
         }
@@ -341,7 +342,8 @@ public class CoordinateTransformHelper {
             return false;
         }
 
-        if (!nTransformation3dto2d(sourcePoint3f.getBytes(), targetIntrinsic.getBytes(), targetDistortion.getBytes(), extrinsic.getBytes(), targetPoint2f.getBytes())) {
+        if (!nTransformation3dto2d(sourcePoint3f.getBytes(), targetIntrinsic.getBytes(), targetDistortion.getBytes(),
+                extrinsic.getBytes(), targetPoint2f.getBytes())) {
             Log.w(TAG, "transformation3dto2d: Transformation failed!");
             return false;
         }

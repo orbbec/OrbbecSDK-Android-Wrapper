@@ -51,9 +51,9 @@ public:
     }
 
     /**
-     * @brief Get the format of the stream
+     * @brief Get the format of the stream.
      *
-     * @return OBFormat return the format of the stream
+     * @return OBFormat return the format of the stream.
      */
     OBFormat getFormat() const {
         ob_error *error  = nullptr;
@@ -63,9 +63,9 @@ public:
     }
 
     /**
-     * @brief Get the type of stream
+     * @brief Get the type of stream.
      *
-     * @return OBStreamType return the type of the stream
+     * @return OBStreamType return the type of the stream.
      */
     OBStreamType getType() const {
         ob_error *error = nullptr;
@@ -75,7 +75,7 @@ public:
     }
 
     /**
-     * @brief Get the extrinsic parameters from current stream profile to the given target stream profile
+     * @brief Get the extrinsic parameters from current stream profile to the given target stream profile.
      *
      * @return OBExtrinsic Return the extrinsic parameters.
      */
@@ -87,17 +87,44 @@ public:
     }
 
     /**
-     * @brief Check if frame object is compatible with the given type
+     * @brief Set the extrinsic parameters from current stream profile to the given target stream profile.
      *
-     * @tparam T  Given type
-     * @return bool return result
+     * @tparam target Target stream profile.
+     * @tparam extrinsic The extrinsic.
+     */
+    void bindExtrinsicTo(std::shared_ptr<StreamProfile> target, const OBExtrinsic &extrinsic) {
+        ob_error *error = nullptr;
+        ob_stream_profile_set_extrinsic_to(const_cast<ob_stream_profile_t *>(impl_), const_cast<const ob_stream_profile_t *>(target->getImpl()), extrinsic,
+                                           &error);
+        Error::handle(&error);
+    }
+
+    /**
+     * @brief Set the extrinsic parameters from current stream profile to the given target stream type.
+     *
+     * @tparam targetStreamType Target stream type.
+     * @tparam extrinsic The extrinsic.
+     */
+    void bindExtrinsicTo(const OBStreamType &targetStreamType, const OBExtrinsic &extrinsic) {
+        ob_error *error = nullptr;
+        ob_stream_profile_set_extrinsic_to_type(const_cast<ob_stream_profile_t *>(impl_), targetStreamType, extrinsic, &error);
+        Error::handle(&error);
+    }
+
+    /**
+     * @brief Check if frame object is compatible with the given type.
+     *
+     * @tparam T  Given type.
+     *
+     * @return bool return result.
      */
     template <typename T> bool is() const;
 
     /**
-     * @brief Converts object type to target type
+     * @brief Converts object type to target type.
      *
-     * @tparam T Target type
+     * @tparam T Target type.
+     *
      * @return std::shared_ptr<T> Return the result. Throws an exception if conversion is not possible.
      */
     template <typename T> std::shared_ptr<T> as() {
@@ -109,9 +136,10 @@ public:
     }
 
     /**
-     * @brief Converts object type to target type (const version)
+     * @brief Converts object type to target type (const version).
      *
-     * @tparam T Target type
+     * @tparam T Target type.
+     *
      * @return std::shared_ptr<T> Return the result. Throws an exception if conversion is not possible.
      */
     template <typename T> std::shared_ptr<const T> as() const {
@@ -193,6 +221,17 @@ public:
     }
 
     /**
+     * @brief Set the intrinsic parameters of the stream.
+     *
+     * @param[in] intrinsic The intrinsic parameters.
+     */
+    void setIntrinsic(const OBCameraIntrinsic &intrinsic) {
+        ob_error *error = nullptr;
+        ob_video_stream_profile_set_intrinsic(const_cast<ob_stream_profile_t *>(impl_), intrinsic, &error);
+        Error::handle(&error);
+    }
+
+    /**
      * @brief Get the distortion parameters of the stream.
      * @brief Brown distortion model
      *
@@ -203,6 +242,30 @@ public:
         auto      distortion = ob_video_stream_profile_get_distortion(impl_, &error);
         Error::handle(&error);
         return distortion;
+    }
+
+    /**
+     * @brief Set the distortion parameters of the stream.
+     *
+     * @param[in] distortion The distortion parameters.
+     */
+    void setDistortion(const OBCameraDistortion &distortion) {
+        ob_error *error = nullptr;
+        ob_video_stream_profile_set_distortion(const_cast<ob_stream_profile_t *>(impl_), distortion, &error);
+        Error::handle(&error);
+    }
+
+    /**
+     * @brief Get the decimation configuration of the stream.
+     *        Includes original resolution and scale factor.
+     *
+     * @return OBHardwareDecimationConfig Return the decimation configuration.
+     */
+    OBHardwareDecimationConfig getDecimationConfig() const {
+        ob_error *error            = nullptr;
+        auto      decimationConfig = ob_video_stream_profile_get_decimation_config(const_cast<ob_stream_profile_t *>(impl_), &error);
+        Error::handle(&error);
+        return decimationConfig;
     }
 
 public:
@@ -332,6 +395,24 @@ public:
     }
 };
 
+/**
+ * @brief Class representing a LiDAR stream profile.
+ */
+
+class LiDARStreamProfile : public StreamProfile {
+public:
+    explicit LiDARStreamProfile(const ob_stream_profile_t *impl) : StreamProfile(impl) {}
+
+    ~LiDARStreamProfile() noexcept override = default;
+
+    OBLiDARScanRate getScanRate() const {
+        ob_error *error = nullptr;
+        auto      rate  = ob_lidar_stream_profile_get_scan_rate(impl_, &error);
+        Error::handle(&error);
+        return rate;
+    }
+};
+
 template <typename T> bool StreamProfile::is() const {
     switch(this->getType()) {
     case OB_STREAM_VIDEO:
@@ -339,13 +420,18 @@ template <typename T> bool StreamProfile::is() const {
     case OB_STREAM_IR_LEFT:
     case OB_STREAM_IR_RIGHT:
     case OB_STREAM_COLOR:
+    case OB_STREAM_COLOR_LEFT:
+    case OB_STREAM_COLOR_RIGHT:
     case OB_STREAM_DEPTH:
     case OB_STREAM_RAW_PHASE:
+    case OB_STREAM_CONFIDENCE:
         return typeid(T) == typeid(VideoStreamProfile);
     case OB_STREAM_ACCEL:
         return typeid(T) == typeid(AccelStreamProfile);
     case OB_STREAM_GYRO:
         return typeid(T) == typeid(GyroStreamProfile);
+    case OB_STREAM_LIDAR:
+        return typeid(T) == typeid(LiDARStreamProfile);
     default:
         break;
     }
@@ -364,12 +450,17 @@ public:
         case OB_STREAM_IR_RIGHT:
         case OB_STREAM_DEPTH:
         case OB_STREAM_COLOR:
+        case OB_STREAM_COLOR_LEFT:
+        case OB_STREAM_COLOR_RIGHT:
         case OB_STREAM_VIDEO:
+        case OB_STREAM_CONFIDENCE:
             return std::make_shared<VideoStreamProfile>(impl);
         case OB_STREAM_ACCEL:
             return std::make_shared<AccelStreamProfile>(impl);
         case OB_STREAM_GYRO:
             return std::make_shared<GyroStreamProfile>(impl);
+        case OB_STREAM_LIDAR:
+            return std::make_shared<LiDARStreamProfile>(impl);
         default: {
             ob_error *err = ob_create_error(OB_STATUS_ERROR, "Unsupported stream type.", "StreamProfileFactory::create", "", OB_EXCEPTION_TYPE_INVALID_VALUE);
             Error::handle(&err);
@@ -406,7 +497,9 @@ public:
     /**
      * @brief Return the StreamProfile object at the specified index.
      *
-     * @param index The index of the StreamProfile object to be retrieved. Must be in the range [0, count-1]. Throws an exception if the index is out of range.
+     * @param[in] index The index of the StreamProfile object to be retrieved. Must be in the range [0, count-1]. Throws an exception if the index is out of
+     * range.
+     *
      * @return std::shared_ptr<StreamProfile> Return the StreamProfile object.
      */
     std::shared_ptr<StreamProfile> getProfile(uint32_t index) const {
@@ -420,10 +513,11 @@ public:
      * @brief Match the corresponding video stream profile based on the passed-in parameters. If multiple Match are found, the first one in the list is
      * returned by default. Throws an exception if no matching profile is found.
      *
-     * @param width The width of the stream. Pass OB_WIDTH_ANY if no matching condition is required.
-     * @param height The height of the stream. Pass OB_HEIGHT_ANY if no matching condition is required.
-     * @param format The type of the stream. Pass OB_FORMAT_ANY if no matching condition is required.
-     * @param fps The frame rate of the stream. Pass OB_FPS_ANY if no matching condition is required.
+     * @param[in] width The width of the stream. Pass OB_WIDTH_ANY if no matching condition is required.
+     * @param[in] height The height of the stream. Pass OB_HEIGHT_ANY if no matching condition is required.
+     * @param[in] format The type of the stream. Pass OB_FORMAT_ANY if no matching condition is required.
+     * @param[in] fps The frame rate of the stream. Pass OB_FPS_ANY if no matching condition is required.
+     *
      * @return std::shared_ptr<VideoStreamProfile> Return the matching resolution.
      */
     std::shared_ptr<VideoStreamProfile> getVideoStreamProfile(int width = OB_WIDTH_ANY, int height = OB_HEIGHT_ANY, OBFormat format = OB_FORMAT_ANY,
@@ -436,11 +530,30 @@ public:
     }
 
     /**
+     * @brief Match the corresponding video stream profile according to the decimation configuration. If multiple profiles match, the first one in the list is
+     * returned. Throws an exception when no matching profile is found.
+     *
+     * @param[in] decimationConfig Decimation configuration. The actual resolution is computed fromthe original resolution and scale factor.
+     * @param[in] format Stream format. Pass OB_FORMAT_ANY if no matching condition is required.
+     * @param[in] fps Frame rate. Pass OB_FPS_ANY if no matching condition is required.
+     *
+     * @return std::shared_ptr<VideoStreamProfile> Return the matched video stream profile.
+     */
+    std::shared_ptr<VideoStreamProfile> getVideoStreamProfile(OBHardwareDecimationConfig decimationConfig, OBFormat format = OB_FORMAT_ANY,
+                                                              int fps = OB_FPS_ANY) const {
+        ob_error *error   = nullptr;
+        auto      profile = ob_stream_profile_list_get_video_stream_profile_by_decimation_config(impl_, decimationConfig, format, fps, &error);
+        Error::handle(&error);
+        auto vsp = StreamProfileFactory::create(profile);
+        return vsp->as<VideoStreamProfile>();
+    }
+
+    /**
      * @brief Match the corresponding accelerometer stream profile based on the passed-in parameters. If multiple Match are found, the first one in the list
      * is returned by default. Throws an exception if no matching profile is found.
      *
-     * @param fullScaleRange The full scale range. Pass 0 if no matching condition is required.
-     * @param sampleRate The sampling frequency. Pass 0 if no matching condition is required.
+     * @param[in] fullScaleRange The full scale range. Pass 0 if no matching condition is required.
+     * @param[in] sampleRate The sampling frequency. Pass 0 if no matching condition is required.
      */
     std::shared_ptr<AccelStreamProfile> getAccelStreamProfile(OBAccelFullScaleRange fullScaleRange, OBAccelSampleRate sampleRate) const {
         ob_error *error   = nullptr;
@@ -454,8 +567,8 @@ public:
      * @brief Match the corresponding gyroscope stream profile based on the passed-in parameters. If multiple Match are found, the first one in the list is
      * returned by default. Throws an exception if no matching profile is found.
      *
-     * @param fullScaleRange The full scale range. Pass 0 if no matching condition is required.
-     * @param sampleRate The sampling frequency. Pass 0 if no matching condition is required.
+     * @param[in] fullScaleRange The full scale range. Pass 0 if no matching condition is required.
+     * @param[in] sampleRate The sampling frequency. Pass 0 if no matching condition is required.
      */
     std::shared_ptr<GyroStreamProfile> getGyroStreamProfile(OBGyroFullScaleRange fullScaleRange, OBGyroSampleRate sampleRate) const {
         ob_error *error   = nullptr;
@@ -463,6 +576,21 @@ public:
         Error::handle(&error);
         auto gsp = StreamProfileFactory::create(profile);
         return gsp->as<GyroStreamProfile>();
+    }
+
+    /**
+     * @brief Match the corresponding LiDAR stream profile based on the passed-in parameters. If multiple Match are found, the first one in the list is
+     * returned by default. Throws an exception if no matching profile is found.
+     *
+     * @param[in] scanRate The scan rate of LiDAR. Pass OB_LIDAR_SCAN_ANY if no matching condition is required.
+     * @param[in] format The type of the stream. Pass OB_FORMAT_ANY if no matching condition is required.
+     */
+    std::shared_ptr<LiDARStreamProfile> getLiDARStreamProfile(OBLiDARScanRate scanRate, OBFormat format) const {
+        ob_error *error   = nullptr;
+        auto      profile = ob_stream_profile_list_get_lidar_stream_profile(impl_, scanRate, format, &error);
+        Error::handle(&error);
+        auto lsp = StreamProfileFactory::create(profile);
+        return lsp->as<LiDARStreamProfile>();
     }
 
 public:

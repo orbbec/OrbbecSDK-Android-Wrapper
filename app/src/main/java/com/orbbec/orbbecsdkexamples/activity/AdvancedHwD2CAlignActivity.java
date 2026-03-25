@@ -1,30 +1,37 @@
 package com.orbbec.orbbecsdkexamples.activity;
 
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.widget.CheckBox;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.libyuv.util.YuvUtil;
 import com.orbbec.obsensor.ColorFrame;
 import com.orbbec.obsensor.Config;
 import com.orbbec.obsensor.DepthFrame;
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceList;
+import com.orbbec.obsensor.FormatConvertFilter;
+import com.orbbec.obsensor.Frame;
 import com.orbbec.obsensor.FrameSet;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.StreamProfile;
 import com.orbbec.obsensor.StreamProfileList;
 import com.orbbec.obsensor.VideoStreamProfile;
 import com.orbbec.obsensor.types.AlignMode;
+import com.orbbec.obsensor.types.ConvertFormat;
 import com.orbbec.obsensor.types.DeviceInfo;
 import com.orbbec.obsensor.types.Format;
 import com.orbbec.obsensor.types.FrameAggregateOutputMode;
+import com.orbbec.obsensor.types.FrameType;
 import com.orbbec.obsensor.types.SensorType;
 import com.orbbec.obsensor.types.StreamType;
 import com.orbbec.orbbecsdkexamples.R;
@@ -44,6 +51,7 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
     private volatile boolean mIsStreamRunning;
     private OBGLView mHwD2CView;
     private CheckBox mHardwareD2CCb;
+    private boolean mIsHwD2CEnabled = true;
 
     private TextView mColorProfileInfoTv;
     private TextView mDepthProfileInfoTv;
@@ -55,6 +63,8 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
 
     private ByteBuffer mColorSrcBuffer;
     private ByteBuffer mColorDstBuffer;
+
+    private FormatConvertFilter formatConvertFilter;
 
     private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
         @Override
@@ -87,11 +97,9 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
 
                     // 4.Enable frame sync inside the pipeline, which is synchronized by frame timestamp
                     mPipeline.enableFrameSync();
-                    // 5.Start the pipeline with config
-                    mPipeline.start(mConfig);
 
-                    // 6.Create a thread to obtain Pipeline data
-                    start();
+                    // 5.Start the pipeline with config and create a thread to obtain Pipeline data
+                    startStream();
                 }
             } catch (Exception e) {
                 Log.e(TAG, "onDeviceAttach: " + e.getMessage());
@@ -137,35 +145,81 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
     protected void onStart() {
         super.onStart();
         initSDK();
+        if(formatConvertFilter == null){
+            formatConvertFilter = new FormatConvertFilter();
+            formatConvertFilter.setFormatType(ConvertFormat.FORMAT_MJPEG_TO_RGB);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 从后台回到前台时，若 pipeline 已存在则恢复出流
+        if (mPipeline != null && !mIsStreamRunning) {
+            startStream();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        // 退到后台时停止出流，但保留 pipeline/config/device 资源
+        stop();
+        if (mPipeline != null) {
+            try {
+                mPipeline.stop();
+            } catch (Exception e) {
+                Log.e(TAG, "onPause pipeline stop: " + e.getMessage());
+            }
+        }
+        super.onPause();
     }
 
     @Override
     protected void onStop() {
+        // 释放全部资源必须在 releaseSDK 之前
         try {
-            // Stop getting Pipeline data
-            stop();
-
-            // Stop the Pipeline and release
-            if (null != mPipeline) {
-                mPipeline.stop();
+            if (mPipeline != null) {
                 mPipeline.close();
+                mPipeline = null;
             }
-
-            // Release Config
-            if (null != mConfig) {
+            if (mConfig != null) {
                 mConfig.close();
+                mConfig = null;
             }
-
-            // Release Device
-            if (null != mDevice) {
+            if (mDevice != null) {
                 mDevice.close();
+                mDevice = null;
             }
         } catch (Exception e) {
             Log.e(TAG, "onStop: " + e.getMessage());
         }
-
         releaseSDK();
         super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // 安全兜底：正常情况 onStop 已释放
+        try {
+            if(formatConvertFilter != null){
+                formatConvertFilter.close();
+            }
+            if (mPipeline != null) {
+                mPipeline.close();
+                mPipeline = null;
+            }
+            if (mConfig != null) {
+                mConfig.close();
+                mConfig = null;
+            }
+            if (mDevice != null) {
+                mDevice.close();
+                mDevice = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "onDestroy: " + e.getMessage());
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -177,6 +231,35 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
         runOnUiThread(() -> Toast.makeText(AdvancedHwD2CAlignActivity.this, msg, Toast.LENGTH_SHORT).show());
     }
 
+    private int getContrastColor(int backgroundColor) {
+        // Calculate relative luminance.
+        double darkness = 1 - (0.299 * Color.red(backgroundColor) + 0.587 * Color.green(backgroundColor) + 0.114 * Color.blue(backgroundColor)) / 255;
+        if (darkness < 0.5) {
+            return Color.BLACK; // Light background, use black text
+        } else {
+            return Color.WHITE; // Dark background, use white text
+        }
+    }
+
+    private void updateTextColor() {
+        // Get background color of activity to determine text color
+        int bgColor = Color.BLACK; // Default
+        TypedValue a = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.windowBackground, a, true);
+        if (a.type >= TypedValue.TYPE_FIRST_COLOR_INT && a.type <= TypedValue.TYPE_LAST_COLOR_INT) {
+            bgColor = a.data;
+        } else {
+            try {
+                Drawable background = getWindow().getDecorView().getBackground();
+                if (background instanceof ColorDrawable) {
+                    bgColor = ((ColorDrawable) background).getColor();
+                }
+            } catch (Exception ignore) {}
+        }
+        int contrastColor = getContrastColor(bgColor);
+        mHardwareD2CCb.setTextColor(contrastColor);
+    }
+
     private void initView() {
         mHwD2CView = findViewById(R.id.hw_d2c_view);
         SeekBar mTransparencySb = findViewById(R.id.sb_transparency);
@@ -185,7 +268,10 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
         mDepthProfileInfoTv = findViewById(R.id.tv_depth_profile_info);
         mHardwareD2CCb = findViewById(R.id.cb_hw_d2c);
 
-        mHardwareD2CCb.setOnClickListener(v -> setAlign(mHardwareD2CCb.isChecked()));
+        mHardwareD2CCb.setOnClickListener(v -> {
+            mIsHwD2CEnabled = mHardwareD2CCb.isChecked();
+            setAlign(mIsHwD2CEnabled);
+        });
         DisplayMetrics dm = getResources().getDisplayMetrics();
         int screenWidth = dm.widthPixels;
         mTransparencySb.getLayoutParams().width = (int) (screenWidth * 0.4);
@@ -213,6 +299,17 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
         mTransparencyTv.setText(String.format(Locale.getDefault(), "%.2f", mTransparencySb.getProgress() / 100f));
         mColorProfileInfoTv.setText("color: null");
         mDepthProfileInfoTv.setText("depth: null");
+
+        updateTextColor();
+    }
+
+    private void startStream() {
+        try {
+            mPipeline.start(mConfig);
+            start();
+        } catch (Exception e) {
+            Log.e(TAG, "startStream: " + e.getMessage());
+        }
     }
 
     private void start() {
@@ -239,6 +336,7 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
         if (null == colorFrame) {
             return;
         }
+
         int colorW = colorFrame.getWidth();
         int colorH = colorFrame.getHeight();
         if (null == mColorSrcBuffer || mColorSrcBuffer.capacity() != colorFrame.getDataSize()) {
@@ -259,13 +357,13 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
                 mColorDstBuffer.flip();
                 break;
             case YUYV:
-                YuvUtil.yuyv2Rgb888(mColorSrcBuffer, mColorDstBuffer, mColorDstBuffer.capacity());
+                ImageUtils.yuyvToRgb(mColorSrcBuffer, mColorDstBuffer, colorW, colorH);
                 break;
             case UYVY:
                 ImageUtils.uyvyToRgb(mColorSrcBuffer, mColorDstBuffer, colorW, colorH);
                 break;
             case MJPG:
-                ImageUtils.mjpgToRgb(mColorSrcBuffer, mColorDstBuffer, colorW, colorH);
+                //ImageUtils.mjpgToRgb(mColorSrcBuffer, mColorDstBuffer, colorW, colorH);
                 break;
             default:
                 Log.w(TAG, "decodeColorFrame: unsupported format!");
@@ -328,8 +426,18 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
                 DepthFrame depthFrame = frameSet.getDepthFrame();
                 ColorFrame colorFrame = frameSet.getColorFrame();
 
+                ColorFrame newColorFrame = colorFrame;
+                ColorFrame processedFrame = null;
+                if(colorFrame != null && colorFrame.getFormat() == Format.MJPG){
+                    Frame res = formatConvertFilter.process(colorFrame);
+                    if (res != null) {
+                        processedFrame = res.as(FrameType.COLOR);
+                        newColorFrame = processedFrame;
+                    }
+                }
+
                 // Depth and color overlay rendering
-                depthOverlayColorProcess(depthFrame, colorFrame);
+                depthOverlayColorProcess(depthFrame, newColorFrame);
 
                 if (null != depthFrame) {
                     depthFrame.close();
@@ -412,11 +520,10 @@ public class AdvancedHwD2CAlignActivity extends BaseActivity {
                         Config hwD2CAlignConfig = new Config();
                         hwD2CAlignConfig.enableStream(colorProfile);
                         hwD2CAlignConfig.enableStream(depthProfile);
-                        hwD2CAlignConfig.setAlignMode(AlignMode.ALIGN_D2C_HW_MODE);
+                        hwD2CAlignConfig.setAlignMode(mIsHwD2CEnabled ? AlignMode.ALIGN_D2C_HW_MODE : AlignMode.ALIGN_DISABLE);
                         hwD2CAlignConfig.setFrameAggregateOutputMode(FrameAggregateOutputMode.OB_FRAME_AGGREGATE_OUTPUT_ALL_TYPE_FRAME_REQUIRE);
-
                         runOnUiThread(() -> {
-                            mHardwareD2CCb.setChecked(true);
+                            mHardwareD2CCb.setChecked(mIsHwD2CEnabled);
                             String colorProfileInfo = "Color: " + colorVsp.getWidth() + "x" + colorVsp.getHeight() + "@" + colorVsp.getFormat()
                                     + " " + colorVsp.getFps() + "fps";
                             mColorProfileInfoTv.setText(colorProfileInfo);

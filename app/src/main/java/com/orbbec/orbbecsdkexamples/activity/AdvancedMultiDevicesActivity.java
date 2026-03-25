@@ -7,7 +7,9 @@ import android.widget.ListView;
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceList;
+import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.types.DeviceInfo;
+import com.orbbec.obsensor.types.SensorType;
 import com.orbbec.orbbecsdkexamples.R;
 import com.orbbec.orbbecsdkexamples.adapter.DeviceControllerAdapter;
 import com.orbbec.orbbecsdkexamples.bean.DeviceBean;
@@ -42,9 +44,19 @@ public class AdvancedMultiDevicesActivity extends BaseActivity {
                     String connectionType = devInfo.getConnectionType();
                     // Release DeviceInfo resources
                     //devInfo.close();
-                    runOnUiThread(() -> {
-                        mDeviceControllerAdapter.addItem(new DeviceBean(name, uid, connectionType, device));
-                    });
+                    // Skip already-connected devices (prevents duplicates on SDK re-register)
+                    boolean alreadyExists = false;
+                    for (DeviceBean bean : mDeviceBeanList) {
+                        if (bean.getDeviceUid().equals(uid)) {
+                            alreadyExists = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyExists) {
+                        runOnUiThread(() -> {
+                            mDeviceControllerAdapter.addItem(new DeviceBean(name, uid, connectionType, device));
+                        });
+                    }
                 }
             } catch (Exception e) {
                 Log.w(TAG, "onDeviceAttach: " + e.getMessage());
@@ -96,23 +108,61 @@ public class AdvancedMultiDevicesActivity extends BaseActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        // 从后台回到前台时，通知 adapter 重绘，触发 getView() 按 isRunning 标志恢复各设备流
+        if (mDeviceControllerAdapter != null) {
+            mDeviceControllerAdapter.notifyDataSetChanged();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        // 退到后台时，停止所有正在运行的 sensor 流，但保留 isRunning 标志以便恢复
+        for (DeviceBean deviceBean : mDeviceBeanList) {
+            try {
+                Device device = deviceBean.getDevice();
+                if (deviceBean.isDepthRunning) {
+                    Sensor depthSensor = device.getSensor(SensorType.DEPTH);
+                    if (depthSensor != null) {
+                        depthSensor.stop();
+                    }
+                }
+                if (deviceBean.isColorRunning) {
+                    Sensor colorSensor = device.getSensor(SensorType.COLOR);
+                    if (colorSensor != null) {
+                        colorSensor.stop();
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "onPause stop stream: " + e.getMessage());
+            }
+        }
+        super.onPause();
+    }
+
+    @Override
     protected void onStop() {
+        releaseSDK();
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // 退出 Activity 时释放全部设备资源
         try {
-            // Release resources
             for (DeviceBean deviceBean : mDeviceBeanList) {
                 try {
-                    // Release device resources
                     deviceBean.getDevice().close();
                 } catch (Exception e) {
-                    Log.w(TAG, "onDestroy: " + e.getMessage());
+                    Log.w(TAG, "onDestroy close device: " + e.getMessage());
                 }
             }
             mDeviceBeanList.clear();
         } catch (Exception e) {
-            Log.w(TAG, "onStop: " + e.getMessage());
+            Log.w(TAG, "onDestroy: " + e.getMessage());
         }
-        releaseSDK();
-        super.onStop();
+        super.onDestroy();
     }
 
     @Override

@@ -30,7 +30,7 @@ android {
                 arguments "-DOBSENSOR_JNI_DIR=${getProjectDir().absolutePath}",
                         "-DANDROID_STL=c++_shared",
                         "-DANDROID_ARM_NEON=TRUE"
-                cppFlags "-std=c++11", "-fopenmp"
+                cppFlags "-std=c++11", "-fopenmp", "-fdeclspec"
                 abiFilters "arm64-v8a", "armeabi-v7a"
             }
         }

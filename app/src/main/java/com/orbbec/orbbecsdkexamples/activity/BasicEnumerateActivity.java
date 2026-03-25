@@ -14,7 +14,6 @@ import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceList;
 import com.orbbec.obsensor.GyroStreamProfile;
-import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
 import com.orbbec.obsensor.StreamProfile;
 import com.orbbec.obsensor.StreamProfileList;
@@ -35,7 +34,6 @@ public class BasicEnumerateActivity extends BaseActivity {
     private static final String TAG = BasicEnumerateActivity.class.getSimpleName();
 
     private Device mDevice;
-    private Pipeline mPipeline;
     private List<Sensor> sensors;
     private TabLayout mTabLayout;
     private TextView mProfilesContent;
@@ -45,8 +43,8 @@ public class BasicEnumerateActivity extends BaseActivity {
         @Override
         public void onDeviceAttach(DeviceList deviceList) {
             try {
-                if (mPipeline == null) {
-                    // 2.Create Device and initialize Pipeline through Device
+                if (mDevice == null) {
+                    // 2.Create Device
                     mDevice = deviceList.getDevice(0);
 
                     sensors = mDevice.querySensors();
@@ -77,10 +75,10 @@ public class BasicEnumerateActivity extends BaseActivity {
                         String uid = deviceList.getUid(i);
                         DeviceInfo deviceInfo = mDevice.getInfo();
                         if (null != deviceInfo && TextUtils.equals(uid, deviceInfo.getUid())) {
-                            mPipeline.close();
-                            mPipeline = null;
                             mDevice.close();
                             mDevice = null;
+                            sensors = null;
+                            runOnUiThread(() -> mTabLayout.removeAllTabs());
                         }
                     }
                 }
@@ -180,19 +178,32 @@ public class BasicEnumerateActivity extends BaseActivity {
 
     @Override
     protected void onStop() {
-        super.onStop();
-        try {
-            if (null != mPipeline) {
-                mPipeline.stop();
-                mPipeline.close();
-            }
-
-            if (null != mDevice) {
+        // 释放设备资源必须在 releaseSDK 之前
+        if (mDevice != null) {
+            try {
                 mDevice.close();
+            } catch (Exception e) {
+                Log.e(TAG, "onStop close device: " + e.getMessage());
             }
-        } catch (Exception e) {
-            Log.e(TAG, "onStop: " + e.getMessage());
+            mDevice = null;
+            sensors = null;
+            mTabLayout.removeAllTabs();
         }
         releaseSDK();
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // 安全兜底：正常情况 onStop 已释放
+        if (mDevice != null) {
+            try {
+                mDevice.close();
+            } catch (Exception e) {
+                Log.e(TAG, "onDestroy close device: " + e.getMessage());
+            }
+            mDevice = null;
+        }
+        super.onDestroy();
     }
 }

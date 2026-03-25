@@ -41,6 +41,12 @@ struct BgrPixel {
     uint8_t r;
 };
 
+typedef struct RGB888{
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+}RGB888;
+
 static BgrPixel rainbowColorMap[256] = {
         {128, 0,   0},
         {132, 0,   0},
@@ -528,20 +534,70 @@ Java_com_orbbec_orbbecsdkexamples_utils_ImageUtils_nY8ToRgb(JNIEnv *env, jclass 
 extern "C" JNIEXPORT void JNICALL
 Java_com_orbbec_orbbecsdkexamples_utils_ImageUtils_nScalePrecisionToDepthPixel(JNIEnv *env, jclass clazz,
                                                     jobject depthBuffer, jint width, jint height, jint size, jfloat scale) {
+
     uint8_t* data = (uint8_t*)env->GetDirectBufferAddress(depthBuffer);
     if (nullptr == data || size == 0) {
         LOGE("nScalePrecisionToDepthPixel failed. data = 0X%08x, depthBuffer size: %d", (long)data, size);
         return;
     }
-    if (width * height * (sizeof(unsigned short)/sizeof(uint8_t)) < size != 0) {
+
+    if (width * height * (sizeof(unsigned short)/sizeof(uint8_t)) > size) {
+        LOGE("nScalePrecisionToDepthPixel failed. invalid size. width: %d, height: %d, size: %ld", width, height, size);
+        return;
+    }
+
+    if (width * height * (sizeof(unsigned short)/sizeof(uint8_t)) < size) {
         LOGE("nScalePrecisionToDepthPixel failed. invalid width and height. width: %d, height: %d, size: %ld", width, height, size);
         return;
     }
 
     unsigned short *pixel = (unsigned short *)data;
     // 仅支持YUYV和Y16
+
     for (int i = 0, N = width * height; i < N; i++) {
         int value = *(pixel + i) * scale;
         *(pixel + i) = (unsigned short)value;
     }
+
+}
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_orbbec_orbbecsdkexamples_utils_ImageUtils_ir2RGB888(JNIEnv *env, jclass clazz, jobject src,
+                                                             jobject dst, jint w, jint h) {
+    if(src == NULL || dst == NULL){
+        return -1;
+    }
+
+    char* srcByte = (char *)env->GetDirectBufferAddress(src);
+    if(srcByte == NULL){
+        LOGD("srcBuf  is null");
+        return -1;
+    }
+
+    char* dstByte = (char*) env->GetDirectBufferAddress(dst);
+    if(dstByte == NULL){
+        LOGD("dstBuf is null");
+        return -1;
+    }
+
+    uint16_t * srcBuf = (uint16_t *)srcByte;
+
+    int frameid = srcBuf[16];
+    LOGD("ir to rgb  frameid: %d", (frameid & 0xff));
+
+    RGB888 * dstBuf = (RGB888*)dstByte;
+
+    int index = 0;
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+
+            uint8_t pixel = (srcBuf[index] >> 2) & 0xff;
+            dstBuf[index].r = pixel;
+            dstBuf[index].g = pixel;
+            dstBuf[index].b = pixel;
+            index++;
+        }
+    }
+
+    return 0;
 }

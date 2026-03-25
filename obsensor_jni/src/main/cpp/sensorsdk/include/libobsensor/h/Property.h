@@ -306,7 +306,7 @@ typedef enum {
     OB_PROP_DEPTH_ROTATE_INT = 118,
 
     /**
-     * @brief Get hardware laser power actual level which real state of laser element. OB_PROP_LASER_POWER_LEVEL_CONTROL_INT99）will effect this command
+     * @brief Get hardware laser power actual level which real state of laser element. OB_PROP_LASER_POWER_LEVEL_CONTROL_INT99 will effect this command
      * which it setting and changed the hardware laser energy level.
      */
     OB_PROP_LASER_POWER_ACTUAL_LEVEL_INT = 119,
@@ -464,6 +464,11 @@ typedef enum {
     OB_PROP_DISP_SEARCH_OFFSET_INT = 196,
 
     /**
+     * @brief cpu temperature correction . true: calibrate temperature
+     */
+    OB_PROP_CPU_TEMPERATURE_CALIBRATION_BOOL = 199,
+
+    /**
      * @brief Repower device (cut off power and power on again)
      *
      * @brief Currently using for GMSL device, cut off power and power on again by GMSL host driver.
@@ -501,6 +506,110 @@ typedef enum {
      * @brief hardware noise remove filter threshold ,range [0.0 - 1.0]
      */
     OB_PROP_HW_NOISE_REMOVE_FILTER_THRESHOLD_FLOAT = 212,
+    /**
+     * @brief soft trigger auto capture enable, use in OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING mode
+     */
+    OB_DEVICE_AUTO_CAPTURE_ENABLE_BOOL = 216,
+    /**
+     * @brief soft trigger auto capture interval time, use in OB_MULTI_DEVICE_SYNC_MODE_SOFTWARE_TRIGGERING mode
+     */
+    OB_DEVICE_AUTO_CAPTURE_INTERVAL_TIME_INT = 217,
+
+    /**
+     * @brief PTP time synchronization enable
+     */
+    OB_DEVICE_PTP_CLOCK_SYNC_ENABLE_BOOL = 223,
+
+    /**
+     * @brief Depth with confidence stream enable
+     */
+    OB_PROP_DEPTH_WITH_CONFIDENCE_STREAM_ENABLE_BOOL = 224,
+
+    /**
+     * @brief Enable or disable confidence stream filter
+     */
+    OB_PROP_CONFIDENCE_STREAM_FILTER_BOOL = 226,
+
+    /**
+     * @brief Confidence stream filter threshold, range [0, 255]
+     */
+    OB_PROP_CONFIDENCE_STREAM_FILTER_THRESHOLD_INT = 227,
+
+    /**
+     * @brief Confidence stream mirror enable
+     */
+    OB_PROP_CONFIDENCE_MIRROR_BOOL = 229,
+
+    /**
+     * @brief Confidence stream flip enable
+     */
+    OB_PROP_CONFIDENCE_FLIP_BOOL = 230,
+
+    /**
+     * @brief Confidence stream rotate angle{0, 90, 180, 270}
+     */
+    OB_PROP_CONFIDENCE_ROTATE_INT = 231,
+
+    /**
+     * @brief Intra-camera Sync Reference based on the exposure start time, the exposure middle time, or the exposure end time. the definition in @ref
+     * OBIntraCameraSyncReference
+     */
+    OB_PROP_INTRA_CAMERA_SYNC_REFERENCE_INT = 236,
+
+    /**
+     * @brief Right Color sensor rotation, angle{0, 90, 180, 270}
+     */
+    OB_PROP_COLOR_RIGHT_ROTATE_INT = 242,
+
+    /**
+     * @brief Right Color mirror
+     */
+    OB_PROP_COLOR_RIGHT_MIRROR_BOOL = 243,
+
+    /**
+     * @brief Right Color flip
+     */
+    OB_PROP_COLOR_RIGHT_FLIP_BOOL = 244,
+
+    /**
+     * @brief Device AE reference source
+     * - 0: Depth based
+     * - 1: Color based
+     */
+    OB_PROP_DEVICE_AE_REFERENCE_INT = 247,
+
+    /**
+     * @brief Device AE strategy
+     * - 0: Default
+     * - 1: Motion
+     */
+    OB_PROP_DEVICE_AE_STRATEGY_INT = 248,
+
+    /**
+     * @brief Color camera ROI brightness adjustment
+     */
+    OB_PROP_COLOR_ROI_BRIGHTNESS_INT = 249,
+
+    /**
+     * @brief Left Color sensor rotation, angle{0, 90, 180, 270}
+     */
+    OB_PROP_COLOR_LEFT_ROTATE_INT = 251,
+
+    /**
+     * @brief Left Color mirror
+     */
+    OB_PROP_COLOR_LEFT_MIRROR_BOOL = 252,
+
+    /**
+     * @brief Left Color flip
+     */
+    OB_PROP_COLOR_LEFT_FLIP_BOOL = 253,
+
+    /**
+     * @brief Color camera preset priority
+     */
+    OB_PROP_COLOR_PRESET_PRIORITY_INT = 255,
+
     /**
      * @brief Baseline calibration parameters
      */
@@ -553,7 +662,7 @@ typedef enum {
 
     /**
      * @brief Device network static ip config record
-     * @brief Using for get last static ip config，witch is record in device flash when user set static ip config
+     * @brief Using for get last static ip config, witch is record in device flash when user set static ip config
      *
      * @attention read only
      */
@@ -589,6 +698,16 @@ typedef enum {
      * @brief Disparity offset interleaving
      */
     OB_STRUCT_DISP_OFFSET_CONFIG = 1064,
+
+    /**
+     * @brief Preset resolution ratio configuration
+     */
+    OB_STRUCT_PRESET_RESOLUTION_CONFIG = 1069,
+
+    /**
+     * @brief Color sensor synchronized exposure parameter structure
+     */
+    OB_STRUCT_COLOR_SYNCED_EXPOSURE_PARAM = 1077,
 
     /**
      * @brief Color camera auto exposure
@@ -796,14 +915,125 @@ typedef enum {
     OB_PROP_SDK_IR_RIGHT_FRAME_UNPACK_BOOL = 3012,
 
     /**
+     * @brief Depth Stream Industry Working Mode Settings, currently only supported by DCW2.
+     */
+    OB_PROP_DEPTH_INDUSTRY_MODE_INT = 3024,
+
+    /**
      * @brief Read the current network bandwidth type of the network device, whether it is Gigabit Ethernet or Fast Ethernet, such as G335LE.
      */
     OB_PROP_NETWORK_BANDWIDTH_TYPE_INT = 3027,
 
     /**
+     * @brief Switch device performance mode, currently available in Adaptive Mode and High Performance Mode, such as G335LE.
+     */
+    OB_PROP_DEVICE_PERFORMANCE_MODE_INT = 3028,
+
+    /**
      * @brief Calibration JSON file read from device (Femto Mega, read only)
      */
     OB_RAW_DATA_CAMERA_CALIB_JSON_FILE = 4029,
+
+    /**
+     * @brief Confidence degree
+     */
+    OB_PROP_DEBUG_ESGM_CONFIDENCE_FLOAT = 5013,
+
+    /**
+     * @brief Color camera CCI denoising level. 0: Auto; 1-8: higher values indicate stronger denoising.
+     * @note This setting has no effect when AE (Auto Exposure) is disabled.
+     */
+    OB_PROP_COLOR_DENOISING_LEVEL_INT = 5525,
+
+    /*
+     * @brief LiDAR: set/get IP address
+     */
+    OB_RAW_DATA_LIDAR_IP_ADDRESS = 8000,
+
+    /**
+     * @brief LiDAR: set/get port
+     */
+    OB_PROP_LIDAR_PORT_INT = 8001,
+
+    /**
+     * @brief LiDAR: set/get MAC address
+     */
+    OB_RAW_DATA_LIDAR_MAC_ADDRESS = 8002,
+
+    /**
+     * @brief LiDAR: set/get subnet mask
+     */
+    OB_RAW_DATA_LIDAR_SUBNET_MASK = 8003,
+
+    /**
+     * @brief LiDAR: set/get work mode
+     */
+    OB_PROP_LIDAR_WORK_MODE_INT = 8004,
+
+    /**
+     * @brief LiDAR: apply configs
+     */
+    OB_PROP_LIDAR_APPLY_CONFIGS_INT = 8005,
+
+    /**
+     * @brief LiDAR: set/get tail filter level
+     */
+    OB_PROP_LIDAR_TAIL_FILTER_LEVEL_INT = 8006,
+
+    /**
+     * @brief LiDAR: set/get mems fov size
+     */
+    OB_PROP_LIDAR_MEMS_FOV_SIZE_FLOAT = 8007,
+
+    /**
+     * @brief LiDAR: set/get mems frequency
+     */
+    OB_PROP_LIDAR_MEMS_FRENQUENCY_FLOAT = 8008,
+
+    /**
+     * @brief LiDAR: get product model
+     */
+    OB_RAW_DATA_LIDAR_PRODUCT_MODEL = 8009,
+
+    /**
+     * @brief LiDAR: get firmware version
+     */
+    OB_RAW_DATA_LIDAR_FIRMWARE_VERSION = 8010,
+
+    /**
+     * @brief LiDAR: get fpga version
+     */
+    OB_RAW_DATA_LIDAR_FPGA_VERSION = 8011,
+
+    /**
+     * @brief LiDAR: get warning info
+     */
+    OB_PROP_LIDAR_WARNING_INFO_INT = 8012,
+
+    /**
+     * @brief LiDAR: get realtime motor spin speed, unit:0.01rpm
+     */
+    OB_PROP_LIDAR_MOTOR_SPIN_SPEED_INT = 8013,
+
+    /**
+     * @brief LiDAR: get mcu temperature, uint: 0.01degrees delsius
+     */
+    OB_PROP_LIDAR_MCU_TEMPERATURE_INT = 8014,
+
+    /**
+     * @brief LiDAR: get apd temperature, uint: 0.01degrees delsius
+     */
+    OB_PROP_LIDAR_APD_TEMPERATURE_INT = 8015,
+
+    /**
+     * @brief LiDAR: get/set specific mode
+     */
+    OB_PROP_LIDAR_SPECIFIC_MODE_INT = 8016,
+
+    /**
+     * @brief LiDAR: get/set repetitive scan mode
+     */
+    OB_PROP_LIDAR_REPETITIVE_SCAN_MODE_INT = 8017
 } OBPropertyID,
     ob_property_id;
 

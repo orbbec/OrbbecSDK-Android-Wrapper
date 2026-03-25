@@ -15,6 +15,7 @@
         android:text="@string/device_status" />
 
     <ScrollView
+        android:id="@+id/scroll_view"
         android:layout_width="600dp"
         android:layout_height="300dp"
         android:background="@drawable/gray_border">
@@ -23,6 +24,7 @@
             android:id="@+id/tv_device_change_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="@color/black"
             android:layout_marginHorizontal="15dp"
             android:layout_marginVertical="10dp" />
     </ScrollView>

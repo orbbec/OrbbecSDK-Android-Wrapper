@@ -894,21 +894,43 @@ Java_com_orbbec_obsensor_OBContext_nQueryDevices(JNIEnv *env,
     return (jlong)deviceInfoList;
 }
 
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_orbbec_obsensor_OBContext_nRegisterDeviceChangedCallback(JNIEnv *env, jclass clazz,
+                                                                  jlong handle, jobject callback) {
+    ob_error *error = NULL;
+    auto context = reinterpret_cast<ob_context *>(handle);
+    void *cookie = nullptr;
+    std::lock_guard<std::mutex> lk(mutex_);
+    if (callback) {
+        jobject gCallback = env->NewGlobalRef(callback);
+        cookie = gCallback;
+        gListCallback_.emplace_back(handle, gCallback);
+    }
+    auto result = ob_register_device_changed_callback(context, onDeviceChangedCallback, cookie,
+                                                      &error);
+    ob_handle_error(env, error);
+    return (jlong) result;
+}
+
 extern "C" JNIEXPORT void JNICALL
-Java_com_orbbec_obsensor_OBContext_nSetDeviceChangedCallback(
-    JNIEnv *env, jclass typeOBContext, jlong handle, jobject callback) {
-  ob_error *error = NULL;
-  auto context = reinterpret_cast<ob_context *>(handle);
-  void *cookie = nullptr;
-  std::lock_guard<std::mutex> lk(mutex_);
-  if (callback) {
-    jobject gCallback = env->NewGlobalRef(callback);
-    cookie = gCallback;
-    gListCallback_.push_back(std::pair<jlong, jobject>(handle, gCallback));
-  }
-  ob_set_device_changed_callback(context, onDeviceChangedCallback, cookie,
-                                 &error);
-  ob_handle_error(env, error);
+Java_com_orbbec_obsensor_OBContext_nUnregisterDeviceChangedCallback(JNIEnv *env, jclass clazz,
+                                                                    jlong handle,
+                                                                    jlong callbackId) {
+    ob_error *error = NULL;
+    auto context = reinterpret_cast<ob_context *>(handle);
+    std::lock_guard<std::mutex> lk(mutex_);
+    std::vector<std::pair<jlong, jobject>>::iterator callbackIt;
+    for (callbackIt = gListCallback_.begin(); callbackIt != gListCallback_.end();) {
+        if (handle == callbackIt->first) {
+            env->DeleteGlobalRef(callbackIt->second);
+            callbackIt = gListCallback_.erase(callbackIt);
+            break;
+        } else {
+            callbackIt++;
+        }
+    }
+    ob_unregister_device_changed_callback(context, static_cast<ob_callback_id>(callbackId), &error);
+    ob_handle_error(env, error);
 }
 
 extern "C" JNIEXPORT void JNICALL

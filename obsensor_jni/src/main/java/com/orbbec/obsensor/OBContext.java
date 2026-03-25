@@ -30,6 +30,7 @@ public class OBContext extends LobClass {
     private static DeviceWatcher mDeviceWatcher;
     private static boolean mHasConfigLogFile = false;
     private static volatile int mInstanceNum = 0;
+    private static volatile long mCallbackId = 0;
 
     private interface DeviceChangedCallbackImpl {
 
@@ -94,7 +95,7 @@ public class OBContext extends LobClass {
         initExtensions(context);
         initDefaultLogConfig(context);
         mHandle = nCreate();
-        nSetDeviceChangedCallback(mHandle, mDeviceChangedCallbackImpl);
+        mCallbackId = nRegisterDeviceChangedCallback(mHandle, mDeviceChangedCallbackImpl);
         setDevicesChangedCallback(callback);
         if (mDeviceWatcher == null) {
             mDeviceWatcher = new DeviceWatcher(context);
@@ -121,7 +122,7 @@ public class OBContext extends LobClass {
         initExtensions(context);
         initDefaultLogConfig(context);
         mHandle = nCreateWithConfig(configPath);
-        nSetDeviceChangedCallback(mHandle, mDeviceChangedCallbackImpl);
+        mCallbackId = nRegisterDeviceChangedCallback(mHandle, mDeviceChangedCallbackImpl);
         setDevicesChangedCallback(callback);
         if (mDeviceWatcher == null) {
             mDeviceWatcher = new DeviceWatcher(context);
@@ -531,7 +532,7 @@ public class OBContext extends LobClass {
     @Override
     public void close() {
         throwInitializeException();
-        nSetDeviceChangedCallback(mHandle, null);
+        nUnregisterDeviceChangedCallback(mHandle, mCallbackId);
         removeDevicesChangedCallback();
         if (mDeviceWatcher != null) {
             mDeviceWatcher.close();
@@ -566,7 +567,9 @@ public class OBContext extends LobClass {
 
     private static native void nSetLoggerToConsole(int severity);
 
-    private static native void nSetDeviceChangedCallback(long handle, DeviceChangedCallbackImpl callback);
+    private static native long nRegisterDeviceChangedCallback(long handle, DeviceChangedCallbackImpl callback);
+
+    private static native void nUnregisterDeviceChangedCallback(long handle, long callbackId);
 
     private static native void nEnableDeviceClockSync(long handle, long repeatInterval);
 

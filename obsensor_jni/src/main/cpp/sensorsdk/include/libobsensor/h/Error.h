@@ -16,11 +16,12 @@ extern "C" {
 /**
  * @brief Create a new error object.
  *
- * @param status The error status.
- * @param message The error message.
- * @param function The name of the API function that caused the error.
- * @param args The error parameters.
- * @param exception_type The type of exception that caused the error.
+ * @param[in] status The error status.
+ * @param[in] message The error message.
+ * @param[in] function The name of the API function that caused the error.
+ * @param[in] args The error parameters.
+ * @param[in] exception_type The type of exception that caused the error.
+ *
  * @return ob_error* The new error object.
  */
 OB_EXPORT ob_error *ob_create_error(ob_status status, const char *message, const char *function, const char *args, ob_exception_type exception_type);
@@ -68,7 +69,7 @@ OB_EXPORT ob_exception_type ob_error_get_exception_type(const ob_error *error);
 /**
  * @brief Delete the error object.
  *
- * @param[in] error The error object to delete.
+ * @param[in] error The error object to delete, you should set the pointer to NULL after calling this function.
  */
 OB_EXPORT void ob_delete_error(ob_error *error);
 

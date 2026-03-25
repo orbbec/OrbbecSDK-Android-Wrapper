@@ -3,6 +3,7 @@ package com.orbbec.internal;
 import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -60,7 +61,7 @@ public class UsbUtilities {
         return getUsbDevices(context, VID_ORBBEC);
     }
 
-    public static String getUsbDeviceBriefText(UsbDevice usbDevice) {
+    public static String getUsbDeviceBriefText(UsbDevice usbDevice, Context context) {
         if (null == usbDevice) {
             return "null";
         }
@@ -69,14 +70,40 @@ public class UsbUtilities {
                 usbDevice.getDeviceId(),
                 usbDevice.getVendorId(),
                 usbDevice.getProductId(),
-                safeGetSerialNumber(usbDevice),
+                safeGetSerialNumber(usbDevice, context),
                 isOrbbecDevice(usbDevice));
     }
 
-    public static String safeGetSerialNumber(UsbDevice usbDevice) {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-//            return "";
-//        }
+    public static String safeGetSerialNumber(UsbDevice usbDevice, Context context) {
+        if (usbDevice == null || context == null) {
+            Log.w(TAG, "UsbDevice or Context is null.");
+            return "error";
+        }
+
+        // For Android Q and higher versions.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
+            if (usbManager != null && usbManager.hasPermission(usbDevice)) {
+                return getSerialNumberWithPermission(usbDevice);
+            } else {
+                Log.w(TAG, "No permission or UsbManager is null for device: " + usbDevice);
+                return "no-permission";
+            }
+        }
+
         return usbDevice.getSerialNumber();
     }
+
+    private static String getSerialNumberWithPermission(UsbDevice usbDevice) {
+        try {
+            return usbDevice.getSerialNumber();
+        } catch (SecurityException e) {
+            Log.w(TAG, "No permission to access serial number: " + e.getMessage());
+            return "no-permission";
+        } catch (Exception e) {
+            Log.w(TAG, "Error getting serial number: " + e.getMessage());
+            return "error";
+        }
+    }
+
 }

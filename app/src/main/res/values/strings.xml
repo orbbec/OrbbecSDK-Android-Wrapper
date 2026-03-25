@@ -68,4 +68,5 @@
     <string name="ir_left_stream">IR Left Stream</string>
     <string name="ir_right_stream">IR Right Stream</string>
     <string name="post_processing_depth_stream">Post Processing Depth Stream</string>
+    <string name="save_image">The image is being saved</string>
 </resources>

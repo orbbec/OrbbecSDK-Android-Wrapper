@@ -4,7 +4,9 @@ import android.graphics.Paint;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.orbbec.obsensor.Device;
@@ -27,6 +29,7 @@ public class DeviceHotPluginActivity extends BaseActivity {
     private DeviceList mCurrentList;
     private TextView mDeviceChangeStatusTv;
     private Button mRebootDeviceBtn;
+    private ScrollView scrollView;
 
     private final Locale locale = Locale.getDefault();
     private final int sdkVersion = Build.VERSION.SDK_INT;
@@ -59,6 +62,7 @@ public class DeviceHotPluginActivity extends BaseActivity {
         setContentView(R.layout.activity_device_hot_plugin);
         mDeviceChangeStatusTv = findViewById(R.id.tv_device_change_status);
         mRebootDeviceBtn = findViewById(R.id.btn_reboot_devices);
+        scrollView = findViewById(R.id.scroll_view);
         mRebootDeviceBtn.setOnClickListener(v -> {
             rebootDevices(mCurrentList);
             mRebootDeviceBtn.setEnabled(false);
@@ -94,7 +98,10 @@ public class DeviceHotPluginActivity extends BaseActivity {
     }
 
     private void setText(TextView tv, String text) {
-        runOnUiThread(() -> tv.append(text));
+        runOnUiThread(() -> {
+            tv.append(text);
+            scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+        });
     }
 
     private String printDeviceList(String prompt, DeviceList deviceList) {

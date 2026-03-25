@@ -10,10 +10,15 @@ import com.orbbec.obsensor.Config;
 import com.orbbec.obsensor.Device;
 import com.orbbec.obsensor.DeviceChangedCallback;
 import com.orbbec.obsensor.DeviceList;
+import com.orbbec.obsensor.FormatConvertFilter;
+import com.orbbec.obsensor.Frame;
 import com.orbbec.obsensor.FrameSet;
 import com.orbbec.obsensor.Pipeline;
 import com.orbbec.obsensor.Sensor;
+import com.orbbec.obsensor.types.ConvertFormat;
 import com.orbbec.obsensor.types.DeviceInfo;
+import com.orbbec.obsensor.types.Format;
+import com.orbbec.obsensor.types.FrameType;
 import com.orbbec.obsensor.types.SensorType;
 import com.orbbec.obsensor.types.StreamType;
 import com.orbbec.orbbecsdkexamples.R;
@@ -32,13 +37,13 @@ public class StreamColorActivity extends BaseActivity {
     private volatile boolean mIsStreamRunning;
     private OBGLView mColorView;
     private Device mDevice;
+    private FormatConvertFilter formatConvertFilter;
 
     private DeviceChangedCallback mDeviceChangedCallback = new DeviceChangedCallback() {
         @Override
         public void onDeviceAttach(DeviceList deviceList) {
             try {
-                if (null == mPipeline) {
-                    // 2.Create Device and initialize Pipeline through Device
+                if (null == mDevice) {
                     mDevice = deviceList.getDevice(0);
                     Sensor colorSensor = mDevice.getSensor(SensorType.COLOR);
                     if (null == colorSensor) {
@@ -47,27 +52,12 @@ public class StreamColorActivity extends BaseActivity {
                         mDevice = null;
                         return;
                     }
-                    // 3. Create Device and initialize Pipeline through Device
-                    mPipeline = new Pipeline(mDevice);
-
-                    // 4.Create Pipeline configuration
-                    Config config = new Config();
-                    // 5.Enable color stream
-                    config.enableStream(SensorType.COLOR);
-
-                    // 6.Start sensor stream
-                    mPipeline.start(config);
-
-                    // 7.Release config
-                    config.close();
-
-                    // 8.Create a thread to obtain Pipeline data
-                    start();
+                    Log.i(TAG, "onDeviceAttach: device init");
+                    runOnUiThread(() -> openStream());
                 }
             } catch (Exception e) {
                 Log.e(TAG, "onDeviceAttach: " + e.getMessage());
             } finally {
-                // 9.Release device list resources
                 deviceList.close();
             }
         }
@@ -80,9 +70,8 @@ public class StreamColorActivity extends BaseActivity {
                         String uid = deviceList.getUid(i);
                         DeviceInfo deviceInfo = mDevice.getInfo();
                         if (null != deviceInfo && TextUtils.equals(uid, deviceInfo.getUid())) {
-                            stop();
-                            mPipeline.close();
-                            mPipeline = null;
+                            Log.i(TAG, "onDeviceDetach: device released");
+                            closeStream();
                             mDevice.close();
                             mDevice = null;
                         }
@@ -102,34 +91,118 @@ public class StreamColorActivity extends BaseActivity {
         setTitle("Stream-Color");
         setContentView(R.layout.activity_stream_color);
         mColorView = findViewById(R.id.colorview_id);
+        // 核心优化：创建时初始化 SDK，切后台不注销上下文
+        initSDK();
+        formatConvertFilter = new FormatConvertFilter();
+        formatConvertFilter.setFormatType(ConvertFormat.FORMAT_MJPEG_TO_RGB);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        initSDK();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 从后台回到前台时，若设备已连接且未出流则快速恢复流
+        if (mDevice != null && !mIsStreamRunning) {
+            openStream();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        // 核心优化：仅停止数据流，不销毁 Pipeline 句柄
+        stopStreamOnly();
+        super.onPause();
     }
 
     @Override
     protected void onStop() {
-        try {
-            // Stop getting Pipeline data
-            stop();
+        super.onStop();
+    }
 
-            // Stop the Pipeline and release
-            if (null != mPipeline) {
-                mPipeline.close();
-            }
-
-            // Release Device
-            if (mDevice != null) {
+    @Override
+    protected void onDestroy() {
+        // 彻底退出页面时才释放硬件资源
+        closeStream();
+        if(formatConvertFilter != null){
+            formatConvertFilter.close();
+        }
+        if (mDevice != null) {
+            try {
                 mDevice.close();
+            } catch (Exception e) {
+                Log.e(TAG, "onDestroy close device: " + e.getMessage());
             }
-        } catch (Exception e) {
-            Log.e(TAG, "onStop: " + e.getMessage());
+            mDevice = null;
         }
         releaseSDK();
-        super.onStop();
+        super.onDestroy();
+    }
+
+    private synchronized void openStream() {
+        if (mIsStreamRunning || mDevice == null) {
+            return;
+        }
+        try {
+            // 复用已有 Pipeline，跳过最耗时的重建过程
+            if (mPipeline == null) {
+                mPipeline = new Pipeline(mDevice);
+            }
+            Config config = new Config();
+            config.enableStream(SensorType.COLOR);
+            mPipeline.start(config);
+            config.close();
+
+            mIsStreamRunning = true;
+            if (null == mStreamThread) {
+                mStreamThread = new Thread(mStreamRunnable);
+                mStreamThread.start();
+            }
+            Log.i(TAG, "openStream success - quickly recovered");
+        } catch (Exception e) {
+            Log.e(TAG, "openStream failed: " + e.getMessage());
+        }
+    }
+
+    private void stopStreamThread() {
+        mIsStreamRunning = false;
+        if (null != mStreamThread) {
+            try {
+                mStreamThread.join(300);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "stopStreamThread join error: " + e.getMessage());
+            }
+            mStreamThread = null;
+        }
+    }
+
+    private synchronized void stopStreamOnly() {
+        stopStreamThread();
+        if (null != mPipeline) {
+            try {
+                // 仅停止传感器出流，保留对象以便 onResume 快速 start
+                mPipeline.stop();
+            } catch (Exception e) {
+                Log.e(TAG, "stopStreamOnly pipeline: " + e.getMessage());
+            }
+        }
+    }
+
+    private synchronized void closeStream() {
+        stopStreamThread();
+        if (null != mPipeline) {
+            try {
+                mPipeline.stop();
+                mPipeline.close();
+            } catch (Exception e) {
+                Log.e(TAG, "closeStream pipeline: " + e.getMessage());
+            }
+            mPipeline = null;
+        }
+        Log.i(TAG, "closeStream - resources released");
     }
 
     @Override
@@ -141,56 +214,31 @@ public class StreamColorActivity extends BaseActivity {
         runOnUiThread(() -> Toast.makeText(StreamColorActivity.this, msg, Toast.LENGTH_SHORT).show());
     }
 
-    private void start() {
-        mIsStreamRunning = true;
-        if (null == mStreamThread) {
-            mStreamThread = new Thread(mStreamRunnable);
-            mStreamThread.start();
-        }
-    }
-
-    private void stop() {
-        mIsStreamRunning = false;
-        if (null != mStreamThread) {
-            try {
-                mStreamThread.join(300);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "stop: " + e.getMessage());
-            }
-            mStreamThread = null;
-        }
-    }
-
     private Runnable mStreamRunnable = () -> {
         ByteBuffer buffer = null;
         while (mIsStreamRunning) {
-            // Obtain the data set in blocking mode. If it cannot be obtained after waiting for 100ms, it will time out.
             try (FrameSet frameSet = mPipeline.waitForFrameSet(100)) {
-                if (null == frameSet) {
-                    continue;
-                }
+                if (null == frameSet) continue;
 
-                // Get color flow data
                 ColorFrame colorFrame = frameSet.getColorFrame();
-                if (null != buffer) {
-                    buffer.clear();
-                }
-
                 if (null != colorFrame) {
-                    // Initialize buffer
+                    if(colorFrame.getFormat() == Format.MJPG){
+                        Frame newFrame = formatConvertFilter.process(colorFrame);
+                        colorFrame.close();
+                        colorFrame = newFrame.as(FrameType.COLOR);
+                    }
+
                     int dataSize = colorFrame.getDataSize();
                     if (null == buffer || buffer.capacity() != dataSize) {
                         buffer = ByteBuffer.allocateDirect(dataSize);
                     }
-                    // Get data and render
+                    buffer.clear();
                     colorFrame.getData(buffer);
                     mColorView.update(colorFrame.getWidth(), colorFrame.getHeight(), StreamType.COLOR, colorFrame.getFormat(), buffer, 1.0f);
-
-                    // Release color data frame
                     colorFrame.close();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "run: " + e.getMessage());
+                Log.e(TAG, "run thread error: " + e.getMessage());
             }
         }
     };

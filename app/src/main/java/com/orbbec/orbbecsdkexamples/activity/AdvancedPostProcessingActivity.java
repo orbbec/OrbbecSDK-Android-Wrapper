@@ -2,12 +2,15 @@ package com.orbbec.orbbecsdkexamples.activity;
 
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -41,6 +44,7 @@ import com.orbbec.orbbecsdkexamples.adapter.SpinnerContentAdapter;
 import com.orbbec.orbbecsdkexamples.view.OBGLView;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -90,16 +94,12 @@ public class AdvancedPostProcessingActivity extends BaseActivity implements Adap
                     // 3.Create Device and initialize Pipeline through Device
                     mPipeline = new Pipeline(mDevice);
 
-                    // 4.Create config to configure the resolution, frame rate, and format of the depth stream
-                    Config config = new Config();
-                    // 5.Enable depth stream
-                    config.enableStream(StreamType.DEPTH);
-
-                    // 6.Get recommended post processor filter list and get the filter count
+                    // 4.Get recommended post processor filter list and get the filter count
                     mRecommendedFilterList = depthSensor.getRecommendedFilterList();
                     int count = mRecommendedFilterList.getFilterListCount();
 
-                    filters = new HashMap<>();
+                    // 使用 LinkedHashMap 保持从 SDK 获取的原始顺序
+                    filters = new LinkedHashMap<>();
                     for (int i = 0; i < count; i++) {
                         Filter filter = mRecommendedFilterList.getFilter(i);
                         String name = mRecommendedFilterList.getFilterName(filter);
@@ -113,14 +113,8 @@ public class AdvancedPostProcessingActivity extends BaseActivity implements Adap
                     }
                     updateFilterSelect();
 
-                    // 7.Start sensor stream
-                    mPipeline.start(config);
-
-                    // 8.Release config
-                    config.close();
-
-                    // 9.Create a thread to obtain Pipeline data
-                    start();
+                    // 7.Start sensor stream and create a thread to obtain Pipeline data
+                    startStream();
                 }
             } catch (Exception e) {
                 Log.e(TAG, "onDeviceAttach: " + e.getMessage());
@@ -160,32 +154,51 @@ public class AdvancedPostProcessingActivity extends BaseActivity implements Adap
         setTitle("Advanced-Post Processing");
         setContentView(R.layout.activity_advanced_post_processing);
         initView();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
+        // SDK 只在 Activity 创建时初始化一次
         initSDK();
     }
 
     @Override
-    protected void onStop() {
+    protected void onResume() {
+        super.onResume();
+        // 从后台回到前台：pipeline 已存在则直接恢复出流，filters/UI 均保留
+        if (mPipeline != null && !mIsStreamRunning) {
+            startStream();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        // 退到后台：只停流线程和 pipeline 出流，不销毁任何资源
+        stopStreamOnly();
+        if (mPipeline != null) {
+            try {
+                mPipeline.stop();
+            } catch (Exception e) {
+                Log.e(TAG, "onPause pipeline stop: " + e.getMessage());
+            }
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Activity 退出时统一释放所有资源
         try {
             stop();
-
             if (null != mPipeline) {
-                mPipeline.stop();
                 mPipeline.close();
+                mPipeline = null;
             }
-
             if (null != mDevice) {
                 mDevice.close();
+                mDevice = null;
             }
         } catch (Exception e) {
-            Log.e(TAG, "onStop: " + e.getMessage());
+            Log.e(TAG, "onDestroy: " + e.getMessage());
         }
         releaseSDK();
-        super.onStop();
+        super.onDestroy();
     }
 
     private void initView() {
@@ -218,6 +231,31 @@ public class AdvancedPostProcessingActivity extends BaseActivity implements Adap
         textSize = screenWidth * 0.01f / density;
     }
 
+    private void startStream() {
+        try {
+            Config config = new Config();
+            config.enableStream(StreamType.DEPTH);
+            mPipeline.start(config);
+            config.close();
+            start();
+        } catch (Exception e) {
+            Log.e(TAG, "startStream: " + e.getMessage());
+        }
+    }
+
+    // Only stops the stream thread, does NOT close filters or UI (used for background pause)
+    private void stopStreamOnly() {
+        mIsStreamRunning = false;
+        if (null != mStreamThread) {
+            try {
+                mStreamThread.join(300);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "stopStreamOnly: " + e.getMessage());
+            }
+            mStreamThread = null;
+        }
+    }
+
     private void start() {
         mIsStreamRunning = true;
         if (mStreamThread == null) {
@@ -239,6 +277,7 @@ public class AdvancedPostProcessingActivity extends BaseActivity implements Adap
 
         if (null != mRecommendedFilterList) {
             mRecommendedFilterList.close();
+            mRecommendedFilterList = null;
         }
 
         if (null != filters) {
@@ -349,6 +388,16 @@ public class AdvancedPostProcessingActivity extends BaseActivity implements Adap
         }
     }
 
+    private int getContrastColor(int backgroundColor) {
+        // Calculate relative luminance.
+        double darkness = 1 - (0.299 * Color.red(backgroundColor) + 0.587 * Color.green(backgroundColor) + 0.114 * Color.blue(backgroundColor)) / 255;
+        if (darkness < 0.5) {
+            return Color.BLACK; // Light background, use black text
+        } else {
+            return Color.WHITE; // Dark background, use white text
+        }
+    }
+
     private void createFilterCheckbox(String filterName, boolean isEnabled) {
         runOnUiThread(() -> {
             CheckBox cb = new CheckBox(this);
@@ -361,7 +410,22 @@ public class AdvancedPostProcessingActivity extends BaseActivity implements Adap
             cb.setCompoundDrawablePadding(6);
             cb.setPadding(6, 0, 6, 6);
             cb.setText(filterName);
-            cb.setTextColor(Color.BLACK);
+            // Get background color of activity to determine text color
+            int bgColor = Color.BLACK; // Default
+            TypedValue a = new TypedValue();
+            getTheme().resolveAttribute(android.R.attr.windowBackground, a, true);
+            if (a.type >= TypedValue.TYPE_FIRST_COLOR_INT && a.type <= TypedValue.TYPE_LAST_COLOR_INT) {
+                bgColor = a.data;
+            } else {
+                try {
+                    Drawable background = getWindow().getDecorView().getBackground();
+                    if (background instanceof ColorDrawable) {
+                        bgColor = ((ColorDrawable) background).getColor();
+                    }
+                } catch (Exception ignore) {}
+            }
+            cb.setTextColor(getContrastColor(bgColor));
+
             cb.post(() -> {
                 textSize = Math.max(12, Math.min(textSize, 14));
                 cb.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSize);

@@ -4,7 +4,6 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
 
-import com.libyuv.util.YuvUtil;
 import com.orbbec.obsensor.types.Format;
 import com.orbbec.obsensor.types.StreamType;
 import com.orbbec.orbbecsdkexamples.utils.GlUtil;
@@ -167,7 +166,7 @@ public class OBRender implements GLSurfaceView.Renderer {
         if (format == Format.Y8) {
             ImageUtils.y8ToRgb(mSrcDataBuffer, mDecodeBuffer, w, h);
         } else {
-            YuvUtil.ir2RGB888(mSrcDataBuffer, mDecodeBuffer, w, h, mSrcDataBuffer.capacity());
+            ImageUtils.ir2RGB888(mSrcDataBuffer, mDecodeBuffer, w, h);
         }
         synchronized (mRenderLock) {
             mRenderBuffer.put(mDecodeBuffer);
@@ -226,7 +225,6 @@ public class OBRender implements GLSurfaceView.Renderer {
                 }
                 break;
             case YUYV:
-//                YuvUtil.yuyv2Rgb888(mSrcDataBuffer, mDecodeBuffer, w * h * 2);
                 ImageUtils.yuyvToRgb(mSrcDataBuffer, mDecodeBuffer, w, h);
                 synchronized (mRenderLock) {
                     mRenderBuffer.put(mDecodeBuffer);
@@ -235,13 +233,6 @@ public class OBRender implements GLSurfaceView.Renderer {
                 break;
             case UYVY:
                 ImageUtils.uyvyToRgb(mSrcDataBuffer, mDecodeBuffer, w, h);
-                synchronized (mRenderLock) {
-                    mRenderBuffer.put(mDecodeBuffer);
-                    mRenderBuffer.flip();
-                }
-                break;
-            case MJPG:
-                ImageUtils.mjpgToRgb(mSrcDataBuffer, mDecodeBuffer, w, h);
                 synchronized (mRenderLock) {
                     mRenderBuffer.put(mDecodeBuffer);
                     mRenderBuffer.flip();

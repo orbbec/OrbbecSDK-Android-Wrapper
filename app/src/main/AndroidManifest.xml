@@ -33,7 +33,10 @@
         <activity android:name=".activity.AdvancedHwD2CAlignActivity" />
         <activity android:name=".activity.AdvancedMultiDevicesActivity" />
         <activity android:name=".activity.AdvancedPointCloudActivity" />
-        <activity android:name=".activity.AdvancedPostProcessingActivity" />
+        <activity
+            android:name=".activity.AdvancedPostProcessingActivity"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
         <activity android:name=".activity.AdvancedSyncAlignActivity" />
         <activity android:name=".activity.MainActivity"
             android:exported="true">

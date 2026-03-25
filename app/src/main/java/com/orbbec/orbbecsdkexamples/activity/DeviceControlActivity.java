@@ -54,8 +54,21 @@ public class DeviceControlActivity extends BaseActivity implements View.OnClickL
         @Override
         public void onDeviceAttach(DeviceList deviceList) {
             try {
+                Device newDevice = deviceList.getDevice(0);
+                DeviceInfo newInfo = newDevice.getInfo();
+                String newUid = newInfo != null ? newInfo.getUid() : null;
+
+                // Avoid adding duplicate device (e.g. when SDK callback re-fires after onStart)
+                for (Device device : mDeviceList) {
+                    DeviceInfo info = device.getInfo();
+                    if (info != null && TextUtils.equals(newUid, info.getUid())) {
+                        newDevice.close();
+                        return;
+                    }
+                }
+
                 // 3.Add the obtained device to the device list
-                mDeviceList.add(deviceList.getDevice(0));
+                mDeviceList.add(newDevice);
 
                 // 4.Update device list
                 updateDeviceSpinnerList();
@@ -113,9 +126,17 @@ public class DeviceControlActivity extends BaseActivity implements View.OnClickL
 
     @Override
     protected void onStop() {
+        // 释放设备资源必须在 releaseSDK 之前
         release();
         releaseSDK();
         super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // 安全兜底：正常情况 onStop 已释放
+        release();
+        super.onDestroy();
     }
 
     @Override
@@ -135,6 +156,12 @@ public class DeviceControlActivity extends BaseActivity implements View.OnClickL
                 device.close();
             }
             mDeviceList.clear();
+            mSelectDevice = null;
+            // 清空设备/属性下拉列表，确保回到前台后 onItemSelected 能正常触发
+            mDeviceNameList.clear();
+            mDeviceNameAdapter.clear();
+            mDeviceNameAdapter.notifyDataSetChanged();
+            clearPropertySpinnerList();
         } catch (Exception e) {
             Log.e(TAG, "release: " + e.getMessage());
         }
@@ -269,10 +296,23 @@ public class DeviceControlActivity extends BaseActivity implements View.OnClickL
                     // to adjust AE, white balance (color temperature) needs to be turned off automatic white
                     // balance to be adjusted.
                     try {
+                        int intValue = Integer.parseInt(setValue);
+
+                        // Restriction for rotation properties: must be 0, 90, 180, or 270
+                        if (devProperty.getProperty() == DeviceProperty.OB_PROP_COLOR_ROTATE_INT
+                                || devProperty.getProperty() == DeviceProperty.OB_PROP_IR_ROTATE_INT
+                                || devProperty.getProperty() == DeviceProperty.OB_PROP_IR_RIGHT_ROTATE_INT
+                                || devProperty.getProperty() == DeviceProperty.OB_PROP_DEPTH_ROTATE_INT) {
+                            if (intValue != 0 && intValue != 90 && intValue != 180 && intValue != 270) {
+                                showToast("The set value is incorrect, it can only be 0, 90, 180, 270.");
+                                return;
+                            }
+                        }
+
                         if (devProperty.getProperty() == DeviceProperty.OB_PROP_COLOR_EXPOSURE_INT
                                 || devProperty.getProperty() == DeviceProperty.OB_PROP_COLOR_GAIN_INT) { //曝光或增益
                             // Get auto exposure status
-                            boolean propertyExposureBool = propertyExposureBool = mSelectDevice.getPropertyValueB(DeviceProperty.OB_PROP_COLOR_AUTO_EXPOSURE_BOOL);
+                            boolean propertyExposureBool = mSelectDevice.getPropertyValueB(DeviceProperty.OB_PROP_COLOR_AUTO_EXPOSURE_BOOL);
                             Log.d(TAG, "propertyExposureBool:" + propertyExposureBool);
                             if (propertyExposureBool) {
                                 showToast(getString(R.string.cannot_set_exposure_and_gain_when_ae_on));
@@ -299,7 +339,7 @@ public class DeviceControlActivity extends BaseActivity implements View.OnClickL
                                 return;
                             }
                         }
-                        mSelectDevice.setPropertyValueI(devProperty.getProperty(), Integer.parseInt(setValue));
+                        mSelectDevice.setPropertyValueI(devProperty.getProperty(), intValue);
                     } catch (Exception e) {
                         Log.e(TAG, "setProperty: " + e.getMessage());
                     }

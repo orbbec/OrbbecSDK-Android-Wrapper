@@ -30,14 +30,14 @@ public class DeviceWatcher extends LobClass {
         @Override
         public void onDeviceAttach(UsbDevice usbDevice) {
             Log.d(TAG, " onDeviceAttach Adding device. deviceName: " + usbDevice.getDeviceName()
-                    + ", sn: " + UsbUtilities.safeGetSerialNumber(usbDevice) + ", deviceId:" + usbDevice.getDeviceId());
+                    + ", sn: " + UsbUtilities.safeGetSerialNumber(usbDevice, mContext) + ", deviceId:" + usbDevice.getDeviceId());
             addDevice(usbDevice);
         }
 
         @Override
         public void onDeviceDetach(UsbDevice usbDevice) {
             Log.d(TAG, " onDeviceDetach remove device.  deviceName: " + usbDevice.getDeviceName()
-                    + ", sn: " + UsbUtilities.safeGetSerialNumber(usbDevice) + ", deviceId:" + usbDevice.getDeviceId());
+                    + ", sn: " + UsbUtilities.safeGetSerialNumber(usbDevice, mContext) + ", deviceId:" + usbDevice.getDeviceId());
             removeDevice(usbDevice);
         }
     };
@@ -91,7 +91,7 @@ public class DeviceWatcher extends LobClass {
                     Integer.valueOf(split[split.length - 1]);
             UsbDeviceInfo usbDevInfo = new UsbDeviceInfo(device.getDeviceName(), device.getDeviceId(), url,
                     device.getVendorId(), device.getProductId(), miId,
-                    UsbUtilities.safeGetSerialNumber(device), cls);
+                    UsbUtilities.safeGetSerialNumber(device, mContext), cls);
             Log.d(TAG, "Adding device: " + usbDevInfo.mName
                     + String.format(" uid: 0x%08x url: %s vid: 0x%04x  pid: 0x%04x", usbDevInfo.mUid, usbDevInfo.mUrl, usbDevInfo.mVid, usbDevInfo.mPid)
                     + " miId: " + usbDevInfo.mMiId + " serialNum: " + usbDevInfo.mSerialNum
@@ -159,7 +159,7 @@ public class DeviceWatcher extends LobClass {
                             Log.e(TAG, "openUsbDevice failed:connection is null!");
                             return 0;
                         }
-                        Log.i(TAG, "openUsbDevice: usbDevice: " + UsbUtilities.getUsbDeviceBriefText(usbDevice));
+                        Log.i(TAG, "openUsbDevice: usbDevice: " + UsbUtilities.getUsbDeviceBriefText(usbDevice, mContext));
                         mUsbDeviceConnections.put(url, connection);
                     }
                     return connection.getFileDescriptor();

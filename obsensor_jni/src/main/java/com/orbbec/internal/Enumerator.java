@@ -40,7 +40,7 @@ public class Enumerator {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-            String deviceText = UsbUtilities.getUsbDeviceBriefText(usbDevice);
+            String deviceText = UsbUtilities.getUsbDeviceBriefText(usbDevice, context);
             Log.i(TAG, "onReceive: " + action + ", usbDevice: " + deviceText);
             if (null == usbDevice || !UsbUtilities.isOrbbecDevice(usbDevice)) {
                 return;
@@ -249,20 +249,20 @@ public class Enumerator {
             if (broadUsbDevice != usbDevice) {
                 if (null != broadUsbDevice) {
                     Log.i(TAG, "USBPermissionReceiver#onReceive broadUsbDevice != usbDevice. broadUsbDevice: {name: "
-                            + broadUsbDevice.getDeviceName() + ", SN: " + UsbUtilities.safeGetSerialNumber(broadUsbDevice)
+                            + broadUsbDevice.getDeviceName() + ", SN: " + UsbUtilities.safeGetSerialNumber(broadUsbDevice, context)
                             + ", id: " + broadUsbDevice.getDeviceId() + "}"
-                            + ", usbDevice: {name: " + usbDevice.getDeviceName() + ", SN: " + UsbUtilities.safeGetSerialNumber(usbDevice)
+                            + ", usbDevice: {name: " + usbDevice.getDeviceName() + ", SN: " + UsbUtilities.safeGetSerialNumber(usbDevice, context)
                             + ", id: " + usbDevice.getDeviceId() + "}");
                 } else {
                     Log.i(TAG, "USBPermissionReceiver#onReceive broadUsbDevice = null"
-                            + ", usbDevice: {name: " + usbDevice.getDeviceName() + ", SN: " + UsbUtilities.safeGetSerialNumber(usbDevice)
+                            + ", usbDevice: {name: " + usbDevice.getDeviceName() + ", SN: " + UsbUtilities.safeGetSerialNumber(usbDevice, context)
                             + ", id: " + usbDevice.getDeviceId() + "}");
                 }
             }
 
             boolean isGranted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false);
             boolean hasPermission = (null != usbDevice ? usbManager.hasPermission(usbDevice) : false);
-            String deviceText = UsbUtilities.getUsbDeviceBriefText(usbDevice);
+            String deviceText = UsbUtilities.getUsbDeviceBriefText(usbDevice, context);
             Log.i(TAG, "USBPermissionReceiver#onReceive. device: " + deviceText + ", isGranted: " + isGranted
                     + ", hasPermission: " + hasPermission);
             if (null != usbDevice && hasPermission && null != mHandler) {
@@ -349,7 +349,7 @@ public class Enumerator {
                 Map.Entry<String, UsbDevice> e = iters.next();
                 UsbDevice usbDevice = e.getValue();
                 if (UsbUtilities.isOrbbecDevice(usbDevice)) {
-                    String deviceText = UsbUtilities.getUsbDeviceBriefText(usbDevice);
+                    String deviceText = UsbUtilities.getUsbDeviceBriefText(usbDevice, context);
                     if (usbManager.hasPermission(usbDevice)) {
                         boolean isAdded = false;
                         synchronized (mUsbDeviceMap) {

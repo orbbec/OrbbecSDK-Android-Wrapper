@@ -1,5 +1,6 @@
 package com.orbbec.obsensor;
 
+import com.orbbec.internal.OBLocalUtils;
 import com.orbbec.obsensor.types.AlignMode;
 import com.orbbec.obsensor.types.CalibrationParam;
 import com.orbbec.obsensor.types.CameraParam;

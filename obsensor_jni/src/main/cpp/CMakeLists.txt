@@ -5,18 +5,16 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 project(cpp)
+
+# Android 15+ 16KB memory page alignment support (backward compatible with 4KB devices)
+if(ANDROID)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
+endif()
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared_ libraries with your APK.
-
-# include sensorsdk
-set(OB_LIBS_DIR ${OBSENSOR_JNI_DIR}/libs/${CMAKE_ANDROID_ARCH_ABI})
-add_library(sensorsdk SHARED IMPORTED)
-set_target_properties(sensorsdk PROPERTIES IMPORTED_LOCATION ${OB_LIBS_DIR}/libOrbbecSDK.so)
-target_include_directories(sensorsdk INTERFACE
-        ${OBSENSOR_JNI_DIR}/src/main/cpp/sensorsdk/include/libobsensor
-)
 
 file(GLOB_RECURSE JNI_SOURCE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/*.h
@@ -32,14 +30,17 @@ target_compile_definitions(obsensor_jni PRIVATE BUILD_NET_PORT)
 
 target_include_directories(obsensor_jni
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-        PUBLIC ${OBSENSOR_JNI_DIR}/src/main/cpp/sensorsdk/include
-)
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/sensorsdk/include)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
 # default, you only need to specify the name of the public NDK library
 # you want to add. CMake verifies that the library exists before
 # completing its build.
+
+add_library(OrbbecSDK SHARED IMPORTED)
+set_target_properties(OrbbecSDK PROPERTIES IMPORTED_LOCATION
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/${ANDROID_ABI}/libOrbbecSDK.so)
 
 find_library( # Sets the name of the path variable.
         log-lib
@@ -57,7 +58,7 @@ find_library( # Sets the name of the path variable.
 target_link_libraries( # Specifies the target library.
         obsensor_jni
 
-        sensorsdk
+        OrbbecSDK
 
         # Links the target library to the log library
         # included in the NDK.

@@ -50,6 +50,20 @@ public class DeviceOptionalDepthPresetsUpdateActivity extends BaseActivity {
                     drawDeviceInfo();
                     drawPresetInfo();
                 }
+                else {
+                    for (int i = 0, N = deviceList.getDeviceCount(); i < N; i++) {
+                        String uid = deviceList.getUid(i);
+                        DeviceInfo deviceInfo = mDevice.getInfo();
+                        if (deviceInfo != null && TextUtils.equals(uid, deviceInfo.getUid())) {
+                            mDevice.close();
+                            mDevice = null;
+                        }
+                    }
+
+                    mDevice = deviceList.getDevice(0);
+                    drawDeviceInfo();
+                    drawPresetInfo();
+                }
             } catch (Exception e) {
                 Log.e(TAG, "onDeviceAttach: " + e.getMessage());
             } finally {
