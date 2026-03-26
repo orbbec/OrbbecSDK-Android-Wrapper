@@ -5,7 +5,7 @@ plugins {
 }
 
 def libVersionCode = 2025041301
-def libVersionName = "2.0.4"
+def libVersionName = "2.0.6"
 println("libVersionCode: ${libVersionCode}, libVersionName: ${libVersionName}")
 
 android {

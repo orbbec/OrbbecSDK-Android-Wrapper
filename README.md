@@ -162,7 +162,7 @@ Android studio **Koala | 2024.1.1**
 download link [Android studio](https://developer.android.com/studio)
 
 ## NDK
-**version:** 21.4.7075529
+**version:** 27.2.12479018
 
 ## CMake
 **version:** 3.18.1
