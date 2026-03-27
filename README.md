@@ -206,10 +206,6 @@ minSdk 24
 //noinspection ExpiredTargetSdkVersion
 targetSdk 27
 ```
-**targetSdkVersion** 27 to fixed bug 'Android 10 Devices Do NOT Support USB Camera Connection' which fixed on android 11.
-\[reference 01] [Android 10 sdk28 usb camera device class bug.](https://forums.oneplus.com/threads/android-10-sdk28-usb-camera-device-class-bug.1258389/)
-
-\[reference 02] [Android 10 Devices Do NOT Support USB Camera Connection.](https://www.camerafi.com/notice-android-10-devices-do-not-support-usb-camera-connection/)
 
 # Simple code of open depth stream
 Create OBContext global member to manager attach devices
